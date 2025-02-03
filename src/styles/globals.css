@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 0.97;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0.97;
+  }
+}
+
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.retro-gradient {
+  background: linear-gradient(45deg, #ff00ff, #00ffff, #ff69b4, #4b0082);
+  background-size: 400% 400%;
+  animation: gradientAnimation 15s ease infinite;
+}
