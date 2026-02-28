@@ -52,7 +52,7 @@ const VHSCoverflow: FC<VHSCoverflowProps> = ({ movies }) => {
                   <img
                     src={movie.coverImage}
                     alt={movie.title}
-                    className="h-full w-full object-cover shadow-lg transition-shadow duration-300 group-hover:shadow-xl relative z-10"
+                    className="relative z-10 h-full w-full object-cover transition-[filter] duration-300 drop-shadow-[0_14px_16px_rgba(0,0,0,0.34)] group-hover:drop-shadow-[0_20px_24px_rgba(0,0,0,0.46)]"
                   />
                 </div>
               </div>

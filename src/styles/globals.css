@@ -23,20 +23,20 @@
   }
 }
 
-@keyframes gradientAnimation {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
 .retro-gradient {
-  background: linear-gradient(45deg, #ff00ff, #00ffff, #ff69b4, #4b0082);
-  background-size: 400% 400%;
-  animation: gradientAnimation 15s ease infinite;
+  background-color: #10313f;
+  background-image:
+    radial-gradient(
+      circle at 50% 38%,
+      rgba(136, 233, 243, 0.26) 0%,
+      rgba(58, 165, 180, 0.2) 35%,
+      rgba(19, 75, 95, 0.22) 60%,
+      rgba(8, 27, 40, 0.68) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(120, 222, 232, 0.16) 0%,
+      rgba(35, 131, 146, 0.14) 45%,
+      rgba(9, 35, 51, 0.34) 100%
+    );
 }
