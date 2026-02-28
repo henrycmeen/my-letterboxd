@@ -6,7 +6,7 @@
   "scripts": {
     "build": "next build",
     "check": "next lint && tsc --noEmit",
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
@@ -21,6 +21,7 @@
     "next": "^15.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "sharp": "^0.34.5",
     "zod": "^3.23.3"
   },
   "devDependencies": {

@@ -65,6 +65,27 @@ This project uses the T3 Stack, providing a robust foundation for full-stack dev
 - [T3 Documentation](https://create.t3.gg/)
 - [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available)
 
+## VHS Render API (WIP)
+
+Backend scaffold for automatic "VHS look" rendering is now available.
+
+- `GET /api/vhs/templates`
+  Returns available template definitions and default template id.
+
+- `POST /api/vhs/render`
+  Renders a PNG or WEBP by combining a source image with template geometry and optional overlay layers.
+
+Example payload:
+
+```json
+{
+  "sourcePath": "/VHS/Front Side Cover Burning.png",
+  "templateId": "retro-cover-default",
+  "fit": "cover",
+  "format": "png"
+}
+```
+
 ## Deployment
 
 Follow the deployment guides for:
