@@ -1,16 +1,12 @@
-# Movie Covers Directory
+# Public Assets
 
-This directory contains cover images for movies displayed in the application.
+Static and generated media for the app.
 
-Please add your movie cover images here with the following specifications:
-- Format: JPG or PNG
-- Recommended size: 500x750 pixels (2:3 aspect ratio)
-- File naming: Use lowercase with hyphens for spaces (e.g., movie-name.jpg)
+## VHS
 
-Required cover images:
-- the-lighthouse.jpg
-- burning.jpg
-- perfect-days.jpg
-- dune-part-2.jpg
-- memories-of-murder.jpg
-- the-handmaiden.jpg
+- `VHS/Front Side.png`: Overlay/template used by VHS render pipeline.
+- `VHS/generated/`: Auto-generated VHS covers from TMDB posters.
+
+Generated files are created by calling:
+
+- `GET /api/vhs/covers`

@@ -12,6 +12,7 @@ const PUBLIC_ROOT = path.resolve(process.cwd(), 'public');
 export interface RenderVhsOptions {
   sourceUrl?: string;
   sourcePath?: string;
+  sourceFilePath?: string;
   templateId?: string;
   fit?: 'cover' | 'contain';
   width?: number;
@@ -19,6 +20,7 @@ export interface RenderVhsOptions {
   overlays?: VhsOverlayLayer[];
   format?: 'png' | 'webp';
   quality?: number;
+  background?: string;
 }
 
 export interface RenderVhsResult {
@@ -55,8 +57,20 @@ const fileExists = async (absolutePath: string): Promise<boolean> => {
 
 const loadSourceBuffer = async (
   sourceUrl?: string,
-  sourcePath?: string
+  sourcePath?: string,
+  sourceFilePath?: string
 ): Promise<Buffer> => {
+  if (sourceFilePath) {
+    const absolutePath = path.resolve(sourceFilePath);
+    const exists = await fileExists(absolutePath);
+
+    if (!exists) {
+      throw new Error(`Source file path not found: ${sourceFilePath}`);
+    }
+
+    return fs.readFile(absolutePath);
+  }
+
   if (sourcePath) {
     const absolutePath = resolvePublicPath(sourcePath);
     const exists = await fileExists(absolutePath);
@@ -110,7 +124,16 @@ const withOpacity = async (
   }
 
   const alpha = clamp(opacity, 0, 1);
-  return sharp(input).ensureAlpha(alpha).png().toBuffer();
+  if (alpha === 1) {
+    return input;
+  }
+
+  // Scale the existing alpha channel instead of replacing it.
+  return sharp(input)
+    .ensureAlpha()
+    .linear([1, 1, 1, alpha], [0, 0, 0, 0])
+    .png()
+    .toBuffer();
 };
 
 const normalizeOverlaysFromTemplate = (
@@ -133,6 +156,11 @@ const normalizeOverlaysFromTemplate = (
         : Math.round(overlay.height * scaleY),
   }));
 
+const resolveBackground = (background?: string): sharp.Color =>
+  background === 'transparent'
+    ? { r: 0, g: 0, b: 0, alpha: 0 }
+    : (background ?? '#10232f');
+
 export const renderVhsPoster = async (
   options: RenderVhsOptions
 ): Promise<RenderVhsResult> => {
@@ -148,18 +176,24 @@ export const renderVhsPoster = async (
   const posterWidth = Math.round(template.poster.width * scaleX);
   const posterHeight = Math.round(template.poster.height * scaleY);
 
-  const sourceBuffer = await loadSourceBuffer(options.sourceUrl, options.sourcePath);
+  const sourceBuffer = await loadSourceBuffer(
+    options.sourceUrl,
+    options.sourcePath,
+    options.sourceFilePath
+  );
 
   const posterBuffer = await sharp(sourceBuffer)
     .resize(posterWidth, posterHeight, {
       fit: options.fit ?? 'cover',
-      position: 'attention',
+      // Keep poster placement stable across titles; attention can drift off-center.
+      position: 'centre',
     })
     .modulate({
-      brightness: 0.96,
-      saturation: 0.88,
+      brightness: 1.03,
+      saturation: 1.15,
+      hue: 4,
     })
-    .linear(1.03, -4)
+    .linear(1.08, 2)
     .png()
     .toBuffer();
 
@@ -220,7 +254,7 @@ export const renderVhsPoster = async (
       width: outputWidth,
       height: outputHeight,
       channels: 4,
-      background: '#10232f',
+      background: resolveBackground(options.background),
     },
   }).composite(compositeOperations);
 

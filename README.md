@@ -1,98 +1,81 @@
-# My Letterboxd
+# VHS Film Club
 
-A personal movie tracking application built with the [T3 Stack](https://create.t3.gg/), featuring a unique VHS-style interface and retro CRT effects. This project allows you to showcase your movie collection with a nostalgic twist.
+A film club app built with Next.js that fetches movie posters from TMDB and renders VHS covers.
 
-![VHS Interface Screenshot](/docs/images/index.png)
+## What It Does
 
-## Features
+- Fetches movies from TMDB (`popular`, `top_rated`, `upcoming`, `now_playing`)
+- Caches TMDB list responses and poster image files on disk
+- Generates VHS cover images in `public/VHS/generated`
+- Supports two renderers:
+  - `sharp` (default): geometry/template-based render
+  - `photoshop`: replaces a smart object layer in a PSD, then exports
 
-- 📼 VHS-style movie cover display with interactive coverflow effect
-- 📺 Retro CRT screen effects with scan lines and screen flicker
-- 🕰️ Digital clock display with retro aesthetics
-- 🎬 Integration with Letterboxd data for movie tracking
-- 🎯 Display of highest-rated and recently watched movies
+## Setup
 
-## Getting Started
+1. Install dependencies
 
-### Prerequisites
-
-- Node.js (LTS version recommended)
-- pnpm (Package manager)
-
-### Installation
-
-1. Clone the repository
-```bash
-git clone https://github.com/yourusername/my-letterboxd.git
-cd my-letterboxd
-```
-
-2. Install dependencies
 ```bash
 pnpm install
 ```
 
-3. Set up environment variables
+2. Configure environment variables
+
 ```bash
 cp .env.example .env
 ```
-Fill in the required environment variables in the `.env` file.
 
-4. Start the development server
+Set at minimum:
+
+```bash
+TMDB_API_KEY="your_tmdb_api_key_here"
+```
+
+Optional:
+
+```bash
+TMDB_LIST_CACHE_TTL_SECONDS=1800
+VHS_RENDERER="sharp" # or "photoshop"
+```
+
+3. Start development server
+
 ```bash
 pnpm dev
 ```
 
-## Project Structure
+## API Endpoints
 
-- `/src/components` - React components including VHS coverflow and retro effects
-- `/src/data` - Data management and API integration
-- `/public` - Static assets including movie covers and VHS case images
+- `GET /api/club/movies?listType=popular&limit=12`
+  Returns TMDB movie list data for the film club.
 
-## Built With
+- `GET /api/vhs/covers?listType=popular&limit=8&force=false&renderer=sharp&format=webp`
+  Generates/returns rendered covers.
 
-- [Next.js](https://nextjs.org) - React framework
-- [NextAuth.js](https://next-auth.js.org) - Authentication
-- [Prisma](https://prisma.io) - Database ORM
-- [Drizzle](https://orm.drizzle.team) - SQL toolkit
-- [Tailwind CSS](https://tailwindcss.com) - Styling
-- [tRPC](https://trpc.io) - End-to-end typesafe APIs
+Query params:
 
-## Development
+- `renderer`: `sharp` or `photoshop`
+- `format`: `png` or `webp`
+- `templateId`: used by `sharp` renderer (`retro-cover-default`, etc)
+- `smartObjectLayerName`: optional preferred smart object layer name for Photoshop renderer
+- `force=true`: re-render files even if they already exist
 
-This project uses the T3 Stack, providing a robust foundation for full-stack development. To learn more about the T3 Stack, check out:
+## Caching
 
-- [T3 Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available)
+- TMDB list cache: `.cache/tmdb/lists`
+- TMDB poster cache: `.cache/tmdb/posters`
+- Generated covers: `public/VHS/generated`
 
-## VHS Render API (WIP)
+## PSD Smart Object Rendering
 
-Backend scaffold for automatic "VHS look" rendering is now available.
+PSD source is stored at:
 
-- `GET /api/vhs/templates`
-  Returns available template definitions and default template id.
+- `assets/vhs-mockups/originals/01. Front Side COVER.psd`
 
-- `POST /api/vhs/render`
-  Renders a PNG or WEBP by combining a source image with template geometry and optional overlay layers.
+If you use `renderer=photoshop`, the backend expects Adobe Photoshop to be installed locally on the same machine as the app server. It will:
 
-Example payload:
+1. Load the PSD
+2. Replace a smart object layer with the cached poster image
+3. Export a PNG (optionally converted to WEBP)
 
-```json
-{
-  "sourcePath": "/VHS/Front Side Cover Burning.png",
-  "templateId": "retro-cover-default",
-  "fit": "cover",
-  "format": "png"
-}
-```
-
-## Deployment
-
-Follow the deployment guides for:
-- [Vercel](https://create.t3.gg/en/deployment/vercel)
-- [Netlify](https://create.t3.gg/en/deployment/netlify)
-- [Docker](https://create.t3.gg/en/deployment/docker)
-
-## Contributing
-
-Contributions are welcome! Feel free to open issues and pull requests.
+If Photoshop is not installed, the endpoint returns an error and you can keep using `renderer=sharp`.

@@ -5,7 +5,15 @@ import { renderVhsPoster } from '@/lib/vhs/render';
 const overlaySchema = z.object({
   publicPath: z.string().min(1),
   blend: z
-    .enum(['over', 'multiply', 'screen', 'overlay', 'soft-light', 'hard-light'])
+    .enum([
+      'over',
+      'dest-in',
+      'multiply',
+      'screen',
+      'overlay',
+      'soft-light',
+      'hard-light',
+    ])
     .optional(),
   opacity: z.number().min(0).max(1).optional(),
   left: z.number().int().min(0).optional(),
@@ -25,6 +33,7 @@ const renderRequestSchema = z
     overlays: z.array(overlaySchema).optional(),
     format: z.enum(['png', 'webp']).optional(),
     quality: z.number().int().min(1).max(100).optional(),
+    background: z.string().min(1).optional(),
   })
   .refine((body) => !!body.sourceUrl || !!body.sourcePath, {
     message: 'sourceUrl or sourcePath is required.',

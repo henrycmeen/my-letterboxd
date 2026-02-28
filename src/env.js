@@ -8,6 +8,9 @@ export const env = createEnv({
    */
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]),
+    TMDB_API_KEY: z.string().min(1).optional(),
+    TMDB_LIST_CACHE_TTL_SECONDS: z.string().optional(),
+    VHS_RENDERER: z.enum(["sharp", "photoshop"]).optional(),
   },
 
   /**
@@ -25,6 +28,9 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
+    TMDB_API_KEY: process.env.TMDB_API_KEY,
+    TMDB_LIST_CACHE_TTL_SECONDS: process.env.TMDB_LIST_CACHE_TTL_SECONDS,
+    VHS_RENDERER: process.env.VHS_RENDERER,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
