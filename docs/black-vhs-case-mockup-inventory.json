@@ -1,0 +1,898 @@
+[
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Mockups/Black VHS Case - FRONT (ALT).psb",
+    "name": "Black VHS Case - FRONT (ALT).psb",
+    "width": 4000,
+    "height": 4000,
+    "smartObjects": [
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black Front Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1099,
+          "y": 467,
+          "width": 1733,
+          "height": 3011
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black Front Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1099,
+          "y": 715,
+          "width": 1410,
+          "height": 2516
+        },
+        "visible": false
+      }
+    ],
+    "keyLayers": [
+      {
+        "name": "Background Color [Double-Click]",
+        "path": "Background Color [Double-Click]",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 4000,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Shadows",
+        "path": "Shadows",
+        "kind": "group",
+        "bbox": {
+          "x": 46,
+          "y": 0,
+          "width": 3822,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Black Front Case",
+        "path": "Black Front Case",
+        "kind": "group",
+        "bbox": {
+          "x": 1086,
+          "y": 413,
+          "width": 1830,
+          "height": 3121
+        },
+        "visible": true
+      },
+      {
+        "name": "Front Case Mockup",
+        "path": "Black Front Case > Front Case Mockup",
+        "kind": "pixel",
+        "bbox": {
+          "x": 1086,
+          "y": 413,
+          "width": 1830,
+          "height": 3121
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black Front Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1099,
+          "y": 467,
+          "width": 1733,
+          "height": 3011
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black Front Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1099,
+          "y": 715,
+          "width": 1410,
+          "height": 2516
+        },
+        "visible": false
+      },
+      {
+        "name": "Textures",
+        "path": "Textures",
+        "kind": "group",
+        "bbox": {
+          "x": 1086,
+          "y": 447,
+          "width": 1791,
+          "height": 3074
+        },
+        "visible": true
+      },
+      {
+        "name": "Texture (Alt)",
+        "path": "Textures > Texture (Alt)",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": false
+      },
+      {
+        "name": "Texture",
+        "path": "Textures > Texture",
+        "kind": "group",
+        "bbox": {
+          "x": 1086,
+          "y": 447,
+          "width": 1791,
+          "height": 3074
+        },
+        "visible": true
+      },
+      {
+        "name": "Lighting",
+        "path": "Lighting",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Mockups/Black VHS Case - FRONT.psb",
+    "name": "Black VHS Case - FRONT.psb",
+    "width": 4000,
+    "height": 4000,
+    "smartObjects": [
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black VHS Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1102,
+          "y": 468,
+          "width": 1737,
+          "height": 3017
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black VHS Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1102,
+          "y": 702,
+          "width": 1423,
+          "height": 2539
+        },
+        "visible": false
+      }
+    ],
+    "keyLayers": [
+      {
+        "name": "Background Color [Double-Click]",
+        "path": "Background Color [Double-Click]",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 4000,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Shadows",
+        "path": "Shadows",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 3908,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Front Case Mokcup",
+        "path": "Black VHS Case > Front Case Mokcup",
+        "kind": "pixel",
+        "bbox": {
+          "x": 1102,
+          "y": 417,
+          "width": 1814,
+          "height": 3110
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black VHS Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1102,
+          "y": 468,
+          "width": 1737,
+          "height": 3017
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black VHS Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1102,
+          "y": 702,
+          "width": 1423,
+          "height": 2539
+        },
+        "visible": false
+      },
+      {
+        "name": "Textures",
+        "path": "Textures",
+        "kind": "group",
+        "bbox": {
+          "x": 1104,
+          "y": 441,
+          "width": 1766,
+          "height": 3057
+        },
+        "visible": true
+      },
+      {
+        "name": "Texture (Alt)",
+        "path": "Textures > Texture (Alt)",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": false
+      },
+      {
+        "name": "Texture",
+        "path": "Textures > Texture",
+        "kind": "group",
+        "bbox": {
+          "x": 1104,
+          "y": 441,
+          "width": 1766,
+          "height": 3057
+        },
+        "visible": true
+      },
+      {
+        "name": "Lighting",
+        "path": "Lighting",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Mockups/Black VHS Case - OPEN.psb",
+    "name": "Black VHS Case - OPEN.psb",
+    "width": 4000,
+    "height": 4000,
+    "smartObjects": [
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black Open Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 453,
+          "y": 823,
+          "width": 3076,
+          "height": 2367
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black Open Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 691,
+          "y": 974,
+          "width": 2602,
+          "height": 2059
+        },
+        "visible": false
+      }
+    ],
+    "keyLayers": [
+      {
+        "name": "Background Color [Double-Click]",
+        "path": "Background Color [Double-Click]",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 4000,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Shadow",
+        "path": "Shadow",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 16,
+          "width": 3996,
+          "height": 3878
+        },
+        "visible": true
+      },
+      {
+        "name": "Open Case Mockup",
+        "path": "Black Open Case > Open Case Mockup",
+        "kind": "pixel",
+        "bbox": {
+          "x": 384,
+          "y": 755,
+          "width": 3233,
+          "height": 2490
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black Open Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 453,
+          "y": 823,
+          "width": 3076,
+          "height": 2367
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black Open Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 691,
+          "y": 974,
+          "width": 2602,
+          "height": 2059
+        },
+        "visible": false
+      },
+      {
+        "name": "Textures",
+        "path": "Textures",
+        "kind": "group",
+        "bbox": {
+          "x": 415,
+          "y": 788,
+          "width": 3141,
+          "height": 2423
+        },
+        "visible": true
+      },
+      {
+        "name": "Texture (Alt)",
+        "path": "Textures > Texture (Alt)",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": false
+      },
+      {
+        "name": "Texture",
+        "path": "Textures > Texture",
+        "kind": "group",
+        "bbox": {
+          "x": 415,
+          "y": 788,
+          "width": 3141,
+          "height": 2423
+        },
+        "visible": true
+      },
+      {
+        "name": "Lighting",
+        "path": "Lighting",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Mockups/Black VHS Case - SPINE.psb",
+    "name": "Black VHS Case - SPINE.psb",
+    "width": 4000,
+    "height": 4000,
+    "smartObjects": [
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black Spine Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1762,
+          "y": 470,
+          "width": 448,
+          "height": 3037
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black Spine Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1767,
+          "y": 470,
+          "width": 434,
+          "height": 3037
+        },
+        "visible": false
+      }
+    ],
+    "keyLayers": [
+      {
+        "name": "Background Color [Double-Click]",
+        "path": "Background Color [Double-Click]",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 4000,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Shadows",
+        "path": "Shadows",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 4000,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Black Spine Case",
+        "path": "Black Spine Case",
+        "kind": "group",
+        "bbox": {
+          "x": 1766,
+          "y": 395,
+          "width": 434,
+          "height": 3173
+        },
+        "visible": true
+      },
+      {
+        "name": "Spine Case Mockup",
+        "path": "Black Spine Case > Spine Case Mockup",
+        "kind": "pixel",
+        "bbox": {
+          "x": 1766,
+          "y": 395,
+          "width": 434,
+          "height": 3173
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Sleeve Insert)",
+        "path": "Black Spine Case > **Your Design Here [Double-Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1762,
+          "y": 470,
+          "width": 448,
+          "height": 3037
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double-Click]** (Cut-Box)",
+        "path": "Black Spine Case > **Your Design Here [Double-Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1767,
+          "y": 470,
+          "width": 434,
+          "height": 3037
+        },
+        "visible": false
+      },
+      {
+        "name": "Texture",
+        "path": "Texture",
+        "kind": "group",
+        "bbox": {
+          "x": 1765,
+          "y": 470,
+          "width": 436,
+          "height": 3070
+        },
+        "visible": true
+      },
+      {
+        "name": "Texture + Reflection  [Adjust]",
+        "path": "Texture > Texture + Reflection  [Adjust]",
+        "kind": "pixel",
+        "bbox": {
+          "x": 1765,
+          "y": 470,
+          "width": 436,
+          "height": 3069
+        },
+        "visible": true
+      },
+      {
+        "name": "Lighting",
+        "path": "Lighting",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Mockups/Black VHS Case -BACK.psb",
+    "name": "Black VHS Case -BACK.psb",
+    "width": 4000,
+    "height": 4000,
+    "smartObjects": [
+      {
+        "name": "**Your Design Here [Double Click]** (Sleeve Insert)",
+        "path": "Black Back Case > **Your Design Here [Double Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1200,
+          "y": 470,
+          "width": 1733,
+          "height": 3008
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double Click]** (Cut-Box)",
+        "path": "Black Back Case > **Your Design Here [Double Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1515,
+          "y": 710,
+          "width": 1418,
+          "height": 2529
+        },
+        "visible": false
+      }
+    ],
+    "keyLayers": [
+      {
+        "name": "Background Color [Double-Click]",
+        "path": "Background Color [Double-Click]",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 4000,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Shadows",
+        "path": "Shadows",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 3757,
+          "height": 4000
+        },
+        "visible": true
+      },
+      {
+        "name": "Black Back Case",
+        "path": "Black Back Case",
+        "kind": "group",
+        "bbox": {
+          "x": 1071,
+          "y": 411,
+          "width": 1938,
+          "height": 3124
+        },
+        "visible": true
+      },
+      {
+        "name": "Back Case Mockup",
+        "path": "Black Back Case > Back Case Mockup",
+        "kind": "pixel",
+        "bbox": {
+          "x": 1071,
+          "y": 411,
+          "width": 1938,
+          "height": 3124
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double Click]** (Sleeve Insert)",
+        "path": "Black Back Case > **Your Design Here [Double Click]** (Sleeve Insert)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1200,
+          "y": 470,
+          "width": 1733,
+          "height": 3008
+        },
+        "visible": true
+      },
+      {
+        "name": "**Your Design Here [Double Click]** (Cut-Box)",
+        "path": "Black Back Case > **Your Design Here [Double Click]** (Cut-Box)",
+        "kind": "smartobject",
+        "bbox": {
+          "x": 1515,
+          "y": 710,
+          "width": 1418,
+          "height": 2529
+        },
+        "visible": false
+      },
+      {
+        "name": "Textures",
+        "path": "Textures",
+        "kind": "group",
+        "bbox": {
+          "x": 1134,
+          "y": 433,
+          "width": 1802,
+          "height": 3076
+        },
+        "visible": true
+      },
+      {
+        "name": "Textures (Alt)",
+        "path": "Textures > Textures (Alt)",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": false
+      },
+      {
+        "name": "Textures ",
+        "path": "Textures > Textures ",
+        "kind": "group",
+        "bbox": {
+          "x": 1134,
+          "y": 433,
+          "width": 1802,
+          "height": 3076
+        },
+        "visible": true
+      },
+      {
+        "name": "Lighting",
+        "path": "Lighting",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Template/Black Case Template.psb",
+    "name": "Black Case Template.psb",
+    "width": 3881,
+    "height": 2987,
+    "smartObjects": [],
+    "keyLayers": [
+      {
+        "name": "Back",
+        "path": "Template > Back",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1720,
+          "height": 2987
+        },
+        "visible": true
+      },
+      {
+        "name": "Back",
+        "path": "Template > Back > Back",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1720,
+          "height": 2987
+        },
+        "visible": true
+      },
+      {
+        "name": "Spine",
+        "path": "Template > Spine",
+        "kind": "group",
+        "bbox": {
+          "x": 1720,
+          "y": 0,
+          "width": 441,
+          "height": 2987
+        },
+        "visible": true
+      },
+      {
+        "name": "Spine",
+        "path": "Template > Spine > Spine",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 1720,
+          "y": 0,
+          "width": 441,
+          "height": 2987
+        },
+        "visible": true
+      },
+      {
+        "name": "Front",
+        "path": "Template > Front",
+        "kind": "group",
+        "bbox": {
+          "x": 2161,
+          "y": 0,
+          "width": 1720,
+          "height": 2987
+        },
+        "visible": true
+      },
+      {
+        "name": "Front",
+        "path": "Template > Front > Front",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 2161,
+          "y": 0,
+          "width": 1720,
+          "height": 2987
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "file": "/Users/henmee/Downloads/Black VHS Case - Mockup/Template/Cut-Box Template.psb",
+    "name": "Cut-Box Template.psb",
+    "width": 2763,
+    "height": 2187,
+    "smartObjects": [],
+    "keyLayers": [
+      {
+        "name": "Back",
+        "path": "Template > Back",
+        "kind": "group",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1226,
+          "height": 2187
+        },
+        "visible": true
+      },
+      {
+        "name": "Back",
+        "path": "Template > Back > Back",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1226,
+          "height": 2187
+        },
+        "visible": true
+      },
+      {
+        "name": "Spine",
+        "path": "Template > Spine",
+        "kind": "group",
+        "bbox": {
+          "x": 1226,
+          "y": 0,
+          "width": 312,
+          "height": 2187
+        },
+        "visible": true
+      },
+      {
+        "name": "Spine",
+        "path": "Template > Spine > Spine",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 1226,
+          "y": 0,
+          "width": 312,
+          "height": 2187
+        },
+        "visible": true
+      },
+      {
+        "name": "Front",
+        "path": "Template > Front",
+        "kind": "group",
+        "bbox": {
+          "x": 1537,
+          "y": 0,
+          "width": 1226,
+          "height": 2187
+        },
+        "visible": true
+      },
+      {
+        "name": "Front",
+        "path": "Template > Front > Front",
+        "kind": "solidcolorfill",
+        "bbox": {
+          "x": 1537,
+          "y": 0,
+          "width": 1226,
+          "height": 2187
+        },
+        "visible": true
+      }
+    ]
+  }
+]

@@ -34,6 +34,7 @@ const renderRequestSchema = z
     format: z.enum(['png', 'webp']).optional(),
     quality: z.number().int().min(1).max(100).optional(),
     background: z.string().min(1).optional(),
+    randomSeed: z.string().trim().min(1).max(128).optional(),
   })
   .refine((body) => !!body.sourceUrl || !!body.sourcePath, {
     message: 'sourceUrl or sourcePath is required.',

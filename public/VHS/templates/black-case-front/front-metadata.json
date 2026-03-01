@@ -1,0 +1,37 @@
+{
+  "sourcePsbName": "Black VHS Case - FRONT.psb",
+  "output": {
+    "width": 4000,
+    "height": 4000
+  },
+  "poster": {
+    "left": 1102,
+    "top": 468,
+    "width": 1737,
+    "height": 3017
+  },
+  "underlays": [
+    {
+      "publicPath": "/VHS/templates/black-case-front/front-shadow-underlay.png",
+      "blend": "over",
+      "opacity": 0.5
+    },
+    {
+      "publicPath": "/VHS/templates/black-case-front/front-case-underlay.png",
+      "blend": "over",
+      "opacity": 1
+    }
+  ],
+  "overlays": [
+    {
+      "publicPath": "/VHS/templates/black-case-front/front-texture-plastic.png",
+      "blend": "screen",
+      "opacity": 1
+    },
+    {
+      "publicPath": "/VHS/templates/black-case-front/front-texture-scratches.png",
+      "blend": "over",
+      "opacity": 0.5
+    }
+  ]
+}

@@ -29,6 +29,7 @@ const tmdbMovieSchema = z.object({
   title: z.string(),
   release_date: z.string(),
   poster_path: z.string().nullable(),
+  backdrop_path: z.string().nullable().optional(),
   overview: z.string(),
   vote_average: z.number(),
   vote_count: z.number(),
@@ -45,6 +46,7 @@ export interface ClubMovie {
   year: number | null;
   releaseDate: string;
   posterUrl: string | null;
+  backdropUrl: string | null;
   overview: string;
   voteAverage: number;
   voteCount: number;
@@ -133,6 +135,9 @@ const mapTmdbMovieToClubMovie = (
   year: movie.release_date ? Number(movie.release_date.slice(0, 4)) : null,
   releaseDate: movie.release_date,
   posterUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+  backdropUrl: movie.backdrop_path
+    ? `${TMDB_IMAGE_BASE_URL}${movie.backdrop_path}`
+    : null,
   overview: movie.overview,
   voteAverage: movie.vote_average,
   voteCount: movie.vote_count,
@@ -154,6 +159,50 @@ const getPosterExtension = (posterUrl: string, contentType: string): string => {
   }
 
   return '.jpg';
+};
+
+type TmdbAuthMode = 'api-key' | 'read-token';
+
+type TmdbAuth = {
+  mode: TmdbAuthMode;
+  token: string;
+};
+
+const resolveTmdbAuth = (): TmdbAuth => {
+  const apiKey = process.env.TMDB_API_KEY?.trim();
+  if (apiKey) {
+    return { mode: 'api-key', token: apiKey };
+  }
+
+  const readToken =
+    process.env.TMDB_READ_ACCESS_TOKEN?.trim() ??
+    process.env.TMDB_READ_TOKEN?.trim();
+  if (readToken) {
+    return { mode: 'read-token', token: readToken };
+  }
+
+  throw new Error(
+    'TMDB API access mangler. Sett TMDB_API_KEY eller TMDB_READ_ACCESS_TOKEN i .env.'
+  );
+};
+
+const createTmdbRequest = (url: URL): { url: string; requestInit?: RequestInit } => {
+  const auth = resolveTmdbAuth();
+
+  if (auth.mode === 'api-key') {
+    url.searchParams.set('api_key', auth.token);
+    return { url: url.toString() };
+  }
+
+  return {
+    url: url.toString(),
+    requestInit: {
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${auth.token}`,
+      },
+    },
+  };
 };
 
 const normalizeTitle = (value: string): string =>
@@ -195,17 +244,6 @@ const scoreSearchCandidate = (
   return score;
 };
 
-const requireTmdbApiKey = (): string => {
-  const apiKey = process.env.TMDB_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error(
-      'TMDB_API_KEY mangler. Legg den inn i .env for aa hente filmdata fra TMDB.'
-    );
-  }
-
-  return apiKey;
-};
-
 const fetchTmdbSearchResults = async (
   query: TmdbTitleQuery
 ): Promise<z.infer<typeof tmdbMovieListResponseSchema>> => {
@@ -215,10 +253,8 @@ const fetchTmdbSearchResults = async (
     return cached;
   }
 
-  const apiKey = requireTmdbApiKey();
   const url = new URL(`${TMDB_BASE_URL}/search/movie`);
 
-  url.searchParams.set('api_key', apiKey);
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('include_adult', 'false');
   url.searchParams.set('query', query.title);
@@ -226,7 +262,8 @@ const fetchTmdbSearchResults = async (
     url.searchParams.set('year', String(query.year));
   }
 
-  const response = await fetch(url.toString());
+  const { url: requestUrl, requestInit } = createTmdbRequest(url);
+  const response = await fetch(requestUrl, requestInit);
   if (!response.ok) {
     throw new Error(`TMDB search error (${response.status})`);
   }
@@ -257,8 +294,12 @@ const searchTmdbMovie = async (query: TmdbTitleQuery): Promise<ClubMovie | null>
 };
 
 export const hasTmdbApiKey = (): boolean => {
-  const value = process.env.TMDB_API_KEY;
-  return Boolean(value && value.trim().length > 0);
+  const apiKey = process.env.TMDB_API_KEY?.trim();
+  const readToken =
+    process.env.TMDB_READ_ACCESS_TOKEN?.trim() ??
+    process.env.TMDB_READ_TOKEN?.trim();
+
+  return Boolean((apiKey?.length ?? 0) > 0 || (readToken?.length ?? 0) > 0);
 };
 
 export const getTmdbMovieList = async (
@@ -271,14 +312,13 @@ export const getTmdbMovieList = async (
     return mapTmdbResponseToMovies(cached);
   }
 
-  const apiKey = requireTmdbApiKey();
   const url = new URL(`${TMDB_BASE_URL}/movie/${listType}`);
 
-  url.searchParams.set('api_key', apiKey);
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('page', String(page));
 
-  const response = await fetch(url.toString());
+  const { url: requestUrl, requestInit } = createTmdbRequest(url);
+  const response = await fetch(requestUrl, requestInit);
   if (!response.ok) {
     throw new Error(`TMDB API error (${response.status})`);
   }
@@ -306,23 +346,87 @@ export const getTmdbMoviesByTitleQueries = async (
   return output;
 };
 
-export const getCachedTmdbPosterPath = async (
+export const getTmdbMoviesBySearchQuery = async (
+  query: string,
+  limit = 8
+): Promise<ClubMovie[]> => {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  const cappedLimit = Math.max(1, Math.min(Math.floor(limit), 20));
+  const data = await fetchTmdbSearchResults({ title: trimmedQuery });
+  const scored = [...data.results].sort(
+    (a, b) =>
+      scoreSearchCandidate(b, { title: trimmedQuery }) -
+      scoreSearchCandidate(a, { title: trimmedQuery })
+  );
+
+  const output: ClubMovie[] = [];
+  const seen = new Set<number>();
+
+  for (const movie of scored) {
+    if (seen.has(movie.id)) {
+      continue;
+    }
+
+    seen.add(movie.id);
+    output.push(mapTmdbMovieToClubMovie(movie));
+
+    if (output.length >= cappedLimit) {
+      break;
+    }
+  }
+
+  return output;
+};
+
+export const getTmdbMovieById = async (
+  movieId: number
+): Promise<ClubMovie | null> => {
+  if (!Number.isFinite(movieId) || movieId <= 0) {
+    return null;
+  }
+
+  const url = new URL(`${TMDB_BASE_URL}/movie/${Math.floor(movieId)}`);
+  url.searchParams.set('language', 'en-US');
+
+  const { url: requestUrl, requestInit } = createTmdbRequest(url);
+  const response = await fetch(requestUrl, requestInit);
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`TMDB movie lookup error (${response.status})`);
+  }
+
+  const rawData: unknown = await response.json();
+  const parsed = tmdbMovieSchema.parse(rawData);
+  return mapTmdbMovieToClubMovie(parsed);
+};
+
+export const getCachedTmdbImagePath = async (
   movieId: number,
-  posterUrl: string
+  imageUrl: string,
+  imageKind: 'poster' | 'backdrop' = 'poster'
 ): Promise<string> => {
   await fs.mkdir(POSTER_CACHE_DIRECTORY, { recursive: true });
 
-  const hash = createHash('sha1').update(posterUrl).digest('hex').slice(0, 12);
+  const hash = createHash('sha1').update(imageUrl).digest('hex').slice(0, 12);
 
   const possibleFiles = await fs.readdir(POSTER_CACHE_DIRECTORY);
-  const existing = possibleFiles.find((name) => name.startsWith(`${movieId}-${hash}.`));
+  const existing = possibleFiles.find((name) =>
+    name.startsWith(`${movieId}-${imageKind}-${hash}.`)
+  );
   if (existing) {
     return path.join(POSTER_CACHE_DIRECTORY, existing);
   }
 
-  const response = await fetch(posterUrl);
+  const response = await fetch(imageUrl);
   if (!response.ok) {
-    throw new Error(`Failed to fetch TMDB poster (${response.status})`);
+    throw new Error(`Failed to fetch TMDB ${imageKind} (${response.status})`);
   }
 
   const contentType = response.headers.get('content-type') ?? '';
@@ -330,8 +434,8 @@ export const getCachedTmdbPosterPath = async (
     throw new Error('TMDB poster URL did not return an image.');
   }
 
-  const extension = getPosterExtension(posterUrl, contentType);
-  const fileName = `${movieId}-${hash}${extension}`;
+  const extension = getPosterExtension(imageUrl, contentType);
+  const fileName = `${movieId}-${imageKind}-${hash}${extension}`;
   const absolutePath = path.join(POSTER_CACHE_DIRECTORY, fileName);
 
   const posterBuffer = Buffer.from(await response.arrayBuffer());
@@ -339,3 +443,8 @@ export const getCachedTmdbPosterPath = async (
 
   return absolutePath;
 };
+
+export const getCachedTmdbPosterPath = async (
+  movieId: number,
+  posterUrl: string
+): Promise<string> => getCachedTmdbImagePath(movieId, posterUrl, 'poster');

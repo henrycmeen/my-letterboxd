@@ -30,7 +30,7 @@ export default async function handler(
   if (!hasTmdbApiKey()) {
     return res.status(500).json({
       message:
-        'TMDB_API_KEY mangler i .env. Legg inn token og restart dev-serveren.',
+        'TMDB API access mangler i .env. Legg inn TMDB_API_KEY eller TMDB_READ_ACCESS_TOKEN.',
     });
   }
 

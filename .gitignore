@@ -12,6 +12,8 @@
 /prisma/db.sqlite
 /prisma/db.sqlite-journal
 db.sqlite
+/data/*.json
+/data/*.tmp
 
 # next.js
 /.next/
@@ -25,6 +27,22 @@ next-env.d.ts
 .DS_Store
 *.pem
 .cache/
+
+# local visual/debug artifacts
+/floor-*.png
+/page-vhs-*.png
+/tmp-*.png
+/tv-after-*.png
+
+# generated VHS covers (runtime cache)
+/public/VHS/generated/*
+!/public/VHS/generated/.gitkeep
+
+# local reference dumps (large, non-runtime)
+/docs/references/2026-02-28-session-images/
+/docs/references/vhs-template-iterations/
+/docs/references/legacy-public-images/
+/docs/references/black-vhs-prototypes/
 
 # debug
 npm-debug.log*
