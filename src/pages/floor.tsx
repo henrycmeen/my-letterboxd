@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { withBasePath } from '@/lib/basePath';
 
 interface ClubMovie {
   id: number;
@@ -102,9 +103,27 @@ interface DeleteAnimationState {
   stage: 'cut' | 'hold' | 'drop';
 }
 
+interface VsPair {
+  firstId: number;
+  secondId: number;
+}
+
+interface ProximityVsCharge {
+  pair: VsPair;
+  progress: number;
+}
+
+interface VsFightState {
+  pair: VsPair;
+  stage: 'countdown' | 'lunge' | 'impact' | 'ko';
+  countdown: 3 | 2 | 1 | 0;
+  winnerId: number | null;
+  loserId: number | null;
+}
+
 const CARD_WIDTH = 260;
 const CARD_HEIGHT = 390;
-const WAITING_SLOT_IMAGE = '/VHS/templates/waiting-cover-vhs-black.webp';
+const WAITING_SLOT_IMAGE = withBasePath('/VHS/templates/waiting-cover-vhs-black.webp');
 const SEARCH_DEBOUNCE_MS = 90;
 const COVER_TEMPLATE_ID = 'black-case-front-v1';
 const COVER_RENDER_REVISION = 'r11';
@@ -127,7 +146,11 @@ const SEARCH_PREVIEW_STEPS: Array<{
 ];
 const ADD_SLOT_HIDDEN_OFFSET = Math.round(CARD_HEIGHT * 0.72);
 const ADD_SLOT_HOVER_OFFSET = Math.round(CARD_HEIGHT * 0.4);
-const REMOTE_CONTROL_IMAGE = '/VHS/ui/remote-control.webp';
+const REMOTE_CONTROL_IMAGE = withBasePath('/VHS/ui/remote-control.webp');
+const VS_BADGE_IMAGE = withBasePath('/VHS/ui/vs.png');
+const VHS_FRONT_SIDE_IMAGE = withBasePath('/VHS/Front Side.png');
+const FLOOR_BACKGROUND_IMAGE = withBasePath('/VHS/backgrounds/floor-oak.png');
+const GENERATED_COVER_API_PATH = withBasePath('/api/vhs/generated/');
 const REMOTE_CONTROL_WIDTH = Math.round(CARD_WIDTH * 0.5);
 const REMOTE_CONTROL_HEIGHT = Math.round((443 / 181) * REMOTE_CONTROL_WIDTH);
 const REMOTE_VISIBLE_DEFAULT = 78;
@@ -141,6 +164,13 @@ const DELETE_DROP_MS = 920;
 const DELETE_SPLIT_LEFT_PCT = 49;
 const DELETE_SPLIT_RIGHT_PCT = 53;
 const DELETE_SPLIT_LINE_TOP_PCT = (DELETE_SPLIT_LEFT_PCT + DELETE_SPLIT_RIGHT_PCT) / 2;
+const VS_BADGE_WIDTH = 132;
+const VS_BADGE_HEIGHT = Math.round((387 / 512) * VS_BADGE_WIDTH);
+const TOP_SCORE_TIE_MIN = 100;
+const PROXIMITY_VS_HOLD_MS = 2000;
+const PROXIMITY_VS_TRIGGER_RADIUS = 170;
+const PROXIMITY_VS_BREAK_RADIUS = 300;
+const PROXIMITY_VS_PULL_MAX = 18;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
@@ -163,12 +193,36 @@ const randomFromSeed = (seed: number): number => {
   return raw - Math.floor(raw);
 };
 
+const createVsPair = (movieAId: number, movieBId: number): VsPair =>
+  movieAId < movieBId
+    ? { firstId: movieAId, secondId: movieBId }
+    : { firstId: movieBId, secondId: movieAId };
+
+const isSameVsPair = (left: VsPair | null, right: VsPair | null): boolean => {
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.firstId === right.firstId && left.secondId === right.secondId;
+};
+
+const pairHasMovie = (pair: VsPair | null, movieId: number): boolean =>
+  Boolean(pair && (pair.firstId === movieId || pair.secondId === movieId));
+
+const getVsPairKey = (pair: VsPair): string => `${pair.firstId}-${pair.secondId}`;
+
+const hasVsPair = (pairs: VsPair[], candidate: VsPair): boolean =>
+  pairs.some((pair) => isSameVsPair(pair, candidate));
+
 const getSearchPreviewStep = (tier: SearchPreviewTier) =>
   SEARCH_PREVIEW_STEPS.find((step) => step.tier === tier) ??
   SEARCH_PREVIEW_STEPS[0]!;
 
 const getSearchPreviewTierIndex = (tier?: SearchPreviewTier): number =>
   tier ? SEARCH_PREVIEW_STEPS.findIndex((step) => step.tier === tier) : -1;
+
+const getSearchMovieSourceImage = (movie: SearchMovie): string | null =>
+  movie.posterUrl ?? movie.backdropUrl ?? null;
 
 const isWaitingSlotCover = (coverImage: string): boolean =>
   coverImage.includes('waiting-cover-vhs-black.webp') ||
@@ -179,7 +233,8 @@ const isWaitingSlotCover = (coverImage: string): boolean =>
 
 const isGeneratedCoverPath = (coverImage: string): boolean =>
   coverImage.includes('/VHS/generated/') ||
-  coverImage.includes('/api/vhs/generated/');
+  coverImage.includes('/api/vhs/generated/') ||
+  coverImage.includes(GENERATED_COVER_API_PATH);
 
 const shouldHydrateBoardCover = (coverImage: string): boolean =>
   isWaitingSlotCover(coverImage) ||
@@ -386,9 +441,17 @@ const FloorPage: NextPage = () => {
     Record<number, SearchPreviewTier>
   >({});
   const [activeSearchCover, setActiveSearchCover] = useState<string | null>(null);
+  const [resolvingVsPairByKey, setResolvingVsPairByKey] = useState<
+    Record<string, true>
+  >({});
+  const [proximityVsPairs, setProximityVsPairs] = useState<VsPair[]>([]);
+  const [proximityVsCharge, setProximityVsCharge] =
+    useState<ProximityVsCharge | null>(null);
+  const [vsFightByKey, setVsFightByKey] = useState<Record<string, VsFightState>>({});
 
   const floorRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const floorMoviesRef = useRef<FloorMovie[]>([]);
   const leaderIdRef = useRef<number | null>(null);
   const animationTimersRef = useRef<number[]>([]);
   const addSlotResetRafRef = useRef<number | null>(null);
@@ -405,6 +468,13 @@ const FloorPage: NextPage = () => {
   const deleteCutTimerRef = useRef<number | null>(null);
   const deleteDropTimerRef = useRef<number | null>(null);
   const deleteCleanupTimerRef = useRef<number | null>(null);
+  const resolvingVsPairByKeyRef = useRef<Record<string, true>>({});
+  const vsFightByKeyRef = useRef<Record<string, VsFightState>>({});
+  const vsFightTimersRef = useRef<number[]>([]);
+  const proximityVsPairsRef = useRef<VsPair[]>([]);
+  const proximityVsCandidatePairRef = useRef<VsPair | null>(null);
+  const proximityVsHoldTimerRef = useRef<number | null>(null);
+  const proximityVsChargeRafRef = useRef<number | null>(null);
   const renderedCoverPromiseByMovieIdRef = useRef<
     Record<number, Promise<ClubMovie | null>>
   >({});
@@ -527,7 +597,9 @@ const FloorPage: NextPage = () => {
 
     const loadMovies = async () => {
       try {
-        const boardResponse = await fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`);
+        const boardResponse = await fetch(
+          withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`)
+        );
         if (boardResponse.ok) {
           const boardRaw: unknown = await boardResponse.json();
           if (isFloorBoardResponse(boardRaw) && !ignore) {
@@ -575,7 +647,9 @@ const FloorPage: NextPage = () => {
                         renderer: 'sharp',
                         templateId: COVER_TEMPLATE_ID,
                       });
-                      const response = await fetch(`/api/vhs/covers?${params.toString()}`);
+                      const response = await fetch(
+                        withBasePath(`/api/vhs/covers?${params.toString()}`)
+                      );
                       if (!response.ok || ignore) {
                         return;
                       }
@@ -643,7 +717,7 @@ const FloorPage: NextPage = () => {
           titles: CURATED_TITLES_QUERY,
         });
 
-        const response = await fetch(`/api/vhs/covers?${params.toString()}`);
+        const response = await fetch(withBasePath(`/api/vhs/covers?${params.toString()}`));
         if (!response.ok) {
           return;
         }
@@ -750,7 +824,7 @@ const FloorPage: NextPage = () => {
             query,
           });
 
-          const response = await fetch(`/api/tmdb/search?${params.toString()}`);
+          const response = await fetch(withBasePath(`/api/tmdb/search?${params.toString()}`));
           if (!response.ok) {
             throw new Error(`Search request failed (${response.status}).`);
           }
@@ -828,10 +902,72 @@ const FloorPage: NextPage = () => {
     }
   }, []);
 
+  const clearProximityVsHoldTimer = useCallback(() => {
+    if (proximityVsHoldTimerRef.current !== null) {
+      window.clearTimeout(proximityVsHoldTimerRef.current);
+      proximityVsHoldTimerRef.current = null;
+    }
+  }, []);
+
+  const clearProximityVsChargeAnimation = useCallback(() => {
+    if (proximityVsChargeRafRef.current !== null) {
+      window.cancelAnimationFrame(proximityVsChargeRafRef.current);
+      proximityVsChargeRafRef.current = null;
+    }
+  }, []);
+
+  const startProximityVsChargeAnimation = useCallback(
+    (pair: VsPair) => {
+      clearProximityVsChargeAnimation();
+      const startedAt = performance.now();
+      setProximityVsCharge({ pair, progress: 0 });
+
+      const animate = () => {
+        const activeCandidate = proximityVsCandidatePairRef.current;
+        if (!isSameVsPair(activeCandidate, pair)) {
+          setProximityVsCharge((current) =>
+            current && isSameVsPair(current.pair, pair) ? null : current
+          );
+          return;
+        }
+
+        const elapsedMs = performance.now() - startedAt;
+        const progress = clamp(elapsedMs / PROXIMITY_VS_HOLD_MS, 0, 1);
+        setProximityVsCharge((current) =>
+          current && isSameVsPair(current.pair, pair)
+            ? { ...current, progress }
+            : current
+        );
+
+        if (progress < 1) {
+          proximityVsChargeRafRef.current = window.requestAnimationFrame(animate);
+        }
+      };
+
+      proximityVsChargeRafRef.current = window.requestAnimationFrame(animate);
+    },
+    [clearProximityVsChargeAnimation]
+  );
+
+  const resetProximityVsCandidate = useCallback(() => {
+    clearProximityVsHoldTimer();
+    clearProximityVsChargeAnimation();
+    proximityVsCandidatePairRef.current = null;
+    setProximityVsCharge(null);
+  }, [clearProximityVsChargeAnimation, clearProximityVsHoldTimer]);
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>, id: number) => {
+    const isMovieInFight = Object.values(vsFightByKeyRef.current).some((fight) =>
+      pairHasMovie(fight.pair, id)
+    );
+    if (isMovieInFight) {
+      return;
+    }
+
     event.preventDefault();
     setPendingSearch(null);
     clearDeleteHoldTimer();
+    resetProximityVsCandidate();
     deleteInZoneRef.current = false;
     deleteHoldMovieIdRef.current = null;
     setDeleteCandidateId(null);
@@ -879,6 +1015,13 @@ const FloorPage: NextPage = () => {
       const deleteZoneTop = bounds.height - DELETE_ZONE_HEIGHT;
       const isInDeleteZone = y + CARD_HEIGHT >= deleteZoneTop;
       deleteInZoneRef.current = isInDeleteZone;
+      const visibleMovies = floorMoviesRef.current.filter(
+        (movie) => !isWaitingSlotCover(movie.coverImage)
+      );
+      const draggedCenterX = x + CARD_WIDTH * 0.5;
+      const draggedCenterY = y + CARD_HEIGHT * 0.5;
+      let nearestMovieId: number | null = null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
 
       if (isInDeleteZone) {
         if (deleteCandidateIdRef.current !== drag.id) {
@@ -912,6 +1055,77 @@ const FloorPage: NextPage = () => {
         }
       }
 
+      for (const movie of visibleMovies) {
+        if (movie.id === drag.id) {
+          continue;
+        }
+
+        const centerX = movie.x + CARD_WIDTH * 0.5;
+        const centerY = movie.y + CARD_HEIGHT * 0.5;
+        const distance = Math.hypot(draggedCenterX - centerX, draggedCenterY - centerY);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestMovieId = movie.id;
+        }
+      }
+
+      const activePairs = proximityVsPairsRef.current;
+      if (activePairs.length > 0) {
+        const movieById = new Map(visibleMovies.map((movie) => [movie.id, movie]));
+        const remainingPairs = activePairs.filter((pair) => {
+          if (!pairHasMovie(pair, drag.id)) {
+            return true;
+          }
+
+          const otherMovieId = pair.firstId === drag.id ? pair.secondId : pair.firstId;
+          const otherMovie = movieById.get(otherMovieId);
+          if (!otherMovie) {
+            return false;
+          }
+
+          const otherCenterX = otherMovie.x + CARD_WIDTH * 0.5;
+          const otherCenterY = otherMovie.y + CARD_HEIGHT * 0.5;
+          const pairDistance = Math.hypot(
+            draggedCenterX - otherCenterX,
+            draggedCenterY - otherCenterY
+          );
+
+          return pairDistance <= PROXIMITY_VS_BREAK_RADIUS;
+        });
+
+        if (remainingPairs.length !== activePairs.length) {
+          setProximityVsPairs(remainingPairs);
+        }
+      }
+
+      if (
+        nearestMovieId !== null &&
+        nearestDistance <= PROXIMITY_VS_TRIGGER_RADIUS
+      ) {
+        const nextPair = createVsPair(drag.id, nearestMovieId);
+        const currentCandidate = proximityVsCandidatePairRef.current;
+
+        if (!isSameVsPair(currentCandidate, nextPair)) {
+          resetProximityVsCandidate();
+          proximityVsCandidatePairRef.current = nextPair;
+          startProximityVsChargeAnimation(nextPair);
+          proximityVsHoldTimerRef.current = window.setTimeout(() => {
+            const activeDragId = dragRef.current?.id ?? null;
+            const activeCandidate = proximityVsCandidatePairRef.current;
+
+            if (activeDragId === drag.id && isSameVsPair(activeCandidate, nextPair)) {
+              setProximityVsPairs((current) =>
+                hasVsPair(current, nextPair) ? current : [...current, nextPair]
+              );
+              resetProximityVsCandidate();
+            }
+          }, PROXIMITY_VS_HOLD_MS);
+        }
+      } else {
+        resetProximityVsCandidate();
+      }
+
       setFloorMovies((previous) =>
         recalculateHierarchy(
           previous.map((movie) =>
@@ -927,7 +1141,12 @@ const FloorPage: NextPage = () => {
         )
       );
     },
-    [clearDeleteHoldTimer, getFloorBounds]
+    [
+      clearDeleteHoldTimer,
+      getFloorBounds,
+      resetProximityVsCandidate,
+      startProximityVsChargeAnimation,
+    ]
   );
 
   const handleGlobalPointerUp = useCallback(() => {
@@ -944,6 +1163,7 @@ const FloorPage: NextPage = () => {
     dragRef.current = null;
     setDraggingId(null);
     clearDeleteHoldTimer();
+    resetProximityVsCandidate();
     deleteInZoneRef.current = false;
     deleteHoldMovieIdRef.current = null;
     setDeleteCandidateId(null);
@@ -1012,6 +1232,9 @@ const FloorPage: NextPage = () => {
         const { [draggedMovieId]: _removed, ...rest } = previous;
         return rest;
       });
+      setProximityVsPairs((current) =>
+        current.filter((pair) => !pairHasMovie(pair, draggedMovieId))
+      );
       delete renderedCoverPromiseByMovieIdRef.current[draggedMovieId];
       return;
     }
@@ -1022,6 +1245,7 @@ const FloorPage: NextPage = () => {
     clearDeleteHoldTimer,
     floorMovies,
     getFloorBounds,
+    resetProximityVsCandidate,
   ]);
 
   useEffect(() => {
@@ -1072,13 +1296,16 @@ const FloorPage: NextPage = () => {
         };
 
         try {
-          const firstResponse = await fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`, {
-            method: 'PUT',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          });
+          const firstResponse = await fetch(
+            withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`),
+            {
+              method: 'PUT',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify(requestBody),
+            }
+          );
 
           if (firstResponse.ok) {
             const payloadRaw: unknown = await firstResponse.json().catch(() => null);
@@ -1109,16 +1336,19 @@ const FloorPage: NextPage = () => {
             return;
           }
 
-          const secondResponse = await fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`, {
-            method: 'PUT',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              ...requestBody,
-              expectedVersion: boardVersionRef.current,
-            }),
-          });
+          const secondResponse = await fetch(
+            withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`),
+            {
+              method: 'PUT',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...requestBody,
+                expectedVersion: boardVersionRef.current,
+              }),
+            }
+          );
 
           if (!secondResponse.ok) {
             return;
@@ -1162,10 +1392,47 @@ const FloorPage: NextPage = () => {
         window.clearTimeout(boardSyncTimerRef.current);
         boardSyncTimerRef.current = null;
       }
+      for (const timer of vsFightTimersRef.current) {
+        window.clearTimeout(timer);
+      }
+      vsFightTimersRef.current = [];
       clearDeleteHoldTimer();
       clearDeleteAnimationTimers();
+      resetProximityVsCandidate();
     };
-  }, [clearDeleteAnimationTimers, clearDeleteHoldTimer]);
+  }, [clearDeleteAnimationTimers, clearDeleteHoldTimer, resetProximityVsCandidate]);
+
+  useEffect(() => {
+    floorMoviesRef.current = floorMovies;
+  }, [floorMovies]);
+
+  useEffect(() => {
+    const visibleMovieIds = new Set(
+      floorMovies
+        .filter((movie) => !isWaitingSlotCover(movie.coverImage))
+        .map((movie) => movie.id)
+    );
+
+    setProximityVsPairs((current) =>
+      current.filter(
+        (pair) =>
+          visibleMovieIds.has(pair.firstId) && visibleMovieIds.has(pair.secondId)
+      )
+    );
+    setVsFightByKey((current) => {
+      const nextEntries = Object.entries(current).filter(([, fight]) => {
+        return (
+          visibleMovieIds.has(fight.pair.firstId) &&
+          visibleMovieIds.has(fight.pair.secondId)
+        );
+      });
+      if (nextEntries.length === Object.keys(current).length) {
+        return current;
+      }
+
+      return Object.fromEntries(nextEntries);
+    });
+  }, [floorMovies]);
 
   useEffect(() => {
     previewCoverByMovieIdRef.current = previewCoverByMovieId;
@@ -1182,6 +1449,18 @@ const FloorPage: NextPage = () => {
   useEffect(() => {
     deleteArmedIdRef.current = deleteArmedId;
   }, [deleteArmedId]);
+
+  useEffect(() => {
+    resolvingVsPairByKeyRef.current = resolvingVsPairByKey;
+  }, [resolvingVsPairByKey]);
+
+  useEffect(() => {
+    vsFightByKeyRef.current = vsFightByKey;
+  }, [vsFightByKey]);
+
+  useEffect(() => {
+    proximityVsPairsRef.current = proximityVsPairs;
+  }, [proximityVsPairs]);
 
   useEffect(() => {
     return () => {
@@ -1219,14 +1498,14 @@ const FloorPage: NextPage = () => {
       tier: SearchPreviewTier,
       signal: AbortSignal
     ): Promise<string | null> => {
-      const sourceUrl = movie.posterUrl ?? movie.backdropUrl;
+      const sourceUrl = getSearchMovieSourceImage(movie);
       if (!sourceUrl) {
         return null;
       }
 
       const previewStep = getSearchPreviewStep(tier);
 
-      const response = await fetch('/api/vhs/render', {
+      const response = await fetch(withBasePath('/api/vhs/render'), {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -1263,7 +1542,7 @@ const FloorPage: NextPage = () => {
       templateId: COVER_TEMPLATE_ID,
     });
 
-    const response = await fetch(`/api/vhs/covers?${params.toString()}`);
+    const response = await fetch(withBasePath(`/api/vhs/covers?${params.toString()}`));
     if (!response.ok) {
       return null;
     }
@@ -1314,9 +1593,11 @@ const FloorPage: NextPage = () => {
     );
     const targetRotation = getRandomCardRotation();
     const selectedPreviewCover = previewCoverByMovieId[selectedMovie.id] ?? null;
+    const selectedSourceCover = getSearchMovieSourceImage(selectedMovie);
     const throwCoverImage =
       selectedPreviewCover ??
       activeSearchCover ??
+      selectedSourceCover ??
       WAITING_SLOT_IMAGE;
     const fallbackMovie: ClubMovie = {
       id: selectedMovie.id,
@@ -1575,7 +1856,12 @@ const FloorPage: NextPage = () => {
           return getSearchPreviewTierIndex(alreadyTier) < getSearchPreviewTierIndex(tier);
         });
 
-      await Promise.all(tiersToFetch.map((tier) => requestPreview(tier)));
+      for (const tier of tiersToFetch) {
+        if (cancelled || controller.signal.aborted) {
+          break;
+        }
+        await requestPreview(tier);
+      }
     })().catch(() => {
       // Ignore preview failures and keep available preview.
     });
@@ -1616,12 +1902,230 @@ const FloorPage: NextPage = () => {
     pendingSearch?.results[pendingSearch.selectedIndex] ?? null;
   const selectedSearchPreviewCover =
     selectedSearchMovie ? previewCoverByMovieId[selectedSearchMovie.id] : undefined;
+  const selectedSearchSourceCover = selectedSearchMovie
+    ? getSearchMovieSourceImage(selectedSearchMovie)
+    : null;
   const addSlotCoverImage =
-    selectedSearchPreviewCover ?? activeSearchCover ?? WAITING_SLOT_IMAGE;
+    selectedSearchPreviewCover ??
+    activeSearchCover ??
+    selectedSearchSourceCover ??
+    WAITING_SLOT_IMAGE;
   const addSlotHasCoverImage = Boolean(addSlotCoverImage);
+  const draggingMovie =
+    draggingId !== null
+      ? floorMovies.find((movie) => movie.id === draggingId) ?? null
+      : null;
+  const draggingScore = draggingMovie
+    ? clamp(
+        typeof draggingMovie.score === 'number'
+          ? draggingMovie.score
+          : getTopScorePercent(draggingMovie.y, getFloorBounds().height),
+        0,
+        100
+      )
+    : 50;
+  const dragScoreDelta = (draggingScore - 50) / 50;
+  const dragScoreMagnitude = Math.pow(Math.abs(dragScoreDelta), 0.55);
+  const dragLightBoost = dragScoreDelta > 0 ? dragScoreMagnitude : 0;
+  const dragDarkBoost = dragScoreDelta < 0 ? dragScoreMagnitude : 0;
   const visibleFloorMovies = floorMovies.filter(
     (movie) => !isWaitingSlotCover(movie.coverImage)
   );
+  const topScoreTiePair = (() => {
+    if (visibleFloorMovies.length < 2) {
+      return null;
+    }
+
+    const sorted = [...visibleFloorMovies].sort(
+      (a, b) => b.score - a.score || a.rank - b.rank || a.id - b.id
+    );
+    const first = sorted[0];
+    const second = sorted[1];
+
+    if (!first || !second) {
+      return null;
+    }
+
+    if (first.score < TOP_SCORE_TIE_MIN || second.score < TOP_SCORE_TIE_MIN) {
+      return null;
+    }
+
+    if (Math.abs(first.score - second.score) > 0.05) {
+      return null;
+    }
+
+    return {
+      first,
+      second,
+    };
+  })();
+  const visibleMovieById = new Map(visibleFloorMovies.map((movie) => [movie.id, movie]));
+  const activeVsPairs = (() => {
+    const nextPairs = [...proximityVsPairs];
+    if (topScoreTiePair) {
+      const tiePair = createVsPair(topScoreTiePair.first.id, topScoreTiePair.second.id);
+      if (!hasVsPair(nextPairs, tiePair)) {
+        nextPairs.push(tiePair);
+      }
+    }
+
+    return nextPairs.filter(
+      (pair) => visibleMovieById.has(pair.firstId) && visibleMovieById.has(pair.secondId)
+    );
+  })();
+  const vsBadges = activeVsPairs
+    .map((pair) => {
+      const first = visibleMovieById.get(pair.firstId);
+      const second = visibleMovieById.get(pair.secondId);
+      if (!first || !second) {
+        return null;
+      }
+
+      const center = {
+        x: (first.x + CARD_WIDTH * 0.5 + second.x + CARD_WIDTH * 0.5) / 2,
+        y: (first.y + CARD_HEIGHT * 0.5 + second.y + CARD_HEIGHT * 0.5) / 2,
+      };
+      const key = getVsPairKey(pair);
+      const fight = vsFightByKey[key] ?? null;
+
+      return {
+        key,
+        pair,
+        first,
+        second,
+        center,
+        resolving: Boolean(resolvingVsPairByKey[key]),
+        fight,
+      };
+    })
+    .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge));
+  const movieFightEffects = (() => {
+    const effectsByMovieId = new Map<
+      number,
+      {
+        x: number;
+        y: number;
+        rotate: number;
+        scale: number;
+      }
+    >();
+    const addEffect = (
+      movieId: number,
+      partial: { x?: number; y?: number; rotate?: number; scaleMul?: number }
+    ) => {
+      const current = effectsByMovieId.get(movieId) ?? {
+        x: 0,
+        y: 0,
+        rotate: 0,
+        scale: 1,
+      };
+      effectsByMovieId.set(movieId, {
+        x: current.x + (partial.x ?? 0),
+        y: current.y + (partial.y ?? 0),
+        rotate: current.rotate + (partial.rotate ?? 0),
+        scale: current.scale * (partial.scaleMul ?? 1),
+      });
+    };
+
+    for (const fight of Object.values(vsFightByKey)) {
+      const first = visibleMovieById.get(fight.pair.firstId);
+      const second = visibleMovieById.get(fight.pair.secondId);
+      if (!first || !second) {
+        continue;
+      }
+
+      if (!fight.winnerId || !fight.loserId) {
+        if (fight.stage === 'countdown') {
+          const chargeScale = 1 + (4 - fight.countdown) * 0.01;
+          addEffect(first.id, { scaleMul: chargeScale });
+          addEffect(second.id, { scaleMul: chargeScale });
+        }
+        continue;
+      }
+
+      const winner = visibleMovieById.get(fight.winnerId);
+      const loser = visibleMovieById.get(fight.loserId);
+      if (!winner || !loser) {
+        continue;
+      }
+
+      const winnerCenterX = winner.x + CARD_WIDTH * 0.5;
+      const winnerCenterY = winner.y + CARD_HEIGHT * 0.5;
+      const loserCenterX = loser.x + CARD_WIDTH * 0.5;
+      const loserCenterY = loser.y + CARD_HEIGHT * 0.5;
+      const distance = Math.hypot(
+        loserCenterX - winnerCenterX,
+        loserCenterY - winnerCenterY
+      );
+      const unitX = distance > 0.001 ? (loserCenterX - winnerCenterX) / distance : 0;
+      const unitY = distance > 0.001 ? (loserCenterY - winnerCenterY) / distance : 1;
+
+      if (fight.stage === 'lunge') {
+        addEffect(winner.id, {
+          x: unitX * 56,
+          y: unitY * 56,
+          rotate: unitX * 2.2,
+          scaleMul: 1.02,
+        });
+        addEffect(loser.id, {
+          x: -unitX * 10,
+          y: -unitY * 10,
+          rotate: -unitX * 1.3,
+        });
+      } else if (fight.stage === 'impact') {
+        addEffect(winner.id, {
+          x: -unitX * 10,
+          y: -unitY * 8,
+          rotate: -unitX * 3.2,
+        });
+        addEffect(loser.id, {
+          x: unitX * 134,
+          y: unitY * 108 + 34,
+          rotate: unitX >= 0 ? 18 : -18,
+          scaleMul: 0.97,
+        });
+      } else if (fight.stage === 'ko') {
+        addEffect(winner.id, {
+          x: -unitX * 6,
+          y: -unitY * 6,
+          rotate: -unitX * 1.8,
+          scaleMul: 1.04,
+        });
+        addEffect(loser.id, {
+          x: unitX * 142,
+          y: unitY * 118 + 44,
+          rotate: unitX >= 0 ? 24 : -24,
+          scaleMul: 0.94,
+        });
+      }
+    }
+
+    return effectsByMovieId;
+  })();
+  const activeCharge = (() => {
+    if (!proximityVsCharge) {
+      return null;
+    }
+
+    const first = visibleMovieById.get(proximityVsCharge.pair.firstId);
+    const second = visibleMovieById.get(proximityVsCharge.pair.secondId);
+    if (!first || !second) {
+      return null;
+    }
+
+    const center = {
+      x: (first.x + CARD_WIDTH * 0.5 + second.x + CARD_WIDTH * 0.5) / 2,
+      y: (first.y + CARD_HEIGHT * 0.5 + second.y + CARD_HEIGHT * 0.5) / 2,
+    };
+
+    return {
+      ...proximityVsCharge,
+      center,
+    };
+  })();
+  const activeChargeProgress = clamp(activeCharge?.progress ?? 0, 0, 1);
+  const activeChargeSize = 56 + activeChargeProgress * 72;
+  const activeChargeOpacity = 0.2 + activeChargeProgress * 0.55;
   const addSlotOffset = getAddSlotOffset();
   const remoteTop =
     getFloorBounds().height -
@@ -1646,7 +2150,7 @@ const FloorPage: NextPage = () => {
     );
 
     const navigateToTv = () => {
-      window.location.href = '/';
+      window.location.href = withBasePath('/');
     };
 
     if (signature === lastBoardSignatureRef.current) {
@@ -1654,7 +2158,7 @@ const FloorPage: NextPage = () => {
       return;
     }
 
-    void fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`, {
+    void fetch(withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`), {
       method: 'PUT',
       headers: {
         'content-type': 'application/json',
@@ -1678,12 +2182,276 @@ const FloorPage: NextPage = () => {
       });
   };
 
+  const handleResolveVsPair = useCallback(
+    (pair: VsPair) => {
+      const pairKey = getVsPairKey(pair);
+      if (
+        resolvingVsPairByKeyRef.current[pairKey] ||
+        Boolean(vsFightByKeyRef.current[pairKey])
+      ) {
+        return;
+      }
+
+      setResolvingVsPairByKey((current) => ({
+        ...current,
+        [pairKey]: true,
+      }));
+      setVsFightByKey((current) => ({
+        ...current,
+        [pairKey]: {
+          pair,
+          stage: 'countdown',
+          countdown: 3,
+          winnerId: null,
+          loserId: null,
+        },
+      }));
+
+      const contenderAId = pair.firstId;
+      const contenderBId = pair.secondId;
+      const clearPairState = () => {
+        setVsFightByKey((current) => {
+          if (!current[pairKey]) {
+            return current;
+          }
+
+          const next = { ...current };
+          delete next[pairKey];
+          return next;
+        });
+        setResolvingVsPairByKey((current) => {
+          if (!current[pairKey]) {
+            return current;
+          }
+
+          const next = { ...current };
+          delete next[pairKey];
+          return next;
+        });
+      };
+      const fetchResultPromise: Promise<{ winnerId: number; loserId: number } | null> =
+        (async () => {
+          try {
+            const response = await fetch(withBasePath('/api/club/vs'), {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                movieAId: contenderAId,
+                movieBId: contenderBId,
+              }),
+            });
+
+            if (!response.ok) {
+              return null;
+            }
+
+            const payloadRaw: unknown = await response.json().catch(() => null);
+            if (!payloadRaw || typeof payloadRaw !== 'object') {
+              return null;
+            }
+
+            const payload = payloadRaw as {
+              winnerId?: unknown;
+              loserId?: unknown;
+            };
+            if (
+              typeof payload.winnerId !== 'number' ||
+              typeof payload.loserId !== 'number'
+            ) {
+              return null;
+            }
+
+            return {
+              winnerId: payload.winnerId,
+              loserId: payload.loserId,
+            };
+          } catch {
+            return null;
+          }
+        })();
+      const scheduleFightStep = (delayMs: number, action: () => void) => {
+        const timer = window.setTimeout(() => {
+          vsFightTimersRef.current = vsFightTimersRef.current.filter(
+            (activeTimer) => activeTimer !== timer
+          );
+          action();
+        }, delayMs);
+        vsFightTimersRef.current.push(timer);
+      };
+      scheduleFightStep(450, () => {
+        setVsFightByKey((current) => {
+          const fight = current[pairKey];
+          if (!fight) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [pairKey]: {
+              ...fight,
+              countdown: 2,
+            },
+          };
+        });
+      });
+      scheduleFightStep(900, () => {
+        setVsFightByKey((current) => {
+          const fight = current[pairKey];
+          if (!fight) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [pairKey]: {
+              ...fight,
+              countdown: 1,
+            },
+          };
+        });
+      });
+      scheduleFightStep(1350, () => {
+        setVsFightByKey((current) => {
+          const fight = current[pairKey];
+          if (!fight) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [pairKey]: {
+              ...fight,
+              countdown: 0,
+            },
+          };
+        });
+      });
+      scheduleFightStep(1560, () => {
+        void (async () => {
+          const result = await fetchResultPromise;
+          if (!result) {
+            clearPairState();
+            return;
+          }
+
+          setVsFightByKey((current) => {
+            const fight = current[pairKey];
+            if (!fight) {
+              return current;
+            }
+
+            return {
+              ...current,
+              [pairKey]: {
+                ...fight,
+                stage: 'lunge',
+                winnerId: result.winnerId,
+                loserId: result.loserId,
+              },
+            };
+          });
+        })();
+      });
+      scheduleFightStep(1830, () => {
+        setVsFightByKey((current) => {
+          const fight = current[pairKey];
+          if (!fight || !fight.winnerId || !fight.loserId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [pairKey]: {
+              ...fight,
+              stage: 'impact',
+            },
+          };
+        });
+      });
+      scheduleFightStep(2140, () => {
+        setVsFightByKey((current) => {
+          const fight = current[pairKey];
+          if (!fight || !fight.winnerId || !fight.loserId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [pairKey]: {
+              ...fight,
+              stage: 'ko',
+            },
+          };
+        });
+      });
+      scheduleFightStep(2920, () => {
+        void (async () => {
+          const result = await fetchResultPromise;
+          if (!result) {
+            clearPairState();
+            return;
+          }
+
+          const winnerId = result.winnerId;
+          const loserId = result.loserId;
+          setProximityVsPairs((current) =>
+            current.filter((activePair) => !isSameVsPair(activePair, pair))
+          );
+
+          const bounds = getFloorBounds();
+          const maxTop = Math.max(0, bounds.height - CARD_HEIGHT);
+          const maxLeft = Math.max(0, bounds.width - CARD_WIDTH);
+
+          setFloorMovies((previous) => {
+            const winnerMovie = previous.find((movie) => movie.id === winnerId);
+            const loserMovie = previous.find((movie) => movie.id === loserId);
+
+            if (!winnerMovie || !loserMovie) {
+              return previous;
+            }
+
+            const winnerCenterX = winnerMovie.x + CARD_WIDTH * 0.5;
+            const winnerCenterY = winnerMovie.y + CARD_HEIGHT * 0.5;
+            const loserCenterX = loserMovie.x + CARD_WIDTH * 0.5;
+            const loserCenterY = loserMovie.y + CARD_HEIGHT * 0.5;
+            const distance = Math.hypot(
+              loserCenterX - winnerCenterX,
+              loserCenterY - winnerCenterY
+            );
+            const unitX = distance > 0.001 ? (loserCenterX - winnerCenterX) / distance : 0;
+            const winnerY = clamp(Math.min(winnerMovie.y, loserMovie.y) - 8, 0, maxTop);
+            const loserY = clamp(winnerY + 172, 0, maxTop);
+            const winnerX = clamp(winnerMovie.x - unitX * 10, 0, maxLeft);
+            const loserX = clamp(loserMovie.x + unitX * 86, 0, maxLeft);
+
+            return recalculateHierarchy(
+              previous.map((movie) =>
+                movie.id === winnerId
+                  ? { ...movie, x: winnerX, y: winnerY }
+                  : movie.id === loserId
+                    ? { ...movie, x: loserX, y: loserY }
+                    : movie
+              ),
+              bounds.height
+            );
+          });
+
+          clearPairState();
+        })();
+      });
+
+    },
+    [getFloorBounds]
+  );
+
   return (
     <main className="h-screen w-full overflow-hidden bg-white">
       <div
         ref={floorRef}
         className="relative h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: "url('/VHS/backgrounds/floor-oak.png')" }}
+        style={{ backgroundImage: `url('${FLOOR_BACKGROUND_IMAGE}')` }}
       >
         <div
           className="pointer-events-none absolute inset-0"
@@ -1702,6 +2470,46 @@ const FloorPage: NextPage = () => {
             opacity: 0.08,
             backgroundImage:
               'repeating-linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.08) 1px, rgba(0,0,0,0) 4px, rgba(0,0,0,0) 8px), repeating-linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 5px)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            zIndex: 4,
+            opacity:
+              0.32 +
+              (draggingMovie
+                ? clamp(0.12 + dragLightBoost * 0.25 - dragDarkBoost * 0.02, 0, 0.35)
+                : 0),
+            transition: 'opacity 180ms ease-out',
+            mixBlendMode: 'soft-light',
+            background: `linear-gradient(to bottom, rgba(255,238,190,${
+              0.15 + (draggingMovie ? dragLightBoost * 0.3 : 0)
+            }) 0%, rgba(255,232,168,${
+              0.075 + (draggingMovie ? dragLightBoost * 0.18 : 0)
+            }) 40%, rgba(22,14,8,${
+              0.045 + (draggingMovie ? dragDarkBoost * 0.12 : 0)
+            }) 74%, rgba(14,10,7,${
+              0.12 + (draggingMovie ? dragDarkBoost * 0.45 : 0)
+            }) 100%)`,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            zIndex: 4,
+            opacity:
+              0.36 +
+              (draggingMovie
+                ? clamp(0.16 + dragLightBoost * 0.28 - dragDarkBoost * 0.03, 0, 0.44)
+                : 0),
+            transition: 'opacity 180ms ease-out',
+            mixBlendMode: 'screen',
+            background: `radial-gradient(68% 52% at 50% -10%, rgba(255,236,168,${
+              0.52 + (draggingMovie ? dragLightBoost * 0.65 : 0)
+            }) 0%, rgba(255,228,146,${
+              0.18 + (draggingMovie ? dragLightBoost * 0.38 : 0)
+            }) 42%, rgba(255,223,138,0) 84%)`,
           }}
         />
         {draggingId !== null ? (
@@ -1730,10 +2538,140 @@ const FloorPage: NextPage = () => {
             />
           </div>
         ) : null}
+        {activeCharge ? (
+          <div
+            className="pointer-events-none absolute z-[1235]"
+            style={{
+              width: activeChargeSize,
+              height: activeChargeSize,
+              left: activeCharge.center.x - activeChargeSize / 2,
+              top: activeCharge.center.y - activeChargeSize / 2,
+              opacity: activeChargeOpacity,
+              transition: 'opacity 70ms linear',
+            }}
+          >
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(255,248,208,0.92) 0%, rgba(255,224,156,0.56) 40%, rgba(255,184,94,0.14) 72%, rgba(255,168,84,0) 100%)',
+                boxShadow:
+                  '0 0 28px rgba(255,220,140,0.52), 0 0 56px rgba(255,190,110,0.25)',
+              }}
+            />
+          </div>
+        ) : null}
+        {vsBadges.map((badge, index) => (
+          <button
+            key={badge.key}
+            type="button"
+            onClick={() => handleResolveVsPair(badge.pair)}
+            disabled={badge.resolving || Boolean(badge.fight)}
+            className="absolute appearance-none border-0 bg-transparent p-0 transition-transform duration-150 hover:scale-105 disabled:cursor-wait"
+            style={{
+              zIndex: 1250 + index,
+              width: VS_BADGE_WIDTH,
+              height: VS_BADGE_HEIGHT,
+              left: badge.center.x - VS_BADGE_WIDTH / 2,
+              top: badge.center.y - VS_BADGE_HEIGHT / 2,
+              opacity: badge.resolving ? 0.72 : badge.fight ? 0.84 : 0.94,
+              transform: badge.fight
+                ? 'scale(1.06)'
+                : undefined,
+            }}
+            aria-label={`Avgjør ${badge.first.title} mot ${badge.second.title}`}
+          >
+            <img
+              src={VS_BADGE_IMAGE}
+              alt="VS"
+              className={`h-full w-full object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.44)] ${
+                badge.fight ? 'vs-badge-fight-active' : ''
+              }`}
+              draggable={false}
+            />
+          </button>
+        ))}
+        {vsBadges.map((badge, index) => {
+          const fight = badge.fight;
+          if (!fight) {
+            return null;
+          }
+
+          const isKoLabel = fight.stage === 'ko';
+          const isFightLabel = fight.countdown === 0 && !isKoLabel;
+          const label = isKoLabel
+            ? 'K.O'
+            : fight.countdown === 0
+              ? 'FIGHT!'
+              : String(fight.countdown);
+          const countdownClass = isKoLabel
+            ? 'vs-showdown-label-ko'
+            : isFightLabel
+              ? 'vs-showdown-label-fight'
+              : 'vs-showdown-label-count';
+          const raysClass = isKoLabel
+            ? 'vs-showdown-rays-ko'
+            : isFightLabel
+              ? 'vs-showdown-rays-fight'
+              : 'vs-showdown-rays-count';
+          const ringClass = isKoLabel
+            ? 'vs-showdown-ring-ko'
+            : isFightLabel
+              ? 'vs-showdown-ring-fight'
+              : 'vs-showdown-ring-count';
+          return (
+            <div
+              key={`${badge.key}-countdown-${fight.stage}-${fight.countdown}`}
+              className="pointer-events-none absolute"
+              style={{
+                zIndex: 1270 + index,
+                left: badge.center.x,
+                top: badge.center.y - VS_BADGE_HEIGHT * 0.78,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              <div className={`vs-showdown-ring ${ringClass}`} />
+              <div className={`vs-showdown-rays ${raysClass}`} />
+              <div className={`vs-showdown-label ${countdownClass}`}>
+                {label}
+              </div>
+            </div>
+          );
+        })}
         {visibleFloorMovies.map((movie) => {
           const dragging = draggingId === movie.id;
           const deleteCandidate = dragging && deleteCandidateId === movie.id;
           const deleteArmed = dragging && deleteArmedId === movie.id;
+          const chargePair = activeCharge?.pair ?? null;
+          const isChargingMovie =
+            chargePair !== null &&
+            (movie.id === chargePair.firstId || movie.id === chargePair.secondId);
+          let chargeOffsetX = 0;
+          let chargeOffsetY = 0;
+
+          if (isChargingMovie && activeCharge) {
+            const movieCenterX = movie.x + CARD_WIDTH * 0.5;
+            const movieCenterY = movie.y + CARD_HEIGHT * 0.5;
+            const deltaX = activeCharge.center.x - movieCenterX;
+            const deltaY = activeCharge.center.y - movieCenterY;
+            const distance = Math.hypot(deltaX, deltaY);
+
+            if (distance > 0.001) {
+              const pullStrength =
+                PROXIMITY_VS_PULL_MAX *
+                (0.18 + Math.pow(activeChargeProgress, 1.2) * 0.82);
+              chargeOffsetX = (deltaX / distance) * pullStrength;
+              chargeOffsetY = (deltaY / distance) * pullStrength;
+            }
+          }
+          const fightEffect = movieFightEffects.get(movie.id);
+          const fightOffsetX = fightEffect?.x ?? 0;
+          const fightOffsetY = fightEffect?.y ?? 0;
+          const fightRotate = fightEffect?.rotate ?? 0;
+          const fightScale = fightEffect?.scale ?? 1;
+          const totalOffsetX = chargeOffsetX + fightOffsetX;
+          const totalOffsetY = chargeOffsetY + fightOffsetY;
+          const isFightAnimated = Boolean(fightEffect);
 
           return (
             <button
@@ -1749,7 +2687,11 @@ const FloorPage: NextPage = () => {
                 left: movie.x,
                 top: movie.y,
                 zIndex: movie.z,
-                transform: `rotate(${movie.rotation}deg)`,
+                transform: `translate(${totalOffsetX}px, ${totalOffsetY}px) rotate(${movie.rotation + fightRotate}deg) scale(${fightScale})`,
+                transition:
+                  isChargingMovie || isFightAnimated
+                    ? 'transform 140ms cubic-bezier(0.24, 0.8, 0.24, 1)'
+                    : undefined,
                 touchAction: 'none',
               }}
             >
@@ -1784,7 +2726,7 @@ const FloorPage: NextPage = () => {
                     }`}
                   >
                     <img
-                      src="/VHS/Front Side.png"
+                      src={VHS_FRONT_SIDE_IMAGE}
                       alt="VHS case"
                       className="h-full w-full object-cover"
                       draggable={false}
@@ -2053,6 +2995,328 @@ const FloorPage: NextPage = () => {
             </div>
           </div>
         ) : null}
+        <style jsx global>{`
+          @font-face {
+            font-family: 'TarrgetCountdown';
+            src: url('${withBasePath('/fonts/tarrget/tarrget.ttf')}') format('truetype');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+          }
+
+          @font-face {
+            font-family: 'TarrgetChrome';
+            src: url('${withBasePath('/fonts/tarrget/tarrgetchrome.ttf')}')
+              format('truetype');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+          }
+
+          @keyframes vs-badge-flare {
+            0% {
+              transform: scale(1) rotate(-1deg);
+              filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.46))
+                drop-shadow(0 0 0 rgba(255, 191, 76, 0));
+            }
+            48% {
+              transform: scale(1.07) rotate(1.2deg);
+              filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.54))
+                drop-shadow(0 0 20px rgba(255, 198, 95, 0.66));
+            }
+            100% {
+              transform: scale(1) rotate(-1deg);
+              filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.46))
+                drop-shadow(0 0 2px rgba(255, 191, 76, 0.2));
+            }
+          }
+
+          @keyframes vs-showdown-ring-pulse {
+            0% {
+              transform: translate(-50%, -50%) scale(0.72);
+              opacity: 0;
+            }
+            35% {
+              opacity: 0.95;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.2);
+              opacity: 0;
+            }
+          }
+
+          @keyframes vs-showdown-rays-spin {
+            0% {
+              transform: translate(-50%, -50%) rotate(0deg) scale(0.9);
+              opacity: 0.2;
+            }
+            42% {
+              opacity: 0.88;
+            }
+            100% {
+              transform: translate(-50%, -50%) rotate(28deg) scale(1.08);
+              opacity: 0.16;
+            }
+          }
+
+          @keyframes vs-showdown-count-pop {
+            0% {
+              transform: translate(-50%, -50%) scale(0.68);
+              opacity: 0;
+            }
+            36% {
+              transform: translate(-50%, -50%) scale(1.08);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(0.98);
+              opacity: 0.96;
+            }
+          }
+
+          @keyframes vs-showdown-fight-slam {
+            0% {
+              transform: translate(-50%, -50%) scale(0.52) rotate(-4deg);
+              opacity: 0;
+            }
+            34% {
+              transform: translate(-50%, -50%) scale(1.2) rotate(2.2deg);
+              opacity: 1;
+            }
+            62% {
+              transform: translate(-50%, -50%) scale(0.96) rotate(-1deg);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.02) rotate(0deg);
+              opacity: 0.98;
+            }
+          }
+
+          @keyframes vs-showdown-ko-crash {
+            0% {
+              transform: translate(-50%, -50%) scale(0.34) rotate(-7deg);
+              opacity: 0;
+            }
+            40% {
+              transform: translate(-50%, -50%) scale(1.24) rotate(1.5deg);
+              opacity: 1;
+            }
+            76% {
+              transform: translate(-50%, -50%) scale(0.94) rotate(-1.2deg);
+              opacity: 0.98;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.02) rotate(0deg);
+              opacity: 1;
+            }
+          }
+
+          .vs-badge-fight-active {
+            animation: vs-badge-flare 520ms ease-in-out infinite;
+            transform-origin: center;
+          }
+
+          .vs-showdown-ring,
+          .vs-showdown-rays,
+          .vs-showdown-label {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            pointer-events: none;
+          }
+
+          .vs-showdown-ring {
+            width: 210px;
+            height: 210px;
+            border-radius: 9999px;
+            animation: vs-showdown-ring-pulse 430ms ease-out 1 both;
+          }
+
+          .vs-showdown-ring-count {
+            background: radial-gradient(
+              circle,
+              rgba(255, 245, 208, 0.28) 0%,
+              rgba(255, 214, 106, 0.2) 38%,
+              rgba(255, 152, 58, 0.08) 58%,
+              rgba(255, 132, 48, 0) 72%
+            );
+            box-shadow:
+              0 0 28px rgba(255, 210, 112, 0.42),
+              0 0 84px rgba(255, 150, 52, 0.25);
+          }
+
+          .vs-showdown-ring-fight {
+            background: radial-gradient(
+              circle,
+              rgba(255, 242, 224, 0.28) 0%,
+              rgba(255, 142, 84, 0.24) 34%,
+              rgba(255, 68, 32, 0.12) 58%,
+              rgba(255, 44, 18, 0) 74%
+            );
+            box-shadow:
+              0 0 36px rgba(255, 160, 84, 0.56),
+              0 0 102px rgba(255, 72, 32, 0.34);
+          }
+
+          .vs-showdown-ring-ko {
+            background: radial-gradient(
+              circle,
+              rgba(255, 248, 220, 0.34) 0%,
+              rgba(255, 112, 64, 0.3) 32%,
+              rgba(255, 48, 20, 0.14) 56%,
+              rgba(255, 48, 20, 0) 74%
+            );
+            box-shadow:
+              0 0 40px rgba(255, 176, 92, 0.66),
+              0 0 126px rgba(255, 56, 24, 0.44);
+          }
+
+          .vs-showdown-rays {
+            width: 280px;
+            height: 280px;
+            border-radius: 9999px;
+            animation: vs-showdown-rays-spin 430ms linear 1 both;
+            mix-blend-mode: screen;
+          }
+
+          .vs-showdown-rays-count {
+            background: conic-gradient(
+              from 0deg,
+              rgba(255, 239, 191, 0) 0deg,
+              rgba(255, 214, 120, 0.58) 20deg,
+              rgba(255, 152, 58, 0) 54deg,
+              rgba(255, 214, 120, 0.54) 84deg,
+              rgba(255, 152, 58, 0) 124deg,
+              rgba(255, 214, 120, 0.52) 164deg,
+              rgba(255, 152, 58, 0) 212deg,
+              rgba(255, 214, 120, 0.52) 246deg,
+              rgba(255, 152, 58, 0) 294deg,
+              rgba(255, 214, 120, 0.56) 330deg,
+              rgba(255, 239, 191, 0) 360deg
+            );
+            opacity: 0.68;
+          }
+
+          .vs-showdown-rays-fight {
+            background: conic-gradient(
+              from 0deg,
+              rgba(255, 226, 192, 0) 0deg,
+              rgba(255, 174, 92, 0.78) 18deg,
+              rgba(255, 82, 44, 0) 56deg,
+              rgba(255, 174, 92, 0.74) 88deg,
+              rgba(255, 82, 44, 0) 132deg,
+              rgba(255, 174, 92, 0.7) 170deg,
+              rgba(255, 82, 44, 0) 222deg,
+              rgba(255, 174, 92, 0.74) 258deg,
+              rgba(255, 82, 44, 0) 306deg,
+              rgba(255, 174, 92, 0.74) 338deg,
+              rgba(255, 226, 192, 0) 360deg
+            );
+            opacity: 0.9;
+          }
+
+          .vs-showdown-rays-ko {
+            background: conic-gradient(
+              from 0deg,
+              rgba(255, 236, 196, 0) 0deg,
+              rgba(255, 205, 118, 0.92) 16deg,
+              rgba(255, 72, 34, 0) 52deg,
+              rgba(255, 205, 118, 0.88) 84deg,
+              rgba(255, 72, 34, 0) 126deg,
+              rgba(255, 205, 118, 0.84) 164deg,
+              rgba(255, 72, 34, 0) 216deg,
+              rgba(255, 205, 118, 0.86) 252deg,
+              rgba(255, 72, 34, 0) 304deg,
+              rgba(255, 205, 118, 0.9) 336deg,
+              rgba(255, 236, 196, 0) 360deg
+            );
+            opacity: 0.96;
+          }
+
+          .vs-showdown-label {
+            white-space: nowrap;
+            font-family: 'TarrgetCountdown', 'Impact', 'Arial Black', sans-serif;
+            font-weight: 400;
+            line-height: 1;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            transform-origin: center;
+          }
+
+          .vs-showdown-label-count {
+            font-size: 64px;
+            color: #fff6dc;
+            -webkit-text-stroke: 2.8px #300b05;
+            text-shadow:
+              0 0 14px rgba(255, 216, 112, 0.92),
+              0 0 34px rgba(255, 150, 56, 0.72),
+              0 10px 0 rgba(66, 8, 4, 0.98),
+              0 22px 26px rgba(0, 0, 0, 0.58);
+            animation: vs-showdown-count-pop
+              430ms
+              cubic-bezier(0.2, 0.88, 0.2, 1)
+              1
+              both;
+          }
+
+          .vs-showdown-label-fight {
+            font-size: 66px;
+            font-family: 'TarrgetChrome', 'TarrgetCountdown', 'Impact', 'Arial Black',
+              sans-serif;
+            background: linear-gradient(
+              to bottom,
+              #fff8ea 0%,
+              #f5f5f5 38%,
+              #c9ced5 52%,
+              #f4f4f4 72%,
+              #9ca4ad 100%
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 3.1px #2b0602;
+            text-shadow:
+              0 0 20px rgba(255, 222, 130, 0.98),
+              0 0 44px rgba(255, 100, 44, 0.9),
+              0 12px 0 rgba(70, 4, 2, 0.98),
+              0 24px 30px rgba(0, 0, 0, 0.66);
+            animation: vs-showdown-fight-slam
+              360ms
+              cubic-bezier(0.12, 0.92, 0.2, 1.08)
+              1
+              both;
+          }
+
+          .vs-showdown-label-ko {
+            font-size: 72px;
+            font-family: 'TarrgetChrome', 'TarrgetCountdown', 'Impact', 'Arial Black',
+              sans-serif;
+            background: linear-gradient(
+              to bottom,
+              #fffdf7 0%,
+              #ffffff 22%,
+              #f1f4f8 42%,
+              #a5b0bc 58%,
+              #f2f2f2 76%,
+              #8f9aa5 100%
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 3.3px #260401;
+            text-shadow:
+              0 0 18px rgba(255, 230, 148, 0.95),
+              0 0 46px rgba(255, 86, 38, 0.96),
+              0 13px 0 rgba(66, 5, 2, 0.98),
+              0 28px 34px rgba(0, 0, 0, 0.72);
+            animation: vs-showdown-ko-crash
+              600ms
+              cubic-bezier(0.12, 0.96, 0.2, 1.08)
+              1
+              both;
+          }
+        `}</style>
       </div>
     </main>
   );

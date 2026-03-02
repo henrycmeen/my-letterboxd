@@ -1,4 +1,5 @@
 import { type FC, useState } from 'react';
+import { withBasePath } from '@/lib/basePath';
 
 interface VHSCoverflowProps {
   movies: Array<{
@@ -8,6 +9,8 @@ interface VHSCoverflowProps {
 }
 
 import RetroDigitalClock from './RetroDigitalClock';
+
+const VHS_FRONT_SIDE_IMAGE = withBasePath('/VHS/Front Side.png');
 
 const VHSCoverflow: FC<VHSCoverflowProps> = ({ movies }) => {
   const [centerIndex, setCenterIndex] = useState(1);
@@ -44,7 +47,7 @@ const VHSCoverflow: FC<VHSCoverflowProps> = ({ movies }) => {
                 <div className="relative h-full w-full transform transition-transform duration-300 group-hover:rotate-1 group-hover:scale-110">
                   <div className="absolute -bottom-4 -right-4 -left-[-20%] h-[102%] opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-[20%] group-hover:translate-x-0">
                     <img
-                      src="/VHS/Front Side.png"
+                      src={VHS_FRONT_SIDE_IMAGE}
                       alt="VHS case"
                       className="h-full w-full object-cover"
                     />

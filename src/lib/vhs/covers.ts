@@ -16,6 +16,7 @@ import { renderPosterIntoPsd } from '@/lib/vhs/psdRenderer';
 import { renderVhsPoster } from '@/lib/vhs/render';
 import { DEFAULT_VHS_TEMPLATE_ID } from '@/lib/vhs/templates';
 import { VHS_RENDER_CACHE_DIRECTORY } from '@/lib/storagePaths';
+import { withBasePath } from '@/lib/basePath';
 
 const OUTPUT_DIRECTORY = VHS_RENDER_CACHE_DIRECTORY;
 const VHS_RENDER_VERSION = 'r11';
@@ -292,7 +293,7 @@ export const syncFrontSideVhsCovers = async (
     const fileBase = `${sourceKey}-${movie.id}${sourceImageKey}-${renderer}-${templateSlug}-${VHS_RENDER_VERSION}-${safeSlug}`;
     const fileName = `${fileBase}.${format}`;
     const absoluteFilePath = path.join(OUTPUT_DIRECTORY, fileName);
-    const publicPath = `/api/vhs/generated/${encodeURIComponent(fileName)}`;
+    const publicPath = withBasePath(`/api/vhs/generated/${encodeURIComponent(fileName)}`);
 
     if (force || !(await fileExists(absoluteFilePath))) {
       await runRenderJob(absoluteFilePath, async () => {

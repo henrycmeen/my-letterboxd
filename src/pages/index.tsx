@@ -1,5 +1,6 @@
 import { type NextPage } from 'next';
 import { useEffect, useRef, useState } from 'react';
+import { withBasePath } from '@/lib/basePath';
 
 interface ProgramMovie {
   id: number;
@@ -23,7 +24,7 @@ interface ProgramResponse {
 }
 
 const BOARD_ID = 'default';
-const FALLBACK_SCREEN_IMAGE = '/VHS/backgrounds/floor-oak.png';
+const FALLBACK_SCREEN_IMAGE = withBasePath('/VHS/backgrounds/floor-oak.png');
 
 const isProgramMovie = (value: unknown): value is ProgramMovie => {
   if (!value || typeof value !== 'object') {
@@ -86,7 +87,7 @@ const Home: NextPage = () => {
     const loadProgram = async () => {
       try {
         const params = new URLSearchParams({ boardId: BOARD_ID });
-        const response = await fetch(`/api/club/next?${params.toString()}`);
+        const response = await fetch(withBasePath(`/api/club/next?${params.toString()}`));
         if (!response.ok) {
           return;
         }
@@ -153,7 +154,7 @@ const Home: NextPage = () => {
 
     setIsPoweringOff(true);
     powerOffTimerRef.current = window.setTimeout(() => {
-      window.location.href = '/floor';
+      window.location.href = withBasePath('/floor');
     }, 640);
   };
 

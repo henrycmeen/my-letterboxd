@@ -4,6 +4,18 @@
  */
 import "./src/env.js";
 
+/** @param {string | undefined} value */
+const normalizeBasePath = (value) => {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed || trimmed === "/") {
+    return "";
+  }
+
+  return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
+};
+
+const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH);
+
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
@@ -17,6 +29,7 @@ const config = {
     locales: ["en"],
     defaultLocale: "en",
   },
+  ...(basePath ? { basePath } : {}),
   transpilePackages: ["geist"],
   webpack: (webpackConfig, { dev }) => {
     if (dev) {
