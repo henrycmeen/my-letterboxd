@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
+import { applyRateLimit } from '@/lib/rateLimit';
 import type { TmdbTitleQuery } from '@/lib/tmdb';
 import { hasTmdbApiKey } from '@/lib/tmdb';
 import {
@@ -105,6 +106,16 @@ export default async function handler(
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  if (
+    !applyRateLimit(req, res, {
+      key: 'vhs-covers',
+      maxRequests: 60,
+      windowMs: 60_000,
+    })
+  ) {
+    return;
   }
 
   if (!hasTmdbApiKey()) {

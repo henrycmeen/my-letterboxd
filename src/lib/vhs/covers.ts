@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { scheduleCachePrune } from '@/lib/cacheMaintenance';
 import {
   getCachedTmdbImagePath,
   getTmdbMovieById,
@@ -14,12 +15,17 @@ import {
 import { renderPosterIntoPsd } from '@/lib/vhs/psdRenderer';
 import { renderVhsPoster } from '@/lib/vhs/render';
 import { DEFAULT_VHS_TEMPLATE_ID } from '@/lib/vhs/templates';
+import { VHS_RENDER_CACHE_DIRECTORY } from '@/lib/storagePaths';
 
-const OUTPUT_DIRECTORY = path.join(process.cwd(), 'public', 'VHS', 'generated');
+const OUTPUT_DIRECTORY = VHS_RENDER_CACHE_DIRECTORY;
 const VHS_RENDER_VERSION = 'r11';
 const DEFAULT_SHARP_RENDER_SIZE = 1800;
 const MIN_SHARP_RENDER_SIZE = 720;
 const MAX_SHARP_RENDER_SIZE = 4000;
+const DEFAULT_VHS_CACHE_MAX_MB = 2048;
+const DEFAULT_VHS_CACHE_MAX_AGE_DAYS = 45;
+const VHS_CACHE_PRUNE_THROTTLE_MS = 5 * 60 * 1000;
+const renderJobsByOutputPath = new Map<string, Promise<void>>();
 const DEFAULT_PSD_TEMPLATE_PATH = path.join(
   process.cwd(),
   'assets',
@@ -59,6 +65,19 @@ export interface VhsClubMovieCover {
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
 
+const parsePositiveIntEnv = (value: string | undefined): number | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return Math.floor(parsed);
+};
+
 const getSharpRenderSize = (): number => {
   const raw = process.env.VHS_SHARP_RENDER_SIZE?.trim();
   if (!raw) {
@@ -77,6 +96,20 @@ const getSharpRenderSize = (): number => {
   );
 };
 
+const getVhsCacheMaxBytes = (): number =>
+  (parsePositiveIntEnv(process.env.VHS_RENDER_CACHE_MAX_MB) ??
+    DEFAULT_VHS_CACHE_MAX_MB) *
+  1024 *
+  1024;
+
+const getVhsCacheMaxAgeMs = (): number =>
+  (parsePositiveIntEnv(process.env.VHS_RENDER_CACHE_MAX_AGE_DAYS) ??
+    DEFAULT_VHS_CACHE_MAX_AGE_DAYS) *
+  24 *
+  60 *
+  60 *
+  1000;
+
 const fileExists = async (absolutePath: string): Promise<boolean> => {
   try {
     await fs.access(absolutePath);
@@ -84,6 +117,31 @@ const fileExists = async (absolutePath: string): Promise<boolean> => {
   } catch {
     return false;
   }
+};
+
+const createTempOutputPath = (outputPath: string): string =>
+  `${outputPath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const runRenderJob = async (
+  outputPath: string,
+  jobFactory: () => Promise<void>
+): Promise<void> => {
+  const existing = renderJobsByOutputPath.get(outputPath);
+  if (existing) {
+    await existing;
+    return;
+  }
+
+  const job = (async () => {
+    try {
+      await jobFactory();
+    } finally {
+      renderJobsByOutputPath.delete(outputPath);
+    }
+  })();
+
+  renderJobsByOutputPath.set(outputPath, job);
+  await job;
 };
 
 const slugify = (value: string): string =>
@@ -175,6 +233,11 @@ export const syncFrontSideVhsCovers = async (
   }
 
   await fs.mkdir(OUTPUT_DIRECTORY, { recursive: true });
+  scheduleCachePrune(OUTPUT_DIRECTORY, {
+    maxBytes: getVhsCacheMaxBytes(),
+    maxAgeMs: getVhsCacheMaxAgeMs(),
+    throttleMs: VHS_CACHE_PRUNE_THROTTLE_MS,
+  });
 
   let movies: TmdbClubMovie[];
   if (hasMovieId) {
@@ -228,32 +291,52 @@ export const syncFrontSideVhsCovers = async (
     const sourceImageKey = sourceImageType === 'poster' ? '' : `-${sourceImageType}`;
     const fileBase = `${sourceKey}-${movie.id}${sourceImageKey}-${renderer}-${templateSlug}-${VHS_RENDER_VERSION}-${safeSlug}`;
     const fileName = `${fileBase}.${format}`;
-    const scratchPngPath = path.join(OUTPUT_DIRECTORY, `${fileBase}.render.png`);
     const absoluteFilePath = path.join(OUTPUT_DIRECTORY, fileName);
-    const publicPath = `/VHS/generated/${fileName}`;
+    const publicPath = `/api/vhs/generated/${encodeURIComponent(fileName)}`;
 
     if (force || !(await fileExists(absoluteFilePath))) {
-      if (renderer === 'photoshop') {
-        await renderWithPhotoshop({
-          sourceFilePath: posterPath,
-          psdPath,
-          smartObjectLayerName: options.smartObjectLayerName,
-          format,
-          quality,
-          outputPath: absoluteFilePath,
-          scratchPath: scratchPngPath,
-        });
-      } else {
-        await renderWithSharp({
-          sourceFilePath: posterPath,
-          templateId,
-          format,
-          quality,
-          renderSize: sharpRenderSize,
-          randomSeed: `movie-${movie.id}`,
-          outputPath: absoluteFilePath,
-        });
-      }
+      await runRenderJob(absoluteFilePath, async () => {
+        if (!force && (await fileExists(absoluteFilePath))) {
+          return;
+        }
+
+        const tempOutputPath = createTempOutputPath(absoluteFilePath);
+        const tempScratchPngPath = `${tempOutputPath}.render.png`;
+
+        try {
+          if (renderer === 'photoshop') {
+            await renderWithPhotoshop({
+              sourceFilePath: posterPath,
+              psdPath,
+              smartObjectLayerName: options.smartObjectLayerName,
+              format,
+              quality,
+              outputPath: tempOutputPath,
+              scratchPath: tempScratchPngPath,
+            });
+          } else {
+            await renderWithSharp({
+              sourceFilePath: posterPath,
+              templateId,
+              format,
+              quality,
+              renderSize: sharpRenderSize,
+              randomSeed: `movie-${movie.id}`,
+              outputPath: tempOutputPath,
+            });
+          }
+
+          await fs.rename(tempOutputPath, absoluteFilePath);
+          scheduleCachePrune(OUTPUT_DIRECTORY, {
+            maxBytes: getVhsCacheMaxBytes(),
+            maxAgeMs: getVhsCacheMaxAgeMs(),
+            throttleMs: VHS_CACHE_PRUNE_THROTTLE_MS,
+          });
+        } finally {
+          await fs.rm(tempOutputPath, { force: true });
+          await fs.rm(tempScratchPngPath, { force: true });
+        }
+      });
     }
 
     output.push({

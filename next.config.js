@@ -18,6 +18,21 @@ const config = {
     defaultLocale: "en",
   },
   transpilePackages: ["geist"],
+  webpack: (webpackConfig, { dev }) => {
+    if (dev) {
+      webpackConfig.watchOptions = {
+        ...(webpackConfig.watchOptions ?? {}),
+        ignored: [
+          "**/.cache/**",
+          "**/data/**",
+          "**/docs/references/**",
+          "**/public/VHS/generated/**",
+        ],
+      };
+    }
+
+    return webpackConfig;
+  },
 };
 
 export default config;

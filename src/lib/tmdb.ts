@@ -2,16 +2,26 @@ import { promises as fs } from 'fs';
 import { createHash } from 'crypto';
 import path from 'path';
 import { z } from 'zod';
+import { scheduleCachePrune } from '@/lib/cacheMaintenance';
+import {
+  TMDB_BACKDROP_CACHE_DIRECTORY,
+  TMDB_CACHE_ROOT,
+  TMDB_LEGACY_POSTER_CACHE_DIRECTORY,
+  TMDB_LIST_CACHE_DIRECTORY,
+  TMDB_POSTER_CACHE_DIRECTORY,
+  TMDB_SEARCH_CACHE_DIRECTORY,
+} from '@/lib/storagePaths';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w780';
 
-const CACHE_ROOT = path.join(process.cwd(), '.cache', 'tmdb');
-const LIST_CACHE_DIRECTORY = path.join(CACHE_ROOT, 'lists');
-const SEARCH_CACHE_DIRECTORY = path.join(CACHE_ROOT, 'search');
-const POSTER_CACHE_DIRECTORY = path.join(CACHE_ROOT, 'posters');
-
 const DEFAULT_CACHE_TTL_SECONDS = 60 * 30;
+const DEFAULT_FETCH_TIMEOUT_MS = 9_000;
+const DEFAULT_FETCH_RETRIES = 2;
+const DEFAULT_FETCH_RETRY_BASE_MS = 300;
+const DEFAULT_TMDB_CACHE_MAX_MB = 768;
+const DEFAULT_TMDB_CACHE_MAX_AGE_DAYS = 30;
+const TMDB_CACHE_PRUNE_THROTTLE_MS = 5 * 60 * 1000;
 
 export type TmdbMovieListType =
   | 'popular'
@@ -79,13 +89,40 @@ const getCacheTtlSeconds = (): number =>
   parsePositiveIntEnv(process.env.TMDB_LIST_CACHE_TTL_SECONDS) ??
   DEFAULT_CACHE_TTL_SECONDS;
 
+const getFetchTimeoutMs = (): number =>
+  parsePositiveIntEnv(process.env.TMDB_FETCH_TIMEOUT_MS) ??
+  DEFAULT_FETCH_TIMEOUT_MS;
+
+const getFetchRetries = (): number =>
+  Math.min(
+    5,
+    parsePositiveIntEnv(process.env.TMDB_FETCH_RETRIES) ?? DEFAULT_FETCH_RETRIES
+  );
+
+const getFetchRetryBaseMs = (): number =>
+  parsePositiveIntEnv(process.env.TMDB_FETCH_RETRY_BASE_MS) ??
+  DEFAULT_FETCH_RETRY_BASE_MS;
+
+const getTmdbCacheMaxBytes = (): number =>
+  (parsePositiveIntEnv(process.env.TMDB_CACHE_MAX_MB) ?? DEFAULT_TMDB_CACHE_MAX_MB) *
+  1024 *
+  1024;
+
+const getTmdbCacheMaxAgeMs = (): number =>
+  (parsePositiveIntEnv(process.env.TMDB_CACHE_MAX_AGE_DAYS) ??
+    DEFAULT_TMDB_CACHE_MAX_AGE_DAYS) *
+  24 *
+  60 *
+  60 *
+  1000;
+
 const getListCachePath = (listType: TmdbMovieListType, page: number): string =>
-  path.join(LIST_CACHE_DIRECTORY, `${listType}-page-${page}.json`);
+  path.join(TMDB_LIST_CACHE_DIRECTORY, `${listType}-page-${page}.json`);
 
 const getSearchCachePath = (title: string, year?: number): string => {
   const key = `${title.trim().toLowerCase()}::${year ?? ''}`;
   const hash = createHash('sha1').update(key).digest('hex');
-  return path.join(SEARCH_CACHE_DIRECTORY, `${hash}.json`);
+  return path.join(TMDB_SEARCH_CACHE_DIRECTORY, `${hash}.json`);
 };
 
 const readFreshCache = async <T>(
@@ -125,6 +162,12 @@ const writeCache = async <T>(cachePath: string, payload: T): Promise<void> => {
   };
 
   await fs.writeFile(cachePath, JSON.stringify(content), 'utf8');
+
+  scheduleCachePrune(TMDB_CACHE_ROOT, {
+    maxBytes: getTmdbCacheMaxBytes(),
+    maxAgeMs: getTmdbCacheMaxAgeMs(),
+    throttleMs: TMDB_CACHE_PRUNE_THROTTLE_MS,
+  });
 };
 
 const mapTmdbMovieToClubMovie = (
@@ -205,6 +248,92 @@ const createTmdbRequest = (url: URL): { url: string; requestInit?: RequestInit }
   };
 };
 
+const sleep = async (ms: number): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+const withTimeoutSignal = (
+  requestInit: RequestInit | undefined,
+  timeoutMs: number
+): { requestInit: RequestInit; cleanup: () => void } => {
+  const controller = new AbortController();
+  const externalSignal = requestInit?.signal;
+
+  const onAbort = () => {
+    controller.abort();
+  };
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      controller.abort();
+    } else {
+      externalSignal.addEventListener('abort', onAbort);
+    }
+  }
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  return {
+    requestInit: {
+      ...(requestInit ?? {}),
+      signal: controller.signal,
+    },
+    cleanup: () => {
+      clearTimeout(timeout);
+      if (externalSignal) {
+        externalSignal.removeEventListener('abort', onAbort);
+      }
+    },
+  };
+};
+
+const isRetriableStatus = (status: number): boolean =>
+  status === 408 || status === 429 || status >= 500;
+
+const isRetriableError = (error: unknown): boolean => {
+  if (error instanceof Error && error.name === 'AbortError') {
+    return true;
+  }
+
+  return error instanceof TypeError;
+};
+
+const fetchWithRetry = async (
+  requestUrl: string,
+  requestInit?: RequestInit
+): Promise<Response> => {
+  const retries = getFetchRetries();
+  const timeoutMs = getFetchTimeoutMs();
+  const retryBaseMs = getFetchRetryBaseMs();
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const { requestInit: timedInit, cleanup } = withTimeoutSignal(requestInit, timeoutMs);
+    try {
+      const response = await fetch(requestUrl, timedInit);
+
+      if (response.ok || attempt === retries || !isRetriableStatus(response.status)) {
+        return response;
+      }
+
+      void response.body?.cancel();
+    } catch (error) {
+      if (attempt === retries || !isRetriableError(error)) {
+        throw error;
+      }
+    } finally {
+      cleanup();
+    }
+
+    const jitter = Math.floor(Math.random() * retryBaseMs * 0.35);
+    const backoffMs = retryBaseMs * Math.pow(2, attempt) + jitter;
+    await sleep(backoffMs);
+  }
+
+  throw new Error('TMDB request failed after retries.');
+};
+
 const normalizeTitle = (value: string): string =>
   value
     .toLowerCase()
@@ -263,7 +392,7 @@ const fetchTmdbSearchResults = async (
   }
 
   const { url: requestUrl, requestInit } = createTmdbRequest(url);
-  const response = await fetch(requestUrl, requestInit);
+  const response = await fetchWithRetry(requestUrl, requestInit);
   if (!response.ok) {
     throw new Error(`TMDB search error (${response.status})`);
   }
@@ -318,7 +447,7 @@ export const getTmdbMovieList = async (
   url.searchParams.set('page', String(page));
 
   const { url: requestUrl, requestInit } = createTmdbRequest(url);
-  const response = await fetch(requestUrl, requestInit);
+  const response = await fetchWithRetry(requestUrl, requestInit);
   if (!response.ok) {
     throw new Error(`TMDB API error (${response.status})`);
   }
@@ -393,7 +522,7 @@ export const getTmdbMovieById = async (
   url.searchParams.set('language', 'en-US');
 
   const { url: requestUrl, requestInit } = createTmdbRequest(url);
-  const response = await fetch(requestUrl, requestInit);
+  const response = await fetchWithRetry(requestUrl, requestInit);
   if (response.status === 404) {
     return null;
   }
@@ -412,19 +541,33 @@ export const getCachedTmdbImagePath = async (
   imageUrl: string,
   imageKind: 'poster' | 'backdrop' = 'poster'
 ): Promise<string> => {
-  await fs.mkdir(POSTER_CACHE_DIRECTORY, { recursive: true });
+  const imageCacheDirectory =
+    imageKind === 'backdrop'
+      ? TMDB_BACKDROP_CACHE_DIRECTORY
+      : TMDB_POSTER_CACHE_DIRECTORY;
+
+  await fs.mkdir(imageCacheDirectory, { recursive: true });
 
   const hash = createHash('sha1').update(imageUrl).digest('hex').slice(0, 12);
-
-  const possibleFiles = await fs.readdir(POSTER_CACHE_DIRECTORY);
-  const existing = possibleFiles.find((name) =>
-    name.startsWith(`${movieId}-${imageKind}-${hash}.`)
-  );
-  if (existing) {
-    return path.join(POSTER_CACHE_DIRECTORY, existing);
+  const filePrefix = `${movieId}-${imageKind}-${hash}.`;
+  const lookupDirectories = [imageCacheDirectory];
+  if (TMDB_LEGACY_POSTER_CACHE_DIRECTORY !== imageCacheDirectory) {
+    lookupDirectories.push(TMDB_LEGACY_POSTER_CACHE_DIRECTORY);
   }
 
-  const response = await fetch(imageUrl);
+  for (const directory of lookupDirectories) {
+    try {
+      const possibleFiles = await fs.readdir(directory);
+      const existing = possibleFiles.find((name) => name.startsWith(filePrefix));
+      if (existing) {
+        return path.join(directory, existing);
+      }
+    } catch {
+      // Ignore missing cache directories and keep searching.
+    }
+  }
+
+  const response = await fetchWithRetry(imageUrl);
   if (!response.ok) {
     throw new Error(`Failed to fetch TMDB ${imageKind} (${response.status})`);
   }
@@ -436,10 +579,16 @@ export const getCachedTmdbImagePath = async (
 
   const extension = getPosterExtension(imageUrl, contentType);
   const fileName = `${movieId}-${imageKind}-${hash}${extension}`;
-  const absolutePath = path.join(POSTER_CACHE_DIRECTORY, fileName);
+  const absolutePath = path.join(imageCacheDirectory, fileName);
 
   const posterBuffer = Buffer.from(await response.arrayBuffer());
   await fs.writeFile(absolutePath, posterBuffer);
+
+  scheduleCachePrune(TMDB_CACHE_ROOT, {
+    maxBytes: getTmdbCacheMaxBytes(),
+    maxAgeMs: getTmdbCacheMaxAgeMs(),
+    throttleMs: TMDB_CACHE_PRUNE_THROTTLE_MS,
+  });
 
   return absolutePath;
 };

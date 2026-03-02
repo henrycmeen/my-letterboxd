@@ -13,25 +13,25 @@
 ## Size Snapshot (Before Cleanup)
 
 - `public/`: ~585.5 MB total images
-- `public/VHS/generated`: ~260.5 MB (runtime-generated cover cache)
+- `public/VHS/generated`: ~260.5 MB (legacy runtime-generated cover cache, superseded by `.cache/vhs/generated`)
 - `public/VHS/templates`: ~206.2 MB
 - Root debug/session images: ~127 MB
-- `.cache/tmdb/posters`: ~10.1 MB (already ignored)
+- `.cache/tmdb/images/posters`: ~10.1 MB (already ignored)
 
 ## Runtime-Critical Image Paths
 
 - `public/VHS/templates/front-side-cover-*.png` and `front-side-cover-flat.webp`
 - `public/VHS/backgrounds/floor-oak.png`
 - `public/VHS/Front Side.png`
-- `public/VHS/generated/*` (runtime cache; should not be hand-curated)
+- `.cache/vhs/generated/*` (runtime cache; should not be hand-curated)
 
 ## Structural Risks Found
 
 - Fallback cover paths in `src/pages/floor.tsx` include generated files that may not exist on fresh clone if caches are empty.
-- `public/VHS/generated` is acting as runtime cache and can quickly grow large.
+- Runtime cover cache should stay in `.cache/vhs/generated` to avoid dev-reload churn and repo bloat.
 
 ## Recommended Next Cleanup
 
 1. Replace hardcoded fallback generated cover paths with stable bundled assets or placeholders.
-2. Add a small cleanup script for stale generated files in `public/VHS/generated`.
+2. Add a small cleanup script for stale generated files in `.cache/vhs/generated`.
 3. Keep all non-runtime visual experiments in `docs/references/` only.

@@ -49,6 +49,12 @@ interface FloorBoardResponse {
   movies: FloorBoardMovie[];
 }
 
+interface FloorBoardConflictResponse {
+  message: string;
+  expectedVersion?: number;
+  currentVersion?: number;
+}
+
 interface FloorMovie extends ClubMovie {
   x: number;
   y: number;
@@ -171,11 +177,15 @@ const isWaitingSlotCover = (coverImage: string): boolean =>
   coverImage.includes('front-placeholder-cover') ||
   coverImage.includes('front-side-cover-flat.webp');
 
+const isGeneratedCoverPath = (coverImage: string): boolean =>
+  coverImage.includes('/VHS/generated/') ||
+  coverImage.includes('/api/vhs/generated/');
+
 const shouldHydrateBoardCover = (coverImage: string): boolean =>
   isWaitingSlotCover(coverImage) ||
   coverImage.startsWith('http://') ||
   coverImage.startsWith('https://') ||
-  (coverImage.includes('/VHS/generated/') &&
+  (isGeneratedCoverPath(coverImage) &&
     (!coverImage.includes(`-${COVER_TEMPLATE_ID}-`) ||
       !coverImage.includes(`-${COVER_RENDER_REVISION}-`)));
 
@@ -320,6 +330,40 @@ const toBoardMoviesPayload = (movies: FloorMovie[]) =>
     score: movie.score,
   }));
 
+const buildBoardSignature = (
+  boardMovies: ReturnType<typeof toBoardMoviesPayload>
+): string =>
+  JSON.stringify(
+    boardMovies.map((movie) => [
+      movie.id,
+      movie.coverImage,
+      Math.round(movie.x),
+      Math.round(movie.y),
+      Math.round(movie.rotation * 10) / 10,
+      Math.round(movie.score * 10) / 10,
+    ])
+  );
+
+const isFloorBoardConflictResponse = (
+  value: unknown
+): value is FloorBoardConflictResponse => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Partial<FloorBoardConflictResponse>;
+  const expectedValid =
+    payload.expectedVersion === undefined ||
+    (typeof payload.expectedVersion === 'number' &&
+      Number.isFinite(payload.expectedVersion));
+  const currentValid =
+    payload.currentVersion === undefined ||
+    (typeof payload.currentVersion === 'number' &&
+      Number.isFinite(payload.currentVersion));
+
+  return typeof payload.message === 'string' && expectedValid && currentValid;
+};
+
 const FloorPage: NextPage = () => {
   const [sourceMovies, setSourceMovies] = useState<ClubMovie[]>([]);
   const [floorMovies, setFloorMovies] = useState<FloorMovie[]>([]);
@@ -364,6 +408,7 @@ const FloorPage: NextPage = () => {
   const renderedCoverPromiseByMovieIdRef = useRef<
     Record<number, Promise<ClubMovie | null>>
   >({});
+  const boardVersionRef = useRef<number | null>(null);
 
   const getFloorBounds = useCallback(() => {
     const rect = floorRef.current?.getBoundingClientRect();
@@ -485,65 +530,83 @@ const FloorPage: NextPage = () => {
         const boardResponse = await fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`);
         if (boardResponse.ok) {
           const boardRaw: unknown = await boardResponse.json();
-          if (isFloorBoardResponse(boardRaw) && boardRaw.movies.length > 0 && !ignore) {
-            const bounds = getFloorBounds();
-            const restoredMovies = recalculateHierarchy(
-              boardRaw.movies.map((movie) => ({
-                id: movie.id,
-                title: movie.title,
-                coverImage: normalizeCoverImage(movie.coverImage),
-                x: movie.x,
-                y: movie.y,
-                rotation: clampCardRotation(movie.rotation),
-                z: movie.z ?? 1,
-                rank: movie.rank ?? 1,
-                score: movie.score ?? getTopScorePercent(movie.y, bounds.height),
-              })),
-              bounds.height
-            );
+          if (isFloorBoardResponse(boardRaw) && !ignore) {
+            boardVersionRef.current = boardRaw.version;
+            if (boardRaw.movies.length > 0) {
+              const bounds = getFloorBounds();
+              const restoredMovies = recalculateHierarchy(
+                boardRaw.movies.map((movie) => ({
+                  id: movie.id,
+                  title: movie.title,
+                  coverImage: normalizeCoverImage(movie.coverImage),
+                  x: movie.x,
+                  y: movie.y,
+                  rotation: clampCardRotation(movie.rotation),
+                  z: movie.z ?? 1,
+                  rank: movie.rank ?? 1,
+                  score: movie.score ?? getTopScorePercent(movie.y, bounds.height),
+                })),
+                bounds.height
+              );
 
-            restoredFromBoardRef.current = true;
-            setFloorMovies(restoredMovies);
-            setSourceMovies(
-              boardRaw.movies.map((movie) => ({
-                id: movie.id,
-                title: movie.title,
-                coverImage: normalizeCoverImage(movie.coverImage),
-              }))
-            );
+              const signature = buildBoardSignature(toBoardMoviesPayload(restoredMovies));
+              lastBoardSignatureRef.current = signature;
+              restoredFromBoardRef.current = true;
+              setFloorMovies(restoredMovies);
+              setSourceMovies(
+                boardRaw.movies.map((movie) => ({
+                  id: movie.id,
+                  title: movie.title,
+                  coverImage: normalizeCoverImage(movie.coverImage),
+                }))
+              );
 
-            const placeholderMovieIds = boardRaw.movies
-              .filter((movie) => shouldHydrateBoardCover(movie.coverImage))
-              .map((movie) => movie.id);
+              const placeholderMovieIds = boardRaw.movies
+                .filter((movie) => shouldHydrateBoardCover(movie.coverImage))
+                .map((movie) => movie.id);
 
-            if (placeholderMovieIds.length > 0) {
-              for (const movieId of placeholderMovieIds) {
-                void (async () => {
-                  try {
-                    const params = new URLSearchParams({
-                      movieId: String(movieId),
-                      limit: '1',
-                      renderer: 'sharp',
-                      templateId: COVER_TEMPLATE_ID,
-                    });
-                    const response = await fetch(`/api/vhs/covers?${params.toString()}`);
-                    if (!response.ok || ignore) {
-                      return;
-                    }
+              if (placeholderMovieIds.length > 0) {
+                for (const movieId of placeholderMovieIds) {
+                  void (async () => {
+                    try {
+                      const params = new URLSearchParams({
+                        movieId: String(movieId),
+                        limit: '1',
+                        renderer: 'sharp',
+                        templateId: COVER_TEMPLATE_ID,
+                      });
+                      const response = await fetch(`/api/vhs/covers?${params.toString()}`);
+                      if (!response.ok || ignore) {
+                        return;
+                      }
 
-                    const payloadRaw: unknown = await response.json();
-                    if (!isCoversResponse(payloadRaw) || payloadRaw.movies.length === 0) {
-                      return;
-                    }
+                      const payloadRaw: unknown = await response.json();
+                      if (!isCoversResponse(payloadRaw) || payloadRaw.movies.length === 0) {
+                        return;
+                      }
 
-                    const hydratedMovie = payloadRaw.movies[0];
-                    if (!hydratedMovie || ignore) {
-                      return;
-                    }
+                      const hydratedMovie = payloadRaw.movies[0];
+                      if (!hydratedMovie || ignore) {
+                        return;
+                      }
 
-                    const boundsAfterHydration = getFloorBounds();
-                    setFloorMovies((previous) =>
-                      recalculateHierarchy(
+                      const boundsAfterHydration = getFloorBounds();
+                      setFloorMovies((previous) =>
+                        recalculateHierarchy(
+                          previous.map((movie) =>
+                            movie.id === movieId
+                              ? {
+                                  ...movie,
+                                  title: hydratedMovie.title,
+                                  coverImage: hydratedMovie.coverImage,
+                                }
+                              : movie
+                          ),
+                          boundsAfterHydration.height
+                        )
+                      );
+
+                      setSourceMovies((previous) =>
                         previous.map((movie) =>
                           movie.id === movieId
                             ? {
@@ -552,33 +615,20 @@ const FloorPage: NextPage = () => {
                                 coverImage: hydratedMovie.coverImage,
                               }
                             : movie
-                        ),
-                        boundsAfterHydration.height
-                      )
-                    );
-
-                    setSourceMovies((previous) =>
-                      previous.map((movie) =>
-                        movie.id === movieId
-                          ? {
-                              ...movie,
-                              title: hydratedMovie.title,
-                              coverImage: hydratedMovie.coverImage,
-                            }
-                          : movie
-                      )
-                    );
-                  } catch {
-                    // Keep placeholder hidden if one hydration call fails.
-                  }
-                })();
+                        )
+                      );
+                    } catch {
+                      // Keep placeholder hidden if one hydration call fails.
+                    }
+                  })();
+                }
               }
-            }
 
-            if (!ignore) {
-              setIsInitialBoardLoaded(true);
+              if (!ignore) {
+                setIsInitialBoardLoaded(true);
+              }
+              return;
             }
-            return;
           }
         }
       } catch {
@@ -1002,17 +1052,7 @@ const FloorPage: NextPage = () => {
     }
 
     const boardMovies = toBoardMoviesPayload(floorMovies);
-
-    const signature = JSON.stringify(
-      boardMovies.map((movie) => [
-        movie.id,
-        movie.coverImage,
-        Math.round(movie.x),
-        Math.round(movie.y),
-        Math.round(movie.rotation * 10) / 10,
-        Math.round(movie.score * 10) / 10,
-      ])
-    );
+    const signature = buildBoardSignature(boardMovies);
 
     if (signature === lastBoardSignatureRef.current) {
       return;
@@ -1024,24 +1064,80 @@ const FloorPage: NextPage = () => {
     }
 
     boardSyncTimerRef.current = window.setTimeout(() => {
-      void fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`, {
-        method: 'PUT',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
+      const syncBoard = async (): Promise<void> => {
+        const requestBody = {
           boardId: FLOOR_BOARD_ID,
           movies: boardMovies,
-        }),
-      })
-        .then((response) => {
-          if (response.ok) {
+          expectedVersion: boardVersionRef.current ?? undefined,
+        };
+
+        try {
+          const firstResponse = await fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`, {
+            method: 'PUT',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (firstResponse.ok) {
+            const payloadRaw: unknown = await firstResponse.json().catch(() => null);
+            if (isFloorBoardResponse(payloadRaw)) {
+              boardVersionRef.current = payloadRaw.version;
+            } else if (boardVersionRef.current !== null) {
+              boardVersionRef.current += 1;
+            }
+
             lastBoardSignatureRef.current = signature;
+            return;
           }
-        })
-        .catch(() => {
+
+          if (firstResponse.status !== 409) {
+            return;
+          }
+
+          const conflictPayloadRaw: unknown = await firstResponse
+            .json()
+            .catch(() => null);
+          if (!isFloorBoardConflictResponse(conflictPayloadRaw)) {
+            return;
+          }
+
+          if (typeof conflictPayloadRaw.currentVersion === 'number') {
+            boardVersionRef.current = conflictPayloadRaw.currentVersion;
+          } else {
+            return;
+          }
+
+          const secondResponse = await fetch(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`, {
+            method: 'PUT',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...requestBody,
+              expectedVersion: boardVersionRef.current,
+            }),
+          });
+
+          if (!secondResponse.ok) {
+            return;
+          }
+
+          const secondPayloadRaw: unknown = await secondResponse.json().catch(() => null);
+          if (isFloorBoardResponse(secondPayloadRaw)) {
+            boardVersionRef.current = secondPayloadRaw.version;
+          } else if (boardVersionRef.current !== null) {
+            boardVersionRef.current += 1;
+          }
+
+          lastBoardSignatureRef.current = signature;
+        } catch {
           // Keep UI responsive even if board sync fails.
-        });
+        }
+      };
+
+      void syncBoard();
     }, BOARD_SYNC_DEBOUNCE_MS);
 
     return () => {

@@ -9,7 +9,14 @@ import {
   type BoardState,
 } from '@/lib/floorBoard';
 
-type ApiResponse = BoardState | { message: string; issues?: unknown };
+type ApiResponse =
+  | BoardState
+  | {
+      message: string;
+      issues?: unknown;
+      expectedVersion?: number;
+      currentVersion?: number;
+    };
 
 const getQueryValue = (
   value: string | string[] | undefined
@@ -83,6 +90,8 @@ export default async function handler(
     if (error instanceof BoardConflictError) {
       return res.status(409).json({
         message: error.message,
+        expectedVersion: error.expectedVersion,
+        currentVersion: error.currentVersion,
       });
     }
 

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
+import { applyRateLimit } from '@/lib/rateLimit';
 import { getTmdbMoviesBySearchQuery, hasTmdbApiKey } from '@/lib/tmdb';
 
 const querySchema = z.object({
@@ -36,6 +37,16 @@ export default async function handler(
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  if (
+    !applyRateLimit(req, res, {
+      key: 'tmdb-search',
+      maxRequests: 90,
+      windowMs: 60_000,
+    })
+  ) {
+    return;
   }
 
   if (!hasTmdbApiKey()) {

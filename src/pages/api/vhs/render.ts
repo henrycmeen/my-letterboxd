@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
+import { applyRateLimit } from '@/lib/rateLimit';
 import { renderVhsPoster } from '@/lib/vhs/render';
 
 const overlaySchema = z.object({
@@ -46,6 +47,16 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  if (
+    !applyRateLimit(req, res, {
+      key: 'vhs-render',
+      maxRequests: 36,
+      windowMs: 60_000,
+    })
+  ) {
+    return;
   }
 
   const parsedBody = renderRequestSchema.safeParse(req.body);

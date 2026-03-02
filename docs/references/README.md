@@ -15,4 +15,4 @@ This folder is for local visual references and experiments that are not part of 
 
 - These folders are ignored by git in `.gitignore` to avoid accidental large commits.
 - Runtime assets should stay in `public/VHS/...`.
-- Generated runtime covers are written to `public/VHS/generated/` and are also ignored.
+- Generated runtime covers are cached in `.cache/vhs/generated/` and served via `/api/vhs/generated/:fileName`.

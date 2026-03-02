@@ -6,8 +6,9 @@ A film club app built with Next.js that fetches movie data from TMDB and renders
 
 - Fetches movies from TMDB (`popular`, `top_rated`, `upcoming`, `now_playing`)
 - Caches TMDB list/search responses and source image files on disk
-- Generates VHS cover images in `public/VHS/generated`
-- Persists floor board state (position + score) in `data/club-floor-board.json`
+- Generates VHS cover images in cache (`.cache/vhs/generated`) and serves them via API
+- Persists floor board state (position + score) in local SQLite (`data/club/filmklubb.sqlite`)
+- Automatically migrates legacy JSON board state (`data/club-floor-board.json`) into SQLite on first boot
 - Uses `sharp` as the primary renderer with a fixed VHS template pipeline
 - Supports Photoshop smart-object rendering as an optional local fallback
 
@@ -35,13 +36,27 @@ Optional:
 
 ```bash
 TMDB_LIST_CACHE_TTL_SECONDS=1800
+TMDB_FETCH_TIMEOUT_MS=9000
+TMDB_FETCH_RETRIES=2
+TMDB_FETCH_RETRY_BASE_MS=300
+TMDB_CACHE_MAX_MB=768
+TMDB_CACHE_MAX_AGE_DAYS=30
 VHS_RENDERER="sharp" # or "photoshop"
+VHS_RENDER_CACHE_MAX_MB=2048
+VHS_RENDER_CACHE_MAX_AGE_DAYS=45
+CLUB_DB_PATH="data/club/filmklubb.sqlite" # optional override
 ```
 
 3. Start development server
 
 ```bash
 pnpm dev
+```
+
+Pre-deploy sanity check:
+
+```bash
+pnpm predeploy
 ```
 
 ## API Endpoints
@@ -52,6 +67,9 @@ pnpm dev
 - `GET /api/vhs/covers?listType=popular&limit=8&force=false&renderer=sharp&format=webp`
   Generates/returns rendered covers.
 
+- `GET /api/health`
+  Lightweight runtime health check for SQLite/cache/TMDB config.
+
 Query params:
 
 - `renderer`: `sharp` or `photoshop`
@@ -60,24 +78,49 @@ Query params:
 - `smartObjectLayerName`: optional preferred smart object layer name for Photoshop renderer
 - `force=true`: re-render files even if they already exist
 
+Selected heavy routes are rate-limited per client IP:
+
+- `GET /api/tmdb/search`
+- `GET /api/vhs/covers`
+- `POST /api/vhs/render`
+
 ## Caching
 
 - TMDB list cache: `.cache/tmdb/lists`
 - TMDB search cache: `.cache/tmdb/search`
-- TMDB poster cache: `.cache/tmdb/posters`
-- Generated covers: `public/VHS/generated`
-- Floor board persistence: `data/club-floor-board.json`
+- TMDB poster cache: `.cache/tmdb/images/posters`
+- TMDB backdrop cache: `.cache/tmdb/images/backdrops`
+- Generated cover cache: `.cache/vhs/generated`
+- Generated cover URL base: `/api/vhs/generated/:fileName`
+- Floor board persistence: `data/club/filmklubb.sqlite`
+
+Caches are pruned automatically by age + total size thresholds.
+
+## Runtime Storage Layout
+
+The project stores runtime/generated content in three places:
+
+- `.cache/tmdb/*`
+  Network cache for TMDB list/search payloads + source images
+- `.cache/vhs/generated/*`
+  Rendered cover images cache used by the UI via `/api/vhs/generated/:fileName`
+- `data/club/filmklubb.sqlite`
+  Shared floor board state (positions, score, leader)
+
+This keeps static design assets in `public/VHS/templates` and runtime data in dedicated cache/data roots.
+
+For operational rules and folder ownership, see `docs/runtime-image-structure.md`.
 
 ## Current Cover Pipeline (`renderer=sharp`)
 
 This is the default flow used by the app right now.
 
 1. Fetch poster/backdrop from TMDB
-2. Cache source image on disk (`.cache/tmdb/posters`)
+2. Cache source image on disk (`.cache/tmdb/images/posters` or `.cache/tmdb/images/backdrops`)
 3. Resize/crop to the VHS poster slot (cover-fit)
 4. Apply template mask (`dest-in`) so the art keeps the same physical cover shape
 5. Composite VHS wear layers (texture/highlight/shadow) from `public/VHS/templates`
-6. Write final output to `public/VHS/generated/*.webp`
+6. Write final output to `.cache/vhs/generated/*.webp` and expose via `/api/vhs/generated/:fileName`
 
 Main template assets (default `black-case-front-v1`):
 
