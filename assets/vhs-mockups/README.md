@@ -20,3 +20,14 @@ python3 scripts/vhs/build_black_case_front_template.py \
 ```
 
 This updates the template layers used by `templateId=black-case-front-v1`.
+
+For spine-only mockups:
+
+```bash
+python3 scripts/vhs/build_black_case_spine_template.py \
+  --psb "/Users/henmee/Library/Mobile Documents/com~apple~CloudDocs/Design/Black VHS Case - Mockup/Mockups/Black VHS Case - SPINE.psb" \
+  --output public/VHS/templates/black-case-spine
+```
+
+This updates the runtime layers used by spine templates (`black-case-spine-v2`/`v3`).
+Current shelf rendering uses `templateId=black-case-spine-v3` (cropped spine layers).

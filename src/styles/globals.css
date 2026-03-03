@@ -189,3 +189,14 @@
       rgba(9, 35, 51, 0.34) 100%
     );
 }
+
+.shelf-scroll-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.shelf-scroll-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

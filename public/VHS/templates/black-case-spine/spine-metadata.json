@@ -1,0 +1,37 @@
+{
+  "sourcePsbName": "Black VHS Case - SPINE.psb",
+  "output": {
+    "width": 4000,
+    "height": 4000
+  },
+  "poster": {
+    "left": 1762,
+    "top": 470,
+    "width": 448,
+    "height": 3037
+  },
+  "underlays": [
+    {
+      "publicPath": "/VHS/templates/black-case-spine/spine-shadow-underlay.png",
+      "blend": "over",
+      "opacity": 0.36
+    },
+    {
+      "publicPath": "/VHS/templates/black-case-spine/spine-case-underlay.png",
+      "blend": "over",
+      "opacity": 1
+    }
+  ],
+  "overlays": [
+    {
+      "publicPath": "/VHS/templates/black-case-spine/spine-texture-plastic.png",
+      "blend": "screen",
+      "opacity": 0.9
+    },
+    {
+      "publicPath": "/VHS/templates/black-case-spine/spine-texture-scratches.png",
+      "blend": "over",
+      "opacity": 0.4
+    }
+  ]
+}

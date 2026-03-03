@@ -14,12 +14,12 @@ import {
 } from '@/lib/tmdb';
 import { renderPosterIntoPsd } from '@/lib/vhs/psdRenderer';
 import { renderVhsPoster } from '@/lib/vhs/render';
-import { DEFAULT_VHS_TEMPLATE_ID } from '@/lib/vhs/templates';
+import { DEFAULT_VHS_TEMPLATE_ID, getVhsTemplateById } from '@/lib/vhs/templates';
 import { VHS_RENDER_CACHE_DIRECTORY } from '@/lib/storagePaths';
 import { withBasePath } from '@/lib/basePath';
 
 const OUTPUT_DIRECTORY = VHS_RENDER_CACHE_DIRECTORY;
-const VHS_RENDER_VERSION = 'r11';
+const VHS_RENDER_VERSION = 'r12';
 const DEFAULT_SHARP_RENDER_SIZE = 1800;
 const MIN_SHARP_RENDER_SIZE = 720;
 const MAX_SHARP_RENDER_SIZE = 4000;
@@ -97,6 +97,31 @@ const getSharpRenderSize = (): number => {
   );
 };
 
+const getSharpRenderDimensions = (
+  templateId: string,
+  maxSide: number
+): { width: number; height: number } => {
+  const template = getVhsTemplateById(templateId);
+  const templateWidth = Math.max(1, template.output.width);
+  const templateHeight = Math.max(1, template.output.height);
+
+  if (templateWidth === templateHeight) {
+    return { width: maxSide, height: maxSide };
+  }
+
+  if (templateWidth > templateHeight) {
+    return {
+      width: maxSide,
+      height: Math.max(1, Math.round((maxSide * templateHeight) / templateWidth)),
+    };
+  }
+
+  return {
+    width: Math.max(1, Math.round((maxSide * templateWidth) / templateHeight)),
+    height: maxSide,
+  };
+};
+
 const getVhsCacheMaxBytes = (): number =>
   (parsePositiveIntEnv(process.env.VHS_RENDER_CACHE_MAX_MB) ??
     DEFAULT_VHS_CACHE_MAX_MB) *
@@ -164,7 +189,8 @@ const renderWithSharp = async (options: {
   templateId: string;
   format: 'png' | 'webp';
   quality: number;
-  renderSize: number;
+  renderWidth: number;
+  renderHeight: number;
   randomSeed?: string;
   outputPath: string;
 }): Promise<void> => {
@@ -172,8 +198,8 @@ const renderWithSharp = async (options: {
     sourceFilePath: options.sourceFilePath,
     templateId: options.templateId,
     fit: 'cover',
-    width: options.renderSize,
-    height: options.renderSize,
+    width: options.renderWidth,
+    height: options.renderHeight,
     format: options.format,
     quality: options.quality,
     background: 'transparent',
@@ -228,6 +254,10 @@ export const syncFrontSideVhsCovers = async (
   const sourceImageType = options.sourceImageType ?? 'poster';
   const psdPath = options.psdPath ?? DEFAULT_PSD_TEMPLATE_PATH;
   const sharpRenderSize = getSharpRenderSize();
+  const sharpRenderDimensions = getSharpRenderDimensions(
+    templateId,
+    sharpRenderSize
+  );
 
   if (renderer === 'photoshop' && !(await fileExists(psdPath))) {
     throw new Error(`PSD template not found: ${psdPath}`);
@@ -321,7 +351,8 @@ export const syncFrontSideVhsCovers = async (
               templateId,
               format,
               quality,
-              renderSize: sharpRenderSize,
+              renderWidth: sharpRenderDimensions.width,
+              renderHeight: sharpRenderDimensions.height,
               randomSeed: `movie-${movie.id}`,
               outputPath: tempOutputPath,
             });

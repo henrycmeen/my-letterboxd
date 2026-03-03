@@ -87,6 +87,106 @@ export const VHS_TEMPLATES: VhsTemplate[] = [
     ],
   },
   {
+    id: 'black-case-spine-v2',
+    name: 'Black VHS Case Spine (PSB Layer Export, Masked)',
+    output: {
+      width: 4000,
+      height: 4000,
+    },
+    poster: {
+      left: 1762,
+      top: 470,
+      width: 448,
+      height: 3037,
+    },
+    scanlines: false,
+    posterJitter: {
+      chance: 0.22,
+      maxOffsetX: 7,
+      maxOffsetY: 16,
+      maxScalePct: 0.04,
+      verticalBiasChance: 0.6,
+      verticalBiasMultiplier: 1.35,
+    },
+    underlays: [
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-shadow-underlay.png',
+        blend: 'over',
+        opacity: 0.36,
+      },
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-case-underlay.png',
+        blend: 'over',
+      },
+    ],
+    overlays: [
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-texture-plastic.png',
+        blend: 'screen',
+        opacity: 0.9,
+      },
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-texture-scratches.png',
+        blend: 'over',
+        opacity: 0.4,
+      },
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-case-mask.png',
+        blend: 'dest-in',
+      },
+    ],
+  },
+  {
+    id: 'black-case-spine-v3',
+    name: 'Black VHS Case Spine (Cropped, Masked)',
+    output: {
+      width: 434,
+      height: 3173,
+    },
+    poster: {
+      left: 0,
+      top: 75,
+      width: 434,
+      height: 3037,
+    },
+    scanlines: false,
+    posterJitter: {
+      chance: 0.22,
+      maxOffsetX: 7,
+      maxOffsetY: 16,
+      maxScalePct: 0.04,
+      verticalBiasChance: 0.6,
+      verticalBiasMultiplier: 1.35,
+    },
+    underlays: [
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-shadow-underlay-cropped.png',
+        blend: 'over',
+        opacity: 0.42,
+      },
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-case-underlay-cropped.png',
+        blend: 'over',
+      },
+    ],
+    overlays: [
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-texture-plastic-cropped.png',
+        blend: 'screen',
+        opacity: 0.92,
+      },
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-texture-scratches-cropped.png',
+        blend: 'over',
+        opacity: 0.45,
+      },
+      {
+        publicPath: '/VHS/templates/black-case-spine/spine-case-mask-cropped.png',
+        blend: 'dest-in',
+      },
+    ],
+  },
+  {
     id: 'front-side-cover-flat',
     name: 'Front Side Cover (Flat PSD Export)',
     output: {
