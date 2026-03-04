@@ -244,8 +244,6 @@ const COVER_EDITOR_DROP_ZONE_EXTRA = 22;
 const COVER_EDITOR_DROP_CYCLE_INTERVAL_MS = 120;
 const COVER_EDITOR_DROP_CYCLE_LIMIT = 14;
 const COVER_EDITOR_IMAGE_FETCH_LIMIT = 36;
-const COVER_EDITOR_PREVIEW_WIDTH = CARD_WIDTH * 3;
-const COVER_EDITOR_PREVIEW_HEIGHT = CARD_HEIGHT * 3;
 const COVER_CUSTOM_SETTINGS_STORAGE_KEY =
   'my-letterboxd-floor-cover-custom-settings-v1';
 const SHELF_TEMPLATE_ID = 'black-case-spine-v3';
@@ -954,8 +952,6 @@ const FloorPage: NextPage = () => {
   const coverEditorAdjustDragRef = useRef<CoverEditorAdjustDragState | null>(null);
   const coverEditorEnterRafRef = useRef<number | null>(null);
   const coverEditorReturnTimerRef = useRef<number | null>(null);
-  const coverEditorFrontPreviewRef = useRef<string | null>(null);
-  const coverEditorSpinePreviewRef = useRef<string | null>(null);
   const shelfDragCandidateRef = useRef<ShelfDragCandidate | null>(null);
   const csvImportInFlightRef = useRef(false);
 
@@ -2091,16 +2087,6 @@ const FloorPage: NextPage = () => {
       clearDeleteAnimationTimers();
       resetProximityVsCandidate();
       shelfDragCandidateRef.current = null;
-      const frontPreview = coverEditorFrontPreviewRef.current;
-      if (frontPreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(frontPreview);
-      }
-      const spinePreview = coverEditorSpinePreviewRef.current;
-      if (spinePreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(spinePreview);
-      }
-      coverEditorFrontPreviewRef.current = null;
-      coverEditorSpinePreviewRef.current = null;
       if (coverEditorDropCycleTimerRef.current !== null) {
         window.clearInterval(coverEditorDropCycleTimerRef.current);
         coverEditorDropCycleTimerRef.current = null;
@@ -3064,123 +3050,10 @@ const FloorPage: NextPage = () => {
 
   useEffect(() => {
     if (!coverEditor) {
-      const frontPreview = coverEditorFrontPreviewRef.current;
-      if (frontPreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(frontPreview);
-      }
-      const spinePreview = coverEditorSpinePreviewRef.current;
-      if (spinePreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(spinePreview);
-      }
-      coverEditorFrontPreviewRef.current = null;
-      coverEditorSpinePreviewRef.current = null;
       setCoverEditorFrontPreview(null);
       setCoverEditorSpinePreview(null);
-      return;
     }
-
-    const frontOption = getCoverEditorOptionAtIndex(
-      coverEditorImageOptions,
-      coverEditor.frontImageIndex
-    );
-    const spineOption = getCoverEditorOptionAtIndex(
-      coverEditorImageOptions,
-      coverEditor.spineImageIndex
-    );
-    if (!frontOption || !spineOption) {
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => {
-      const renderVariantPreview = async (
-        variant: CoverVariant,
-        option: TmdbImageOption,
-        offsetX: number,
-        offsetY: number,
-        scale: number
-      ): Promise<string | null> => {
-        try {
-          const templateId = variant === 'front' ? COVER_TEMPLATE_ID : SHELF_TEMPLATE_ID;
-          const response = await fetch(withBasePath('/api/vhs/render'), {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              sourceUrl: option.sourceUrl,
-              templateId,
-              width: COVER_EDITOR_PREVIEW_WIDTH,
-              height: COVER_EDITOR_PREVIEW_HEIGHT,
-              fit: 'cover',
-              format: 'webp',
-              quality: 74,
-              background: 'transparent',
-              posterOffsetX: Math.round(offsetX),
-              posterOffsetY: Math.round(offsetY),
-              posterScale: clamp(scale, 0.45, 2.6),
-            }),
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            return null;
-          }
-
-          const blob = await response.blob();
-          return URL.createObjectURL(blob);
-        } catch {
-          return null;
-        }
-      };
-
-      void Promise.all([
-        renderVariantPreview(
-          'front',
-          frontOption,
-          coverEditor.frontOffsetX,
-          coverEditor.frontOffsetY,
-          coverEditor.frontScale
-        ),
-        renderVariantPreview(
-          'spine',
-          spineOption,
-          coverEditor.spineOffsetX,
-          coverEditor.spineOffsetY,
-          coverEditor.spineScale
-        ),
-      ]).then(([nextFrontPreview, nextSpinePreview]) => {
-        if (controller.signal.aborted) {
-          if (nextFrontPreview?.startsWith('blob:')) {
-            URL.revokeObjectURL(nextFrontPreview);
-          }
-          if (nextSpinePreview?.startsWith('blob:')) {
-            URL.revokeObjectURL(nextSpinePreview);
-          }
-          return;
-        }
-
-        const previousFrontPreview = coverEditorFrontPreviewRef.current;
-        if (previousFrontPreview?.startsWith('blob:')) {
-          URL.revokeObjectURL(previousFrontPreview);
-        }
-        const previousSpinePreview = coverEditorSpinePreviewRef.current;
-        if (previousSpinePreview?.startsWith('blob:')) {
-          URL.revokeObjectURL(previousSpinePreview);
-        }
-
-        coverEditorFrontPreviewRef.current = nextFrontPreview;
-        coverEditorSpinePreviewRef.current = nextSpinePreview;
-        setCoverEditorFrontPreview(nextFrontPreview);
-        setCoverEditorSpinePreview(nextSpinePreview);
-      });
-    }, 130);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timeout);
-    };
-  }, [coverEditor, coverEditorImageOptions, getCoverEditorOptionAtIndex]);
+  }, [coverEditor]);
 
   useEffect(() => {
     if (!coverEditor) {
@@ -4825,12 +4698,12 @@ const FloorPage: NextPage = () => {
     ? getCoverEditorOptionAtIndex(coverEditorImageOptions, coverEditor.spineImageIndex)
     : null;
   const coverEditorFrontImage =
-    coverEditorFrontPreview ??
     coverEditorFrontOption?.previewUrl ??
+    coverEditorFrontPreview ??
     WAITING_SLOT_IMAGE;
   const coverEditorSpineImage =
-    coverEditorSpinePreview ??
     coverEditorSpineOption?.previewUrl ??
+    coverEditorSpinePreview ??
     SHELF_PLACEHOLDER_IMAGE;
   const isCoverEditorFrontFocused = coverEditor?.focusVariant === 'front';
   const isCoverEditorSpineFocused = coverEditor?.focusVariant === 'spine';
@@ -5756,9 +5629,17 @@ const FloorPage: NextPage = () => {
                       <img
                         src={coverEditorSpineImage}
                         alt={coverEditor.movieTitle}
-                        className="h-full w-full object-contain"
+                        className="h-full w-full object-cover"
                         style={{
-                          transform: `rotate(90deg) scale(${SHELF_SPINE_IMAGE_SCALE * 1.62})`,
+                          transform: `translate3d(${Math.round(
+                            coverEditor.spineOffsetX
+                          )}px, ${Math.round(
+                            coverEditor.spineOffsetY
+                          )}px, 0) rotate(90deg) scale(${(
+                            SHELF_SPINE_IMAGE_SCALE *
+                            1.62 *
+                            clamp(coverEditor.spineScale, 0.45, 2.6)
+                          ).toFixed(4)})`,
                           transformOrigin: 'center',
                         }}
                         draggable={false}
@@ -5801,6 +5682,16 @@ const FloorPage: NextPage = () => {
                       src={coverEditorFrontImage}
                       alt={coverEditor.movieTitle}
                       className="h-full w-full object-cover"
+                      style={{
+                        transform: `translate3d(${Math.round(
+                          coverEditor.frontOffsetX
+                        )}px, ${Math.round(
+                          coverEditor.frontOffsetY
+                        )}px, 0) scale(${clamp(coverEditor.frontScale, 0.45, 2.6).toFixed(
+                          4
+                        )})`,
+                        transformOrigin: 'center',
+                      }}
                       draggable={false}
                     />
                   </div>
