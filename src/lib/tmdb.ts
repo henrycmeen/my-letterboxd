@@ -6,6 +6,7 @@ import { scheduleCachePrune } from '@/lib/cacheMaintenance';
 import {
   TMDB_BACKDROP_CACHE_DIRECTORY,
   TMDB_CACHE_ROOT,
+  TMDB_IMAGE_CACHE_DIRECTORY,
   TMDB_LEGACY_POSTER_CACHE_DIRECTORY,
   TMDB_LIST_CACHE_DIRECTORY,
   TMDB_POSTER_CACHE_DIRECTORY,
@@ -14,6 +15,7 @@ import {
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w780';
+const TMDB_IMAGE_SOURCE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 
 const DEFAULT_CACHE_TTL_SECONDS = 60 * 30;
 const DEFAULT_FETCH_TIMEOUT_MS = 9_000;
@@ -61,6 +63,32 @@ export interface ClubMovie {
   voteAverage: number;
   voteCount: number;
   popularity: number;
+}
+
+const tmdbImageEntrySchema = z.object({
+  file_path: z.string(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  vote_average: z.number().optional().default(0),
+});
+
+const tmdbMovieImagesResponseSchema = z.object({
+  backdrops: z.array(tmdbImageEntrySchema).default([]),
+  posters: z.array(tmdbImageEntrySchema).default([]),
+});
+
+export interface TmdbMovieImageOption {
+  kind: 'poster' | 'backdrop';
+  sourceUrl: string;
+  previewUrl: string;
+  width: number;
+  height: number;
+  voteAverage: number;
+}
+
+export interface TmdbMovieImages {
+  posters: TmdbMovieImageOption[];
+  backdrops: TmdbMovieImageOption[];
 }
 
 const fileExists = async (absolutePath: string): Promise<boolean> => {
@@ -124,6 +152,9 @@ const getSearchCachePath = (title: string, year?: number): string => {
   const hash = createHash('sha1').update(key).digest('hex');
   return path.join(TMDB_SEARCH_CACHE_DIRECTORY, `${hash}.json`);
 };
+
+const getImagesCachePath = (movieId: number): string =>
+  path.join(TMDB_IMAGE_CACHE_DIRECTORY, `movie-${movieId}-images.json`);
 
 const readFreshCache = async <T>(
   cachePath: string,
@@ -534,6 +565,75 @@ export const getTmdbMovieById = async (
   const rawData: unknown = await response.json();
   const parsed = tmdbMovieSchema.parse(rawData);
   return mapTmdbMovieToClubMovie(parsed);
+};
+
+const toMovieImageOption = (
+  image: z.infer<typeof tmdbImageEntrySchema>,
+  kind: 'poster' | 'backdrop'
+): TmdbMovieImageOption => ({
+  kind,
+  sourceUrl: `${TMDB_IMAGE_SOURCE_BASE_URL}${image.file_path}`,
+  previewUrl: `${TMDB_IMAGE_BASE_URL}${image.file_path}`,
+  width: image.width,
+  height: image.height,
+  voteAverage: image.vote_average ?? 0,
+});
+
+export const getTmdbMovieImages = async (
+  movieId: number,
+  limit = 24
+): Promise<TmdbMovieImages> => {
+  if (!Number.isFinite(movieId) || movieId <= 0) {
+    return {
+      posters: [],
+      backdrops: [],
+    };
+  }
+
+  const normalizedId = Math.floor(movieId);
+  const cappedLimit = Math.max(1, Math.min(Math.floor(limit), 60));
+  const cachePath = getImagesCachePath(normalizedId);
+  const cached = await readFreshCache(cachePath, tmdbMovieImagesResponseSchema);
+
+  let payload: z.infer<typeof tmdbMovieImagesResponseSchema>;
+  if (cached) {
+    payload = tmdbMovieImagesResponseSchema.parse(cached);
+  } else {
+    const url = new URL(`${TMDB_BASE_URL}/movie/${normalizedId}/images`);
+    url.searchParams.set('include_image_language', 'en,null');
+
+    const { url: requestUrl, requestInit } = createTmdbRequest(url);
+    const response = await fetchWithRetry(requestUrl, requestInit);
+    if (!response.ok) {
+      throw new Error(`TMDB images error (${response.status})`);
+    }
+
+    const rawData: unknown = await response.json();
+    payload = tmdbMovieImagesResponseSchema.parse(rawData);
+    await writeCache(cachePath, payload);
+  }
+
+  const sortByRank = (
+    left: z.infer<typeof tmdbImageEntrySchema>,
+    right: z.infer<typeof tmdbImageEntrySchema>
+  ): number =>
+    (right.vote_average ?? 0) - (left.vote_average ?? 0) ||
+    right.width * right.height - left.width * left.height;
+
+  const posters = [...payload.posters]
+    .sort(sortByRank)
+    .slice(0, cappedLimit)
+    .map((image) => toMovieImageOption(image, 'poster'));
+
+  const backdrops = [...payload.backdrops]
+    .sort(sortByRank)
+    .slice(0, cappedLimit)
+    .map((image) => toMovieImageOption(image, 'backdrop'));
+
+  return {
+    posters,
+    backdrops,
+  };
 };
 
 export const getCachedTmdbImagePath = async (

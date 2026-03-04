@@ -32,6 +32,64 @@ interface SearchResponse {
   results: SearchMovie[];
 }
 
+type CoverVariant = 'front' | 'spine';
+type TmdbImageKind = 'poster' | 'backdrop';
+
+interface TmdbImageOption {
+  kind: TmdbImageKind;
+  sourceUrl: string;
+  previewUrl: string;
+  width: number;
+  height: number;
+  voteAverage: number;
+}
+
+interface TmdbImagesResponse {
+  movieId: number;
+  posters: TmdbImageOption[];
+  backdrops: TmdbImageOption[];
+}
+
+interface CustomCoverVariantSettings {
+  sourceUrl: string;
+  sourceKind: TmdbImageKind;
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+}
+
+interface MovieCustomCoverSettings {
+  front: CustomCoverVariantSettings;
+  spine: CustomCoverVariantSettings;
+}
+
+interface CustomCoverSettingsStoragePayload {
+  movieSettings: Record<string, MovieCustomCoverSettings>;
+}
+
+interface CoverEditorState {
+  movieId: number;
+  movieTitle: string;
+  focusVariant: CoverVariant;
+  frontImageIndex: number;
+  spineImageIndex: number;
+  frontOffsetX: number;
+  frontOffsetY: number;
+  frontScale: number;
+  spineOffsetX: number;
+  spineOffsetY: number;
+  spineScale: number;
+  saving: boolean;
+}
+
+interface CoverEditorAdjustDragState {
+  variant: CoverVariant;
+  startClientX: number;
+  startClientY: number;
+  startOffsetX: number;
+  startOffsetY: number;
+}
+
 interface FloorBoardMovie {
   id: number;
   title: string;
@@ -182,24 +240,37 @@ const VS_BADGE_IMAGE = withBasePath('/VHS/ui/vs.png');
 const VHS_FRONT_SIDE_IMAGE = withBasePath('/VHS/Front Side.png');
 const FLOOR_BACKGROUND_IMAGE = withBasePath('/VHS/backgrounds/floor-oak.png');
 const GENERATED_COVER_API_PATH = withBasePath('/api/vhs/generated/');
-const SHELF_TEMPLATE_ID = 'black-case-spine-v2';
+const COVER_EDITOR_DROP_ZONE_EXTRA = 22;
+const COVER_EDITOR_DROP_CYCLE_INTERVAL_MS = 120;
+const COVER_EDITOR_DROP_CYCLE_LIMIT = 14;
+const COVER_EDITOR_IMAGE_FETCH_LIMIT = 36;
+const COVER_EDITOR_PREVIEW_WIDTH = CARD_WIDTH * 3;
+const COVER_EDITOR_PREVIEW_HEIGHT = CARD_HEIGHT * 3;
+const COVER_CUSTOM_SETTINGS_STORAGE_KEY =
+  'my-letterboxd-floor-cover-custom-settings-v1';
+const SHELF_TEMPLATE_ID = 'black-case-spine-v3';
 const SHELF_SOURCE_IMAGE_TYPE = 'backdrop';
 const SHELF_PLACEHOLDER_IMAGE = withBasePath(
-  '/VHS/templates/black-case-spine/spine-placeholder-cover.webp'
+  '/VHS/templates/black-case-spine/spine-placeholder-cover-cropped.webp'
 );
 const SHELF_STORAGE_KEY = 'my-letterboxd-floor-shelf-v1';
-const SHELF_OPEN_WIDTH = 308;
+const SHELF_OPEN_WIDTH = 252;
 const SHELF_SCROLL_WIDTH = SHELF_OPEN_WIDTH;
-const SHELF_ITEM_WIDTH = CARD_WIDTH;
+const SHELF_ITEM_WIDTH = 240;
 const SHELF_ITEM_HEIGHT = CARD_HEIGHT;
-const SHELF_STACK_OVERLAP = CARD_HEIGHT - 44;
+const SHELF_STACK_OVERLAP = CARD_HEIGHT - 36;
 const SHELF_PEEK_OFFSET = Math.round(SHELF_OPEN_WIDTH * 0.72);
 const SHELF_DROP_ZONE_EXTRA = 22;
-const SHELF_LIST_TOP_PADDING = 32;
+const SHELF_LIST_TOP_PADDING = 20;
 const SHELF_EXPOSED_STRIP_HEIGHT = SHELF_ITEM_HEIGHT - SHELF_STACK_OVERLAP;
 const SHELF_SPINE_HITBOX_HEIGHT = SHELF_EXPOSED_STRIP_HEIGHT;
 const SHELF_SPINE_HITBOX_TOP = 0;
 const SHELF_SPINE_HITBOX_SIDE_INSET = 0;
+const SHELF_ROW_ART_TOP = Math.round(
+  (SHELF_EXPOSED_STRIP_HEIGHT - SHELF_ITEM_HEIGHT) / 2
+);
+const SHELF_SPINE_IMAGE_SCALE = 0.62;
+const DRAG_SIDECOVER_IMAGE_SCALE = 0.78;
 const REMOTE_CONTROL_WIDTH = Math.round(CARD_WIDTH * 0.5);
 const REMOTE_CONTROL_HEIGHT = Math.round((443 / 181) * REMOTE_CONTROL_WIDTH);
 const REMOTE_VISIBLE_DEFAULT = 78;
@@ -277,6 +348,39 @@ const getSearchPreviewTierIndex = (tier?: SearchPreviewTier): number =>
 
 const getSearchMovieSourceImage = (movie: SearchMovie): string | null =>
   movie.posterUrl ?? movie.backdropUrl ?? null;
+
+const toCustomSettingsRecord = (
+  movieSettings: Record<string, MovieCustomCoverSettings>
+): Record<number, MovieCustomCoverSettings> => {
+  const output: Record<number, MovieCustomCoverSettings> = {};
+  for (const [key, value] of Object.entries(movieSettings)) {
+    const movieId = Number(key);
+    if (!Number.isFinite(movieId) || movieId <= 0) {
+      continue;
+    }
+    output[Math.floor(movieId)] = value;
+  }
+
+  return output;
+};
+
+const toCustomSettingsStorageRecord = (
+  movieSettings: Record<number, MovieCustomCoverSettings>
+): Record<string, MovieCustomCoverSettings> => {
+  const output: Record<string, MovieCustomCoverSettings> = {};
+  for (const [rawMovieId, value] of Object.entries(movieSettings)) {
+    output[String(rawMovieId)] = value;
+  }
+
+  return output;
+};
+
+const getCustomVariantSettingsHash = (
+  settings: CustomCoverVariantSettings
+): string =>
+  `${settings.sourceKind}|${settings.sourceUrl}|${Math.round(
+    settings.offsetX
+  )}|${Math.round(settings.offsetY)}|${settings.scale.toFixed(4)}`;
 
 const isWaitingSlotCover = (coverImage: string): boolean =>
   coverImage.includes('waiting-cover-vhs-black.webp') ||
@@ -365,6 +469,83 @@ const isSearchResponse = (value: unknown): value is SearchResponse => {
       backdropValid
     );
   });
+};
+
+const isTmdbImageOption = (value: unknown): value is TmdbImageOption => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const entry = value as Partial<TmdbImageOption>;
+  return (
+    (entry.kind === 'poster' || entry.kind === 'backdrop') &&
+    typeof entry.sourceUrl === 'string' &&
+    typeof entry.previewUrl === 'string' &&
+    typeof entry.width === 'number' &&
+    typeof entry.height === 'number' &&
+    typeof entry.voteAverage === 'number'
+  );
+};
+
+const isTmdbImagesResponse = (value: unknown): value is TmdbImagesResponse => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Partial<TmdbImagesResponse>;
+  return (
+    typeof payload.movieId === 'number' &&
+    Array.isArray(payload.posters) &&
+    Array.isArray(payload.backdrops) &&
+    payload.posters.every(isTmdbImageOption) &&
+    payload.backdrops.every(isTmdbImageOption)
+  );
+};
+
+const isCustomCoverVariantSettings = (
+  value: unknown
+): value is CustomCoverVariantSettings => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const entry = value as Partial<CustomCoverVariantSettings>;
+  return (
+    (entry.sourceKind === 'poster' || entry.sourceKind === 'backdrop') &&
+    typeof entry.sourceUrl === 'string' &&
+    typeof entry.offsetX === 'number' &&
+    typeof entry.offsetY === 'number' &&
+    typeof entry.scale === 'number'
+  );
+};
+
+const isMovieCustomCoverSettings = (
+  value: unknown
+): value is MovieCustomCoverSettings => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Partial<MovieCustomCoverSettings>;
+  return (
+    isCustomCoverVariantSettings(payload.front) &&
+    isCustomCoverVariantSettings(payload.spine)
+  );
+};
+
+const isCustomCoverSettingsStoragePayload = (
+  value: unknown
+): value is CustomCoverSettingsStoragePayload => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as { movieSettings?: unknown };
+  if (!payload.movieSettings || typeof payload.movieSettings !== 'object') {
+    return false;
+  }
+
+  return Object.values(payload.movieSettings).every(isMovieCustomCoverSettings);
 };
 
 const isFloorBoardResponse = (value: unknown): value is FloorBoardResponse => {
@@ -673,12 +854,36 @@ const FloorPage: NextPage = () => {
   const [shelfPreviewCoverByMovieId, setShelfPreviewCoverByMovieId] = useState<
     Record<number, string>
   >({});
+  const [isCoverEditorDropActive, setIsCoverEditorDropActive] = useState(false);
+  const [customCoverSettingsByMovieId, setCustomCoverSettingsByMovieId] = useState<
+    Record<number, MovieCustomCoverSettings>
+  >({});
+  const [coverEditor, setCoverEditor] = useState<CoverEditorState | null>(null);
+  const [coverEditorImageOptions, setCoverEditorImageOptions] = useState<
+    TmdbImageOption[]
+  >([]);
+  const [coverEditorImagesLoading, setCoverEditorImagesLoading] = useState(false);
+  const [coverEditorError, setCoverEditorError] = useState<string | null>(null);
+  const [coverEditorFrontPreview, setCoverEditorFrontPreview] = useState<string | null>(
+    null
+  );
+  const [coverEditorSpinePreview, setCoverEditorSpinePreview] = useState<string | null>(
+    null
+  );
+  const [coverEditorDropCycleImage, setCoverEditorDropCycleImage] = useState<
+    string | null
+  >(null);
+  const [coverEditorDidEnter, setCoverEditorDidEnter] = useState(false);
+  const [coverEditorReturnMovieId, setCoverEditorReturnMovieId] = useState<number | null>(
+    null
+  );
 
   const floorRef = useRef<HTMLDivElement | null>(null);
   const shelfScrollRef = useRef<HTMLDivElement | null>(null);
   const csvImportInputRef = useRef<HTMLInputElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const floorMoviesRef = useRef<FloorMovie[]>([]);
+  const sourceMoviesRef = useRef<ClubMovie[]>([]);
   const shelfMoviesRef = useRef<ShelfMovie[]>([]);
   const leaderIdRef = useRef<number | null>(null);
   const animationTimersRef = useRef<number[]>([]);
@@ -708,17 +913,49 @@ const FloorPage: NextPage = () => {
   >({});
   const boardVersionRef = useRef<number | null>(null);
   const isShelfDropActiveRef = useRef(false);
+  const isCoverEditorDropActiveRef = useRef(false);
   const shelfDropInsertIndexRef = useRef<number | null>(null);
   const moveMovieToShelfRef = useRef<
     ((movieId: number, insertIndex?: number) => void) | null
   >(null);
+  const openCoverEditorForMovieRef = useRef<((movieId: number) => void) | null>(null);
   const beginDragFromShelfRef = useRef<
     ((movie: ShelfMovie, pointerEvent: PointerEvent) => void) | null
   >(null);
-  const restoreMovieFromShelfRef = useRef<((movieId: number) => void) | null>(null);
+  const restoreMovieFromShelfRef = useRef<
+    ((movieId: number, clientX?: number, clientY?: number) => void) | null
+  >(null);
   const renderedSpineCoverPromiseByMovieIdRef = useRef<
     Record<number, Promise<ClubMovie | null>>
   >({});
+  const customCoverSettingsByMovieIdRef = useRef<
+    Record<number, MovieCustomCoverSettings>
+  >({});
+  const customFrontCoverCacheRef = useRef<
+    Record<number, { hash: string; coverImage: string }>
+  >({});
+  const customSpineCoverCacheRef = useRef<
+    Record<number, { hash: string; coverImage: string }>
+  >({});
+  const customFrontCoverPromiseRef = useRef<
+    Record<number, { hash: string; promise: Promise<string | null> }>
+  >({});
+  const customSpineCoverPromiseRef = useRef<
+    Record<number, { hash: string; promise: Promise<string | null> }>
+  >({});
+  const coverEditorImageOptionsCacheRef = useRef<Record<number, TmdbImageOption[]>>(
+    {}
+  );
+  const coverEditorDropCycleTimerRef = useRef<number | null>(null);
+  const coverEditorDropCycleAbortRef = useRef<AbortController | null>(null);
+  const coverEditorDropCycleMovieIdRef = useRef<number | null>(null);
+  const coverEditorDropCycleIndexRef = useRef(0);
+  const coverEditorDropCyclePoolRef = useRef<string[]>([]);
+  const coverEditorAdjustDragRef = useRef<CoverEditorAdjustDragState | null>(null);
+  const coverEditorEnterRafRef = useRef<number | null>(null);
+  const coverEditorReturnTimerRef = useRef<number | null>(null);
+  const coverEditorFrontPreviewRef = useRef<string | null>(null);
+  const coverEditorSpinePreviewRef = useRef<string | null>(null);
   const shelfDragCandidateRef = useRef<ShelfDragCandidate | null>(null);
   const csvImportInFlightRef = useRef(false);
 
@@ -766,7 +1003,7 @@ const FloorPage: NextPage = () => {
     }
 
     const scrollRect = scrollElement.getBoundingClientRect();
-    const step = SHELF_ITEM_HEIGHT - SHELF_STACK_OVERLAP;
+    const step = SHELF_EXPOSED_STRIP_HEIGHT;
     const relativeY =
       clientY - scrollRect.top + scrollElement.scrollTop - SHELF_LIST_TOP_PADDING;
     const rawIndex = Math.round(relativeY / step);
@@ -1245,6 +1482,7 @@ const FloorPage: NextPage = () => {
     setDeleteCandidateId(null);
     setDeleteArmedId(null);
     setIsShelfDropActive(false);
+    setIsCoverEditorDropActive(false);
     updateShelfDropInsertIndex(null);
 
     const bounds = getFloorBounds();
@@ -1355,6 +1593,34 @@ const FloorPage: NextPage = () => {
       if (isShelfDropActiveRef.current !== isInShelfDropZone) {
         setIsShelfDropActive(isInShelfDropZone);
       }
+
+      const slotPosition = getEmptySlotPosition();
+      const activeAddSlotOffset = pendingSearch
+        ? 0
+        : isAddSlotPeek
+          ? ADD_SLOT_HOVER_OFFSET
+          : ADD_SLOT_HIDDEN_OFFSET;
+      const editorDropZoneLeft = slotPosition.x - COVER_EDITOR_DROP_ZONE_EXTRA;
+      const editorDropZoneTop =
+        slotPosition.y + activeAddSlotOffset - COVER_EDITOR_DROP_ZONE_EXTRA;
+      const editorDropZoneRight =
+        slotPosition.x + CARD_WIDTH + COVER_EDITOR_DROP_ZONE_EXTRA;
+      const editorDropZoneBottom =
+        slotPosition.y +
+        activeAddSlotOffset +
+        CARD_HEIGHT +
+        COVER_EDITOR_DROP_ZONE_EXTRA;
+      const isInCoverEditorDropZone =
+        !isInShelfDropZone &&
+        draggedCenterX >= editorDropZoneLeft &&
+        draggedCenterX <= editorDropZoneRight &&
+        draggedCenterY >= editorDropZoneTop &&
+        draggedCenterY <= editorDropZoneBottom;
+
+      if (isCoverEditorDropActiveRef.current !== isInCoverEditorDropZone) {
+        setIsCoverEditorDropActive(isInCoverEditorDropZone);
+      }
+
       if (isInShelfDropZone) {
         const nextInsertIndex = getShelfDropInsertIndexFromPointer(event.clientY);
         updateShelfDropInsertIndex(nextInsertIndex);
@@ -1364,7 +1630,9 @@ const FloorPage: NextPage = () => {
 
       const deleteZoneTop = bounds.height - DELETE_ZONE_HEIGHT;
       const isInDeleteZone =
-        y + CARD_HEIGHT >= deleteZoneTop && !isInShelfDropZone;
+        y + CARD_HEIGHT >= deleteZoneTop &&
+        !isInShelfDropZone &&
+        !isInCoverEditorDropZone;
       deleteInZoneRef.current = isInDeleteZone;
       const visibleMovies = floorMoviesRef.current.filter(
         (movie) => !isWaitingSlotCover(movie.coverImage)
@@ -1493,7 +1761,10 @@ const FloorPage: NextPage = () => {
     },
     [
       clearDeleteHoldTimer,
+      getEmptySlotPosition,
       getFloorBounds,
+      isAddSlotPeek,
+      pendingSearch,
       resetProximityVsCandidate,
       startProximityVsChargeAnimation,
       getShelfDropInsertIndexFromPointer,
@@ -1505,8 +1776,13 @@ const FloorPage: NextPage = () => {
     const shelfDragCandidate = shelfDragCandidateRef.current;
     if (shelfDragCandidate) {
       shelfDragCandidateRef.current = null;
+      setIsCoverEditorDropActive(false);
       updateShelfDropInsertIndex(null);
-      restoreMovieFromShelfRef.current?.(shelfDragCandidate.movie.id);
+      restoreMovieFromShelfRef.current?.(
+        shelfDragCandidate.movie.id,
+        shelfDragCandidate.startClientX,
+        shelfDragCandidate.startClientY
+      );
       return;
     }
 
@@ -1518,6 +1794,7 @@ const FloorPage: NextPage = () => {
     const bounds = getFloorBounds();
     const draggedMovieId = drag.id;
     const shouldMoveToShelf = isShelfDropActiveRef.current;
+    const shouldOpenCoverEditor = isCoverEditorDropActiveRef.current;
     const dropInsertIndex = shelfDropInsertIndexRef.current;
     const shouldDelete =
       deleteArmedIdRef.current === draggedMovieId && deleteInZoneRef.current;
@@ -1541,10 +1818,32 @@ const FloorPage: NextPage = () => {
     setDeleteCandidateId(null);
     setDeleteArmedId(null);
     setIsShelfDropActive(false);
+    setIsCoverEditorDropActive(false);
     updateShelfDropInsertIndex(null);
 
     if (shouldMoveToShelf) {
       moveMovieToShelfRef.current?.(draggedMovieId, dropInsertIndex ?? 0);
+      return;
+    }
+
+    if (shouldOpenCoverEditor) {
+      setPendingSearch(null);
+      setIsAddSlotPeek(false);
+      setActiveSearchCover(null);
+      setFloorMovies((previous) =>
+        recalculateHierarchy(
+          previous.map((movie) =>
+            movie.id === draggedMovieId
+              ? {
+                  ...movie,
+                  rotation: releaseRotation,
+                }
+              : movie
+          ),
+          bounds.height
+        )
+      );
+      openCoverEditorForMovieRef.current?.(draggedMovieId);
       return;
     }
 
@@ -1792,12 +2091,35 @@ const FloorPage: NextPage = () => {
       clearDeleteAnimationTimers();
       resetProximityVsCandidate();
       shelfDragCandidateRef.current = null;
+      const frontPreview = coverEditorFrontPreviewRef.current;
+      if (frontPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(frontPreview);
+      }
+      const spinePreview = coverEditorSpinePreviewRef.current;
+      if (spinePreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(spinePreview);
+      }
+      coverEditorFrontPreviewRef.current = null;
+      coverEditorSpinePreviewRef.current = null;
+      if (coverEditorDropCycleTimerRef.current !== null) {
+        window.clearInterval(coverEditorDropCycleTimerRef.current);
+        coverEditorDropCycleTimerRef.current = null;
+      }
+      if (coverEditorDropCycleAbortRef.current) {
+        coverEditorDropCycleAbortRef.current.abort();
+        coverEditorDropCycleAbortRef.current = null;
+      }
+      coverEditorAdjustDragRef.current = null;
     };
   }, [clearDeleteAnimationTimers, clearDeleteHoldTimer, resetProximityVsCandidate]);
 
   useEffect(() => {
     floorMoviesRef.current = floorMovies;
   }, [floorMovies]);
+
+  useEffect(() => {
+    sourceMoviesRef.current = sourceMovies;
+  }, [sourceMovies]);
 
   useEffect(() => {
     shelfMoviesRef.current = shelfMovies;
@@ -1840,6 +2162,10 @@ const FloorPage: NextPage = () => {
   }, [previewTierByMovieId]);
 
   useEffect(() => {
+    customCoverSettingsByMovieIdRef.current = customCoverSettingsByMovieId;
+  }, [customCoverSettingsByMovieId]);
+
+  useEffect(() => {
     deleteCandidateIdRef.current = deleteCandidateId;
   }, [deleteCandidateId]);
 
@@ -1850,6 +2176,10 @@ const FloorPage: NextPage = () => {
   useEffect(() => {
     isShelfDropActiveRef.current = isShelfDropActive;
   }, [isShelfDropActive]);
+
+  useEffect(() => {
+    isCoverEditorDropActiveRef.current = isCoverEditorDropActive;
+  }, [isCoverEditorDropActive]);
 
   useEffect(() => {
     shelfDropInsertIndexRef.current = shelfDropInsertIndex;
@@ -2093,6 +2423,969 @@ const FloorPage: NextPage = () => {
     return ADD_SLOT_HIDDEN_OFFSET;
   }, [isAddSlotPeek, pendingSearch]);
 
+  const triggerCoverEditorReturnAnimation = useCallback((movieId: number) => {
+    if (!Number.isFinite(movieId) || movieId <= 0) {
+      return;
+    }
+
+    const normalizedMovieId = Math.floor(movieId);
+    if (coverEditorReturnTimerRef.current !== null) {
+      window.clearTimeout(coverEditorReturnTimerRef.current);
+    }
+
+    setCoverEditorReturnMovieId(normalizedMovieId);
+    coverEditorReturnTimerRef.current = window.setTimeout(() => {
+      setCoverEditorReturnMovieId((current) =>
+        current === normalizedMovieId ? null : current
+      );
+      coverEditorReturnTimerRef.current = null;
+    }, 640);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (coverEditorEnterRafRef.current !== null) {
+        window.cancelAnimationFrame(coverEditorEnterRafRef.current);
+      }
+      if (coverEditorReturnTimerRef.current !== null) {
+        window.clearTimeout(coverEditorReturnTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (coverEditorEnterRafRef.current !== null) {
+      window.cancelAnimationFrame(coverEditorEnterRafRef.current);
+      coverEditorEnterRafRef.current = null;
+    }
+
+    if (!coverEditor) {
+      setCoverEditorDidEnter(false);
+      return;
+    }
+
+    setCoverEditorDidEnter(false);
+    coverEditorEnterRafRef.current = window.requestAnimationFrame(() => {
+      coverEditorEnterRafRef.current = null;
+      setCoverEditorDidEnter(true);
+    });
+  }, [coverEditor]);
+
+  const getCoverEditorOptionAtIndex = useCallback(
+    (options: TmdbImageOption[], index: number): TmdbImageOption | null => {
+      if (options.length === 0) {
+        return null;
+      }
+
+      const normalizedIndex = clamp(
+        Math.round(index),
+        0,
+        Math.max(0, options.length - 1)
+      );
+      return options[normalizedIndex] ?? null;
+    },
+    []
+  );
+
+  const getCoverEditorOptionPoolIndices = useCallback(
+    (options: TmdbImageOption[], variant: CoverVariant): number[] => {
+      const preferredKind: TmdbImageKind = variant === 'front' ? 'poster' : 'backdrop';
+      const preferred = options
+        .map((option, index) => (option.kind === preferredKind ? index : -1))
+        .filter((index) => index >= 0);
+      if (preferred.length > 0) {
+        return preferred;
+      }
+
+      return options.map((_, index) => index);
+    },
+    []
+  );
+
+  const fetchTmdbImageOptions = useCallback(
+    async (
+      movieId: number,
+      signal?: AbortSignal
+    ): Promise<{ options: TmdbImageOption[]; requestFailed: boolean }> => {
+      if (!Number.isFinite(movieId) || movieId <= 0) {
+        return { options: [], requestFailed: false };
+      }
+
+      const normalizedMovieId = Math.floor(movieId);
+      const cached = coverEditorImageOptionsCacheRef.current[normalizedMovieId];
+      if (Array.isArray(cached) && cached.length > 0) {
+        return { options: cached, requestFailed: false };
+      }
+
+      const params = new URLSearchParams({
+        movieId: String(normalizedMovieId),
+        limit: String(COVER_EDITOR_IMAGE_FETCH_LIMIT),
+      });
+
+      try {
+        const imageResponse = await fetch(withBasePath(`/api/tmdb/images?${params.toString()}`), {
+          signal,
+        });
+        const imagePayloadRaw: unknown = imageResponse.ok
+          ? await imageResponse.json()
+          : null;
+        const options = isTmdbImagesResponse(imagePayloadRaw)
+          ? [...imagePayloadRaw.backdrops, ...imagePayloadRaw.posters]
+          : [];
+
+        if (options.length > 0) {
+          coverEditorImageOptionsCacheRef.current[normalizedMovieId] = options;
+        }
+
+        return {
+          options,
+          requestFailed: !imageResponse.ok,
+        };
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return { options: [], requestFailed: false };
+        }
+        return { options: [], requestFailed: true };
+      }
+    },
+    []
+  );
+
+  const stopCoverEditorDropCycle = useCallback(() => {
+    if (coverEditorDropCycleTimerRef.current !== null) {
+      window.clearInterval(coverEditorDropCycleTimerRef.current);
+      coverEditorDropCycleTimerRef.current = null;
+    }
+    if (coverEditorDropCycleAbortRef.current) {
+      coverEditorDropCycleAbortRef.current.abort();
+      coverEditorDropCycleAbortRef.current = null;
+    }
+
+    coverEditorDropCycleMovieIdRef.current = null;
+    coverEditorDropCycleIndexRef.current = 0;
+    coverEditorDropCyclePoolRef.current = [];
+    setCoverEditorDropCycleImage(null);
+  }, []);
+
+  const buildCoverEditorDropCyclePool = useCallback(
+    (movieCoverImage: string, options: TmdbImageOption[]): string[] => {
+      const posterPreviewUrls = options
+        .filter((option) => option.kind === 'poster')
+        .map((option) => option.previewUrl);
+      const backdropPreviewUrls = options
+        .filter((option) => option.kind === 'backdrop')
+        .map((option) => option.previewUrl);
+      const primaryPool =
+        posterPreviewUrls.length > 0
+          ? posterPreviewUrls
+          : options.map((option) => option.previewUrl);
+      const mergedPool = [
+        movieCoverImage,
+        ...primaryPool.slice(0, COVER_EDITOR_DROP_CYCLE_LIMIT),
+        ...backdropPreviewUrls.slice(0, 4),
+      ];
+
+      const uniquePool: string[] = [];
+      for (const url of mergedPool) {
+        if (!url || uniquePool.includes(url)) {
+          continue;
+        }
+        uniquePool.push(url);
+      }
+
+      return uniquePool;
+    },
+    []
+  );
+
+  const openCoverEditorForMovie = useCallback(
+    async (movieId: number) => {
+      if (!Number.isFinite(movieId) || movieId <= 0) {
+        return;
+      }
+
+      const normalizedMovieId = Math.floor(movieId);
+      const currentFloorCoverImage =
+        floorMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
+          ?.coverImage ??
+        sourceMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
+          ?.coverImage ??
+        null;
+      const currentSpineCoverImage =
+        shelfMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
+          ?.coverImage ??
+        shelfPreviewCoverByMovieId[normalizedMovieId] ??
+        null;
+      const existingSettings =
+        customCoverSettingsByMovieIdRef.current[normalizedMovieId];
+
+      stopCoverEditorDropCycle();
+      setPendingSearch(null);
+      setIsAddSlotPeek(false);
+      setActiveSearchCover(null);
+      setCoverEditorError(null);
+      setCoverEditorImageOptions([]);
+      setCoverEditorFrontPreview(currentFloorCoverImage);
+      setCoverEditorSpinePreview(currentSpineCoverImage);
+
+      const movieTitle =
+        floorMoviesRef.current.find((entry) => entry.id === normalizedMovieId)?.title ??
+        shelfMoviesRef.current.find((entry) => entry.id === normalizedMovieId)?.title ??
+        sourceMoviesRef.current.find((entry) => entry.id === normalizedMovieId)?.title ??
+        `Movie ${normalizedMovieId}`;
+
+      setCoverEditor({
+        movieId: normalizedMovieId,
+        movieTitle,
+        focusVariant: 'front',
+        frontImageIndex: 0,
+        spineImageIndex: 0,
+        frontOffsetX: existingSettings?.front.offsetX ?? 0,
+        frontOffsetY: existingSettings?.front.offsetY ?? 0,
+        frontScale: existingSettings?.front.scale ?? 1,
+        spineOffsetX: existingSettings?.spine.offsetX ?? 0,
+        spineOffsetY: existingSettings?.spine.offsetY ?? 0,
+        spineScale: existingSettings?.spine.scale ?? 1,
+        saving: false,
+      });
+
+      const applyImageOptions = (
+        imageOptions: TmdbImageOption[],
+        requestFailed: boolean
+      ) => {
+        setCoverEditorImageOptions(imageOptions);
+        if (imageOptions.length === 0) {
+          setCoverEditorImagesLoading(false);
+          setCoverEditorError(
+            requestFailed
+              ? 'Klarte ikke å hente TMDB-bilder akkurat nå.'
+              : 'Fant ingen TMDB-bilder for denne filmen akkurat nå.'
+          );
+          return;
+        }
+
+        const resolveIndexFromSettings = (
+          variant: CoverVariant,
+          variantSettings?: CustomCoverVariantSettings
+        ): number => {
+          const preferredPool = getCoverEditorOptionPoolIndices(imageOptions, variant);
+          const fallbackIndex = preferredPool[0] ?? 0;
+          if (!variantSettings) {
+            return fallbackIndex;
+          }
+
+          const sourceIndex = imageOptions.findIndex(
+            (option) => option.sourceUrl === variantSettings.sourceUrl
+          );
+          if (sourceIndex >= 0) {
+            return sourceIndex;
+          }
+
+          const kindIndex = imageOptions.findIndex(
+            (option) => option.kind === variantSettings.sourceKind
+          );
+          return kindIndex >= 0 ? kindIndex : fallbackIndex;
+        };
+
+        const frontIndex = resolveIndexFromSettings('front', existingSettings?.front);
+        const spineIndex = resolveIndexFromSettings('spine', existingSettings?.spine);
+        setCoverEditor((current) => {
+          if (!current || current.movieId !== normalizedMovieId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            frontImageIndex: frontIndex,
+            spineImageIndex: spineIndex,
+          };
+        });
+        setCoverEditorImagesLoading(false);
+        setCoverEditorError(null);
+      };
+
+      const cachedOptions = coverEditorImageOptionsCacheRef.current[normalizedMovieId] ?? [];
+      if (cachedOptions.length > 0) {
+        setCoverEditorImagesLoading(false);
+        applyImageOptions(cachedOptions, false);
+        return;
+      }
+
+      setCoverEditorImagesLoading(true);
+      const { options: imageOptions, requestFailed } = await fetchTmdbImageOptions(
+        normalizedMovieId
+      );
+      applyImageOptions(imageOptions, requestFailed);
+    },
+    [
+      fetchTmdbImageOptions,
+      getCoverEditorOptionPoolIndices,
+      shelfPreviewCoverByMovieId,
+      stopCoverEditorDropCycle,
+    ]
+  );
+  openCoverEditorForMovieRef.current = (movieId: number) => {
+    void openCoverEditorForMovie(movieId);
+  };
+
+  useEffect(() => {
+    if (coverEditor || draggingId === null || !isCoverEditorDropActive) {
+      stopCoverEditorDropCycle();
+      return;
+    }
+
+    const normalizedMovieId = Math.floor(draggingId);
+    const draggingMovie =
+      floorMoviesRef.current.find((movie) => movie.id === normalizedMovieId) ?? null;
+    if (!draggingMovie) {
+      stopCoverEditorDropCycle();
+      return;
+    }
+
+    let effectCanceled = false;
+    const startDropCycle = (pool: string[]) => {
+      if (effectCanceled) {
+        return;
+      }
+
+      const uniquePool = pool.filter((url, index) => url && pool.indexOf(url) === index);
+      if (uniquePool.length === 0) {
+        setCoverEditorDropCycleImage(draggingMovie.coverImage);
+        return;
+      }
+
+      if (coverEditorDropCycleTimerRef.current !== null) {
+        window.clearInterval(coverEditorDropCycleTimerRef.current);
+        coverEditorDropCycleTimerRef.current = null;
+      }
+      coverEditorDropCycleMovieIdRef.current = normalizedMovieId;
+      coverEditorDropCyclePoolRef.current = uniquePool;
+      coverEditorDropCycleIndexRef.current = 0;
+      setCoverEditorDropCycleImage(uniquePool[0] ?? draggingMovie.coverImage);
+
+      if (uniquePool.length <= 1) {
+        return;
+      }
+
+      coverEditorDropCycleTimerRef.current = window.setInterval(() => {
+        const currentPool = coverEditorDropCyclePoolRef.current;
+        if (currentPool.length <= 1) {
+          return;
+        }
+
+        coverEditorDropCycleIndexRef.current =
+          (coverEditorDropCycleIndexRef.current + 1) % currentPool.length;
+        const nextImage = currentPool[coverEditorDropCycleIndexRef.current] ?? null;
+        if (nextImage) {
+          setCoverEditorDropCycleImage(nextImage);
+        }
+      }, COVER_EDITOR_DROP_CYCLE_INTERVAL_MS);
+    };
+
+    setCoverEditorDropCycleImage(draggingMovie.coverImage);
+    const cachedOptions = coverEditorImageOptionsCacheRef.current[normalizedMovieId] ?? [];
+    if (cachedOptions.length > 0) {
+      startDropCycle(
+        buildCoverEditorDropCyclePool(draggingMovie.coverImage, cachedOptions)
+      );
+      return () => {
+        effectCanceled = true;
+      };
+    }
+
+    if (coverEditorDropCycleAbortRef.current) {
+      coverEditorDropCycleAbortRef.current.abort();
+      coverEditorDropCycleAbortRef.current = null;
+    }
+
+    const controller = new AbortController();
+    coverEditorDropCycleAbortRef.current = controller;
+    void fetchTmdbImageOptions(normalizedMovieId, controller.signal).then(({ options }) => {
+      if (effectCanceled || controller.signal.aborted) {
+        return;
+      }
+      startDropCycle(buildCoverEditorDropCyclePool(draggingMovie.coverImage, options));
+    });
+
+    return () => {
+      effectCanceled = true;
+      if (coverEditorDropCycleAbortRef.current === controller) {
+        controller.abort();
+        coverEditorDropCycleAbortRef.current = null;
+      }
+    };
+  }, [
+    buildCoverEditorDropCyclePool,
+    coverEditor,
+    draggingId,
+    fetchTmdbImageOptions,
+    isCoverEditorDropActive,
+    stopCoverEditorDropCycle,
+  ]);
+
+  const saveCoverEditorSettings = useCallback(async () => {
+    if (!coverEditor) {
+      return;
+    }
+
+    const frontOption = getCoverEditorOptionAtIndex(
+      coverEditorImageOptions,
+      coverEditor.frontImageIndex
+    );
+    const spineOption = getCoverEditorOptionAtIndex(
+      coverEditorImageOptions,
+      coverEditor.spineImageIndex
+    );
+    if (!frontOption || !spineOption) {
+      setCoverEditorError('Mangler gyldig bildekilde for front eller side.');
+      return;
+    }
+
+    const settings: MovieCustomCoverSettings = {
+      front: {
+        sourceUrl: frontOption.sourceUrl,
+        sourceKind: frontOption.kind,
+        offsetX: Math.round(coverEditor.frontOffsetX),
+        offsetY: Math.round(coverEditor.frontOffsetY),
+        scale: clamp(coverEditor.frontScale, 0.45, 2.6),
+      },
+      spine: {
+        sourceUrl: spineOption.sourceUrl,
+        sourceKind: spineOption.kind,
+        offsetX: Math.round(coverEditor.spineOffsetX),
+        offsetY: Math.round(coverEditor.spineOffsetY),
+        scale: clamp(coverEditor.spineScale, 0.45, 2.6),
+      },
+    };
+
+    setCoverEditor((current) =>
+      current ? { ...current, saving: true } : current
+    );
+    setCoverEditorError(null);
+    setCustomCoverSettingsByMovieId((previous) => ({
+      ...previous,
+      [coverEditor.movieId]: settings,
+    }));
+    customCoverSettingsByMovieIdRef.current = {
+      ...customCoverSettingsByMovieIdRef.current,
+      [coverEditor.movieId]: settings,
+    };
+    delete customFrontCoverCacheRef.current[coverEditor.movieId];
+    delete customSpineCoverCacheRef.current[coverEditor.movieId];
+    delete customFrontCoverPromiseRef.current[coverEditor.movieId];
+    delete customSpineCoverPromiseRef.current[coverEditor.movieId];
+    delete renderedCoverPromiseByMovieIdRef.current[coverEditor.movieId];
+    delete renderedSpineCoverPromiseByMovieIdRef.current[coverEditor.movieId];
+
+    const renderVariant = async (
+      variant: CoverVariant,
+      variantSettings: CustomCoverVariantSettings
+    ): Promise<string | null> => {
+      const templateId = variant === 'front' ? COVER_TEMPLATE_ID : SHELF_TEMPLATE_ID;
+      const response = await fetch(withBasePath('/api/vhs/custom-cover'), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          movieId: coverEditor.movieId,
+          sourceUrl: variantSettings.sourceUrl,
+          sourceKind: variantSettings.sourceKind,
+          templateId,
+          fit: 'cover',
+          format: 'webp',
+          quality: 92,
+          background: 'transparent',
+          posterOffsetX: Math.round(variantSettings.offsetX),
+          posterOffsetY: Math.round(variantSettings.offsetY),
+          posterScale: variantSettings.scale,
+        }),
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const payloadRaw: unknown = await response.json();
+      if (!payloadRaw || typeof payloadRaw !== 'object') {
+        return null;
+      }
+      const coverImage = (payloadRaw as { coverImage?: unknown }).coverImage;
+      return typeof coverImage === 'string' ? coverImage : null;
+    };
+
+    const [frontCoverImage, spineCoverImage] = await Promise.all([
+      renderVariant('front', settings.front),
+      renderVariant('spine', settings.spine),
+    ]);
+
+    if (!frontCoverImage || !spineCoverImage) {
+      setCoverEditor((current) =>
+        current ? { ...current, saving: false } : current
+      );
+      setCoverEditorError('Klarte ikke å lagre nye covers. Prøv igjen.');
+      return;
+    }
+
+    customFrontCoverCacheRef.current[coverEditor.movieId] = {
+      hash: getCustomVariantSettingsHash(settings.front),
+      coverImage: frontCoverImage,
+    };
+    customSpineCoverCacheRef.current[coverEditor.movieId] = {
+      hash: getCustomVariantSettingsHash(settings.spine),
+      coverImage: spineCoverImage,
+    };
+
+    setFloorMovies((previous) =>
+      previous.map((entry) =>
+        entry.id === coverEditor.movieId
+          ? {
+              ...entry,
+              coverImage: frontCoverImage,
+            }
+          : entry
+      )
+    );
+    setSourceMovies((previous) =>
+      previous.map((entry) =>
+        entry.id === coverEditor.movieId
+          ? {
+              ...entry,
+              coverImage: frontCoverImage,
+            }
+          : entry
+      )
+    );
+    setShelfPreviewCoverByMovieId((previous) => ({
+      ...previous,
+      [coverEditor.movieId]: spineCoverImage,
+    }));
+    setShelfMovies((previous) =>
+      previous.map((entry) =>
+        entry.id === coverEditor.movieId
+          ? {
+              ...entry,
+              coverImage: spineCoverImage,
+              frontCoverImage: frontCoverImage,
+            }
+          : entry
+      )
+    );
+
+    const bounds = getFloorBounds();
+    const targetX = clamp(
+      bounds.width * 0.45 + (Math.random() - 0.5) * 220 - CARD_WIDTH * 0.5,
+      0,
+      Math.max(0, bounds.width - CARD_WIDTH)
+    );
+    const targetY = clamp(
+      bounds.height * 0.5 + (Math.random() - 0.5) * 180 - CARD_HEIGHT * 0.5,
+      0,
+      Math.max(0, bounds.height - CARD_HEIGHT)
+    );
+    const targetRotation = clampCardRotation((Math.random() - 0.5) * 14);
+    setFloorMovies((previous) =>
+      recalculateHierarchy(
+        previous.map((entry) =>
+          entry.id === coverEditor.movieId
+            ? {
+                ...entry,
+                x: targetX,
+                y: targetY,
+                rotation: targetRotation,
+              }
+            : entry
+        ),
+        bounds.height
+      )
+    );
+    triggerCoverEditorReturnAnimation(coverEditor.movieId);
+    setCoverEditor(null);
+  }, [
+    coverEditor,
+    coverEditorImageOptions,
+    getFloorBounds,
+    getCoverEditorOptionAtIndex,
+    triggerCoverEditorReturnAnimation,
+  ]);
+
+  const handleCoverEditorBackdropPointerDown = useCallback(() => {
+    if (!coverEditor || coverEditor.saving) {
+      return;
+    }
+
+    if (coverEditorImagesLoading || coverEditorImageOptions.length === 0) {
+      setCoverEditor(null);
+      return;
+    }
+
+    void saveCoverEditorSettings();
+  }, [
+    coverEditor,
+    coverEditorImageOptions.length,
+    coverEditorImagesLoading,
+    saveCoverEditorSettings,
+  ]);
+
+  const handleCoverEditorVariantPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>, variant: CoverVariant) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      setCoverEditor((current) => {
+        if (!current || current.saving || coverEditorImageOptions.length === 0) {
+          return current;
+        }
+
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+          // Ignore pointer capture errors on unsupported targets.
+        }
+
+        const startOffsetX =
+          variant === 'front' ? current.frontOffsetX : current.spineOffsetX;
+        const startOffsetY =
+          variant === 'front' ? current.frontOffsetY : current.spineOffsetY;
+        coverEditorAdjustDragRef.current = {
+          variant,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startOffsetX,
+          startOffsetY,
+        };
+
+        return {
+          ...current,
+          focusVariant: variant,
+        };
+      });
+    },
+    [coverEditorImageOptions.length]
+  );
+
+  useEffect(() => {
+    if (!coverEditor) {
+      const frontPreview = coverEditorFrontPreviewRef.current;
+      if (frontPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(frontPreview);
+      }
+      const spinePreview = coverEditorSpinePreviewRef.current;
+      if (spinePreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(spinePreview);
+      }
+      coverEditorFrontPreviewRef.current = null;
+      coverEditorSpinePreviewRef.current = null;
+      setCoverEditorFrontPreview(null);
+      setCoverEditorSpinePreview(null);
+      return;
+    }
+
+    const frontOption = getCoverEditorOptionAtIndex(
+      coverEditorImageOptions,
+      coverEditor.frontImageIndex
+    );
+    const spineOption = getCoverEditorOptionAtIndex(
+      coverEditorImageOptions,
+      coverEditor.spineImageIndex
+    );
+    if (!frontOption || !spineOption) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      const renderVariantPreview = async (
+        variant: CoverVariant,
+        option: TmdbImageOption,
+        offsetX: number,
+        offsetY: number,
+        scale: number
+      ): Promise<string | null> => {
+        try {
+          const templateId = variant === 'front' ? COVER_TEMPLATE_ID : SHELF_TEMPLATE_ID;
+          const response = await fetch(withBasePath('/api/vhs/render'), {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              sourceUrl: option.sourceUrl,
+              templateId,
+              width: COVER_EDITOR_PREVIEW_WIDTH,
+              height: COVER_EDITOR_PREVIEW_HEIGHT,
+              fit: 'cover',
+              format: 'webp',
+              quality: 74,
+              background: 'transparent',
+              posterOffsetX: Math.round(offsetX),
+              posterOffsetY: Math.round(offsetY),
+              posterScale: clamp(scale, 0.45, 2.6),
+            }),
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            return null;
+          }
+
+          const blob = await response.blob();
+          return URL.createObjectURL(blob);
+        } catch {
+          return null;
+        }
+      };
+
+      void Promise.all([
+        renderVariantPreview(
+          'front',
+          frontOption,
+          coverEditor.frontOffsetX,
+          coverEditor.frontOffsetY,
+          coverEditor.frontScale
+        ),
+        renderVariantPreview(
+          'spine',
+          spineOption,
+          coverEditor.spineOffsetX,
+          coverEditor.spineOffsetY,
+          coverEditor.spineScale
+        ),
+      ]).then(([nextFrontPreview, nextSpinePreview]) => {
+        if (controller.signal.aborted) {
+          if (nextFrontPreview?.startsWith('blob:')) {
+            URL.revokeObjectURL(nextFrontPreview);
+          }
+          if (nextSpinePreview?.startsWith('blob:')) {
+            URL.revokeObjectURL(nextSpinePreview);
+          }
+          return;
+        }
+
+        const previousFrontPreview = coverEditorFrontPreviewRef.current;
+        if (previousFrontPreview?.startsWith('blob:')) {
+          URL.revokeObjectURL(previousFrontPreview);
+        }
+        const previousSpinePreview = coverEditorSpinePreviewRef.current;
+        if (previousSpinePreview?.startsWith('blob:')) {
+          URL.revokeObjectURL(previousSpinePreview);
+        }
+
+        coverEditorFrontPreviewRef.current = nextFrontPreview;
+        coverEditorSpinePreviewRef.current = nextSpinePreview;
+        setCoverEditorFrontPreview(nextFrontPreview);
+        setCoverEditorSpinePreview(nextSpinePreview);
+      });
+    }, 130);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [coverEditor, coverEditorImageOptions, getCoverEditorOptionAtIndex]);
+
+  useEffect(() => {
+    if (!coverEditor) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!coverEditor) {
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setCoverEditor(null);
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (coverEditor.saving) {
+          return;
+        }
+
+        if (coverEditorImagesLoading || coverEditorImageOptions.length === 0) {
+          setCoverEditor(null);
+          return;
+        }
+
+        void saveCoverEditorSettings();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        setCoverEditor((current) =>
+          current
+            ? {
+                ...current,
+                focusVariant:
+                  current.focusVariant === 'front' ? 'spine' : 'front',
+              }
+            : current
+        );
+        return;
+      }
+
+      const optionCount = coverEditorImageOptions.length;
+      if (optionCount <= 0) {
+        return;
+      }
+
+      const cycleFocusedVariantImage = (delta: number) => {
+        setCoverEditor((current) => {
+          if (!current) {
+            return current;
+          }
+
+          const pool = getCoverEditorOptionPoolIndices(
+            coverEditorImageOptions,
+            current.focusVariant
+          );
+          const currentIndex =
+            current.focusVariant === 'front'
+              ? current.frontImageIndex
+              : current.spineImageIndex;
+          const currentPoolIndex = pool.indexOf(currentIndex);
+          const startPoolIndex =
+            currentPoolIndex >= 0 ? currentPoolIndex : delta > 0 ? -1 : 0;
+          const nextPoolIndex =
+            (startPoolIndex + delta + pool.length) % pool.length;
+          const nextIndex = pool[nextPoolIndex] ?? currentIndex;
+
+          if (current.focusVariant === 'front') {
+            return {
+              ...current,
+              frontImageIndex: nextIndex,
+            };
+          }
+
+          return {
+            ...current,
+            spineImageIndex: nextIndex,
+          };
+        });
+      };
+
+      if (
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowRight' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowDown'
+      ) {
+        event.preventDefault();
+
+        if (event.shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+          const scaleDelta = event.key === 'ArrowUp' ? 0.03 : -0.03;
+          setCoverEditor((current) => {
+            if (!current) {
+              return current;
+            }
+
+            if (current.focusVariant === 'front') {
+              return {
+                ...current,
+                frontScale: clamp(current.frontScale + scaleDelta, 0.45, 2.6),
+              };
+            }
+
+            return {
+              ...current,
+              spineScale: clamp(current.spineScale + scaleDelta, 0.45, 2.6),
+            };
+          });
+          return;
+        }
+
+        const delta =
+          event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
+        cycleFocusedVariantImage(delta);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [
+    coverEditor,
+    coverEditorImageOptions,
+    coverEditorImagesLoading,
+    getCoverEditorOptionPoolIndices,
+    saveCoverEditorSettings,
+  ]);
+
+  useEffect(() => {
+    if (!coverEditor) {
+      coverEditorAdjustDragRef.current = null;
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const drag = coverEditorAdjustDragRef.current;
+      if (!drag) {
+        return;
+      }
+
+      const deltaX = event.clientX - drag.startClientX;
+      const deltaY = event.clientY - drag.startClientY;
+      const offsetX = clamp(Math.round(drag.startOffsetX + deltaX), -560, 560);
+      const offsetY = clamp(Math.round(drag.startOffsetY + deltaY), -560, 560);
+      setCoverEditor((current) => {
+        if (!current || current.saving) {
+          return current;
+        }
+
+        if (drag.variant === 'front') {
+          if (
+            current.frontOffsetX === offsetX &&
+            current.frontOffsetY === offsetY &&
+            current.focusVariant === 'front'
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            focusVariant: 'front',
+            frontOffsetX: offsetX,
+            frontOffsetY: offsetY,
+          };
+        }
+
+        if (
+          current.spineOffsetX === offsetX &&
+          current.spineOffsetY === offsetY &&
+          current.focusVariant === 'spine'
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          focusVariant: 'spine',
+          spineOffsetX: offsetX,
+          spineOffsetY: offsetY,
+        };
+      });
+    };
+
+    const handlePointerUp = () => {
+      coverEditorAdjustDragRef.current = null;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [coverEditor]);
+
   const fetchSearchPreviewCover = useCallback(
     async (
       movie: SearchMovie,
@@ -2178,8 +3471,209 @@ const FloorPage: NextPage = () => {
     return payloadRaw.movies[0] ?? null;
   }, []);
 
+  const getMovieTitleById = useCallback((movieId: number): string => {
+    const floorTitle = floorMoviesRef.current.find((entry) => entry.id === movieId)?.title;
+    if (floorTitle) {
+      return floorTitle;
+    }
+
+    const shelfTitle = shelfMoviesRef.current.find((entry) => entry.id === movieId)?.title;
+    if (shelfTitle) {
+      return shelfTitle;
+    }
+
+    const sourceTitle = sourceMoviesRef.current.find((entry) => entry.id === movieId)?.title;
+    if (sourceTitle) {
+      return sourceTitle;
+    }
+
+    return `Movie ${movieId}`;
+  }, []);
+
+  const fetchCustomCoverImageForVariant = useCallback(
+    async (
+      movieId: number,
+      variant: CoverVariant,
+      settings: CustomCoverVariantSettings
+    ): Promise<string | null> => {
+      const templateId = variant === 'front' ? COVER_TEMPLATE_ID : SHELF_TEMPLATE_ID;
+      const response = await fetch(withBasePath('/api/vhs/custom-cover'), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          movieId,
+          sourceUrl: settings.sourceUrl,
+          sourceKind: settings.sourceKind,
+          templateId,
+          fit: 'cover',
+          format: 'webp',
+          quality: 92,
+          background: 'transparent',
+          posterOffsetX: Math.round(settings.offsetX),
+          posterOffsetY: Math.round(settings.offsetY),
+          posterScale: settings.scale,
+        }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const payloadRaw: unknown = await response.json();
+      if (!payloadRaw || typeof payloadRaw !== 'object') {
+        return null;
+      }
+
+      const coverImage = (payloadRaw as { coverImage?: unknown }).coverImage;
+      return typeof coverImage === 'string' ? coverImage : null;
+    },
+    []
+  );
+
+  const getCustomCoverImageForVariantPromise = useCallback(
+    (movieId: number, variant: CoverVariant): Promise<string | null> => {
+      const movieSettings = customCoverSettingsByMovieIdRef.current[movieId];
+      if (!movieSettings) {
+        return Promise.resolve(null);
+      }
+
+      const variantSettings = movieSettings[variant];
+      const variantHash = getCustomVariantSettingsHash(variantSettings);
+      const cacheRef =
+        variant === 'front' ? customFrontCoverCacheRef : customSpineCoverCacheRef;
+      const promiseRef =
+        variant === 'front' ? customFrontCoverPromiseRef : customSpineCoverPromiseRef;
+
+      const cached = cacheRef.current[movieId];
+      if (cached && cached.hash === variantHash) {
+        return Promise.resolve(cached.coverImage);
+      }
+
+      const inFlight = promiseRef.current[movieId];
+      if (inFlight && inFlight.hash === variantHash) {
+        return inFlight.promise;
+      }
+
+      const promise = fetchCustomCoverImageForVariant(
+        movieId,
+        variant,
+        variantSettings
+      ).then((coverImage) => {
+        if (coverImage) {
+          cacheRef.current[movieId] = {
+            hash: variantHash,
+            coverImage,
+          };
+        }
+        return coverImage;
+      });
+
+      promiseRef.current[movieId] = {
+        hash: variantHash,
+        promise,
+      };
+
+      return promise;
+    },
+    [fetchCustomCoverImageForVariant]
+  );
+
+  const getCustomRenderedCoverPromise = useCallback(
+    async (movieId: number, variant: CoverVariant): Promise<ClubMovie | null> => {
+      const coverImage = await getCustomCoverImageForVariantPromise(movieId, variant);
+      if (!coverImage) {
+        return null;
+      }
+
+      return {
+        id: movieId,
+        title: getMovieTitleById(movieId),
+        coverImage,
+      };
+    },
+    [getCustomCoverImageForVariantPromise, getMovieTitleById]
+  );
+
+  const applyCustomCoversToCollections = useCallback(
+    (movieId: number, frontCoverImage: string, spineCoverImage: string) => {
+      setFloorMovies((previous) => {
+        let changed = false;
+        const next = previous.map((entry) => {
+          if (entry.id !== movieId || entry.coverImage === frontCoverImage) {
+            return entry;
+          }
+          changed = true;
+          return {
+            ...entry,
+            coverImage: frontCoverImage,
+          };
+        });
+
+        return changed ? next : previous;
+      });
+
+      setSourceMovies((previous) => {
+        let changed = false;
+        const next = previous.map((entry) => {
+          if (entry.id !== movieId || entry.coverImage === frontCoverImage) {
+            return entry;
+          }
+          changed = true;
+          return {
+            ...entry,
+            coverImage: frontCoverImage,
+          };
+        });
+        return changed ? next : previous;
+      });
+
+      setShelfPreviewCoverByMovieId((previous) => {
+        const existing = previous[movieId];
+        if (existing === spineCoverImage) {
+          return previous;
+        }
+        return {
+          ...previous,
+          [movieId]: spineCoverImage,
+        };
+      });
+
+      setShelfMovies((previous) => {
+        let changed = false;
+        const next = previous.map((entry) => {
+          if (entry.id !== movieId) {
+            return entry;
+          }
+
+          if (
+            entry.coverImage === spineCoverImage &&
+            entry.frontCoverImage === frontCoverImage
+          ) {
+            return entry;
+          }
+
+          changed = true;
+          return {
+            ...entry,
+            coverImage: spineCoverImage,
+            frontCoverImage: frontCoverImage,
+          };
+        });
+
+        return changed ? next : previous;
+      });
+    },
+    []
+  );
+
   const getRenderedSpineCoverPromise = useCallback(
     (movieId: number): Promise<ClubMovie | null> => {
+      if (customCoverSettingsByMovieIdRef.current[movieId]) {
+        return getCustomRenderedCoverPromise(movieId, 'spine');
+      }
+
       const existing = renderedSpineCoverPromiseByMovieIdRef.current[movieId];
       if (existing) {
         return existing;
@@ -2189,11 +3683,15 @@ const FloorPage: NextPage = () => {
       renderedSpineCoverPromiseByMovieIdRef.current[movieId] = promise;
       return promise;
     },
-    [fetchRenderedSpineCoverForMovie]
+    [fetchRenderedSpineCoverForMovie, getCustomRenderedCoverPromise]
   );
 
   const getRenderedCoverPromise = useCallback(
     (movieId: number): Promise<ClubMovie | null> => {
+      if (customCoverSettingsByMovieIdRef.current[movieId]) {
+        return getCustomRenderedCoverPromise(movieId, 'front');
+      }
+
       const existing = renderedCoverPromiseByMovieIdRef.current[movieId];
       if (existing) {
         return existing;
@@ -2209,7 +3707,32 @@ const FloorPage: NextPage = () => {
       renderedCoverPromiseByMovieIdRef.current[movieId] = promise;
       return promise;
     },
-    [fetchRenderedCoverForMovie, getRenderedSpineCoverPromise]
+    [
+      fetchRenderedCoverForMovie,
+      getCustomRenderedCoverPromise,
+      getRenderedSpineCoverPromise,
+    ]
+  );
+
+  const hydrateCustomCoversForMovie = useCallback(
+    (movieId: number): Promise<void> => {
+      const settings = customCoverSettingsByMovieIdRef.current[movieId];
+      if (!settings) {
+        return Promise.resolve();
+      }
+
+      return Promise.all([
+        getCustomRenderedCoverPromise(movieId, 'front'),
+        getCustomRenderedCoverPromise(movieId, 'spine'),
+      ]).then(([front, spine]) => {
+        if (!front?.coverImage || !spine?.coverImage) {
+          return;
+        }
+
+        applyCustomCoversToCollections(movieId, front.coverImage, spine.coverImage);
+      });
+    },
+    [applyCustomCoversToCollections, getCustomRenderedCoverPromise]
   );
 
   useEffect(() => {
@@ -2289,6 +3812,67 @@ const FloorPage: NextPage = () => {
       // Ignore storage quota errors.
     }
   }, [shelfMovies]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(COVER_CUSTOM_SETTINGS_STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed: unknown = JSON.parse(raw);
+      if (!isCustomCoverSettingsStoragePayload(parsed)) {
+        return;
+      }
+
+      setCustomCoverSettingsByMovieId(
+        toCustomSettingsRecord(parsed.movieSettings)
+      );
+    } catch {
+      // Ignore parse/storage failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const payload: CustomCoverSettingsStoragePayload = {
+      movieSettings: toCustomSettingsStorageRecord(customCoverSettingsByMovieId),
+    };
+
+    try {
+      window.localStorage.setItem(
+        COVER_CUSTOM_SETTINGS_STORAGE_KEY,
+        JSON.stringify(payload)
+      );
+    } catch {
+      // Ignore storage quota errors.
+    }
+  }, [customCoverSettingsByMovieId]);
+
+  useEffect(() => {
+    const movieIds = Array.from(
+      new Set([
+        ...sourceMovies.map((movie) => movie.id),
+        ...floorMovies.map((movie) => movie.id),
+        ...shelfMovies.map((movie) => movie.id),
+      ])
+    ).filter((movieId) => Boolean(customCoverSettingsByMovieIdRef.current[movieId]));
+
+    if (movieIds.length === 0) {
+      return;
+    }
+
+    for (const movieId of movieIds) {
+      void hydrateCustomCoversForMovie(movieId);
+    }
+  }, [floorMovies, hydrateCustomCoversForMovie, shelfMovies, sourceMovies]);
 
   useEffect(() => {
     const movieIds = Array.from(new Set(sourceMovies.map((movie) => movie.id)));
@@ -2483,6 +4067,7 @@ const FloorPage: NextPage = () => {
       setDeleteCandidateId(null);
       setDeleteArmedId(null);
       setIsShelfDropActive(false);
+      setIsCoverEditorDropActive(false);
       updateShelfDropInsertIndex(null);
       setShelfRecentlyInsertedMovieId((current) =>
         current === movie.id ? null : current
@@ -2588,7 +4173,7 @@ const FloorPage: NextPage = () => {
   );
 
   const restoreMovieFromShelf = useCallback(
-    (movieId: number) => {
+    (movieId: number, clientX?: number, clientY?: number) => {
       const shelfMovie = shelfMovies.find((entry) => entry.id === movieId);
       if (!shelfMovie) {
         return;
@@ -2599,17 +4184,39 @@ const FloorPage: NextPage = () => {
       );
 
       const bounds = getFloorBounds();
-      const targetX = clamp(
-        SHELF_OPEN_WIDTH + 24 + Math.random() * 84,
-        0,
-        Math.max(0, bounds.width - CARD_WIDTH)
-      );
-      const targetY = clamp(
-        bounds.height * (0.18 + Math.random() * 0.56),
-        0,
-        Math.max(0, bounds.height - CARD_HEIGHT)
-      );
-      const targetRotation = getRandomCardRotation();
+      const hasPointerPosition =
+        typeof clientX === 'number' && Number.isFinite(clientX) &&
+        typeof clientY === 'number' && Number.isFinite(clientY);
+      const pointerX = hasPointerPosition
+        ? clientX
+        : bounds.left + CARD_WIDTH * 0.5;
+      const pointerY = hasPointerPosition
+        ? clientY
+        : bounds.top + CARD_HEIGHT * 0.5;
+      const laneIndex = floorMoviesRef.current.length % 6;
+      const targetX = hasPointerPosition
+        ? clamp(
+            pointerX - bounds.left - CARD_WIDTH * 0.5,
+            0,
+            Math.max(0, bounds.width - CARD_WIDTH)
+          )
+        : clamp(
+            SHELF_OPEN_WIDTH + 28 + laneIndex * 24 + Math.random() * 18,
+            0,
+            Math.max(0, bounds.width - CARD_WIDTH)
+          );
+      const targetY = hasPointerPosition
+        ? clamp(
+            pointerY - bounds.top - CARD_HEIGHT * 0.5,
+            0,
+            Math.max(0, bounds.height - CARD_HEIGHT)
+          )
+        : clamp(
+            bounds.height * 0.32 + (laneIndex - 2.5) * 22 + (Math.random() - 0.5) * 18,
+            0,
+            Math.max(0, bounds.height - CARD_HEIGHT)
+          );
+      const targetRotation = clampCardRotation((Math.random() - 0.5) * 8);
       const fallbackMovie: ClubMovie = {
         id: shelfMovie.id,
         title: shelfMovie.title,
@@ -3211,6 +4818,39 @@ const FloorPage: NextPage = () => {
   const activeChargeSize = 56 + activeChargeProgress * 72;
   const activeChargeOpacity = 0.2 + activeChargeProgress * 0.55;
   const addSlotOffset = getAddSlotOffset();
+  const coverEditorFrontOption = coverEditor
+    ? getCoverEditorOptionAtIndex(coverEditorImageOptions, coverEditor.frontImageIndex)
+    : null;
+  const coverEditorSpineOption = coverEditor
+    ? getCoverEditorOptionAtIndex(coverEditorImageOptions, coverEditor.spineImageIndex)
+    : null;
+  const coverEditorFrontImage =
+    coverEditorFrontPreview ??
+    coverEditorFrontOption?.previewUrl ??
+    WAITING_SLOT_IMAGE;
+  const coverEditorSpineImage =
+    coverEditorSpinePreview ??
+    coverEditorSpineOption?.previewUrl ??
+    SHELF_PLACEHOLDER_IMAGE;
+  const isCoverEditorFrontFocused = coverEditor?.focusVariant === 'front';
+  const isCoverEditorSpineFocused = coverEditor?.focusVariant === 'spine';
+  const coverEditorFrontWidth = CARD_WIDTH;
+  const coverEditorFrontHeight = CARD_HEIGHT;
+  const coverEditorSpineWidth = 76;
+  const coverEditorGap = 12;
+  const coverEditorPairWidth =
+    coverEditorSpineWidth + coverEditorGap + coverEditorFrontWidth;
+  const coverEditorPairHeight = coverEditorFrontHeight;
+  const coverEditorPairLeft = clamp(
+    emptySlot.x + CARD_WIDTH - coverEditorPairWidth,
+    10,
+    Math.max(10, getFloorBounds().width - coverEditorPairWidth - 10)
+  );
+  const coverEditorPairTop = clamp(
+    emptySlot.y - coverEditorPairHeight - 18,
+    10,
+    Math.max(10, getFloorBounds().height - coverEditorPairHeight - 10)
+  );
   const remoteTop =
     getFloorBounds().height -
     (isRemotePeek ? REMOTE_VISIBLE_PEEK : REMOTE_VISIBLE_DEFAULT);
@@ -3517,7 +5157,10 @@ const FloorPage: NextPage = () => {
               background: 'transparent',
             }}
           >
-            <div className="flex flex-col items-center pb-12 pt-8">
+            <div
+              className="flex flex-col items-center pb-12"
+              style={{ paddingTop: SHELF_LIST_TOP_PADDING }}
+            >
               {shelfMovies.map((movie, index) => {
                 const isLifted = hoveredShelfMovieId === movie.id;
                 const isRecentlyInserted = shelfRecentlyInsertedMovieId === movie.id;
@@ -3525,10 +5168,10 @@ const FloorPage: NextPage = () => {
                 return (
                   <div
                     key={movie.id}
-                    className="relative"
+                    className="relative overflow-hidden"
                     style={{
                       width: SHELF_ITEM_WIDTH,
-                      height: SHELF_ITEM_HEIGHT,
+                      height: SHELF_EXPOSED_STRIP_HEIGHT,
                       pointerEvents: 'none',
                       marginTop:
                         index === 0
@@ -3537,10 +5180,9 @@ const FloorPage: NextPage = () => {
                             : 0
                           : shelfInsertGapIndex === index
                             ? shelfInsertGap
-                            : -SHELF_STACK_OVERLAP,
+                            : 0,
                       zIndex: isLifted ? shelfMovies.length + 16 : baseZIndex,
-                      transform: 'translate3d(0, 0, 0)',
-                      transition: 'margin-top 180ms ease-out',
+                      transition: 'margin-top 180ms ease-out, filter 180ms ease-out',
                     }}
                   >
                     <button
@@ -3570,25 +5212,34 @@ const FloorPage: NextPage = () => {
                       aria-label={`Legg ${movie.title} tilbake på gulvet`}
                     />
                     <div
-                      className="pointer-events-none h-full w-full transition-[filter] duration-200 ease-out"
+                      className="pointer-events-none absolute inset-0 transition-[filter] duration-200 ease-out"
                       style={{
                         filter: isLifted || isRecentlyInserted ? 'brightness(1.04)' : 'brightness(1)',
                       }}
                     >
-                      <img
-                        src={movie.coverImage}
-                        alt={movie.title}
-                        className={`h-full w-full object-contain ${
-                          isLifted
-                            ? 'drop-shadow-[0_24px_28px_rgba(0,0,0,0.58)]'
-                            : 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.48)]'
-                        }`}
+                      <div
+                        className="absolute left-0"
                         style={{
-                          transform: 'rotate(90deg) scale(1.35)',
-                          transformOrigin: 'center',
+                          top: SHELF_ROW_ART_TOP,
+                          width: SHELF_ITEM_WIDTH,
+                          height: SHELF_ITEM_HEIGHT,
                         }}
-                        draggable={false}
-                      />
+                      >
+                        <img
+                          src={movie.coverImage}
+                          alt={movie.title}
+                          className={`h-full w-full object-contain ${
+                            isLifted
+                              ? 'drop-shadow-[0_24px_28px_rgba(0,0,0,0.58)]'
+                              : 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.48)]'
+                          }`}
+                          style={{
+                            transform: `rotate(90deg) scale(${SHELF_SPINE_IMAGE_SCALE})`,
+                            transformOrigin: 'center',
+                          }}
+                          draggable={false}
+                        />
+                      </div>
                     </div>
                   </div>
                 );
@@ -3737,19 +5388,30 @@ const FloorPage: NextPage = () => {
           </button>
         ))}
         {visibleFloorMovies.map((movie) => {
+          if (coverEditor && movie.id === coverEditor.movieId) {
+            return null;
+          }
+
           const dragging = draggingId === movie.id;
+          const isCoverEditorDropPreview =
+            dragging &&
+            isCoverEditorDropActive &&
+            coverEditorDropCycleMovieIdRef.current === movie.id &&
+            Boolean(coverEditorDropCycleImage);
           const dragMorphToSidecover =
             dragging &&
             isShelfDropActive &&
             !shelfMovieIdSet.has(movie.id);
           const movieImageSource = dragMorphToSidecover
             ? shelfPreviewCoverByMovieId[movie.id] ?? SHELF_PLACEHOLDER_IMAGE
-            : movie.coverImage;
+            : isCoverEditorDropPreview
+              ? coverEditorDropCycleImage ?? movie.coverImage
+              : movie.coverImage;
           const movieImageClassName = dragMorphToSidecover
             ? `relative z-10 h-full w-full object-contain transition-[filter,transform] duration-220 ${
                 dragging
-                  ? 'drop-shadow-[0_30px_34px_rgba(0,0,0,0.54)] drop-shadow-[0_10px_16px_rgba(0,0,0,0.26)]'
-                  : 'drop-shadow-[0_20px_24px_rgba(0,0,0,0.44)] drop-shadow-[0_7px_14px_rgba(0,0,0,0.2)] group-hover:drop-shadow-[0_32px_38px_rgba(0,0,0,0.6)] group-hover:drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]'
+                  ? 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.42)] drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]'
+                  : 'drop-shadow-[0_12px_14px_rgba(0,0,0,0.36)] drop-shadow-[0_4px_8px_rgba(0,0,0,0.16)] group-hover:drop-shadow-[0_18px_20px_rgba(0,0,0,0.48)] group-hover:drop-shadow-[0_6px_12px_rgba(0,0,0,0.2)]'
               }`
             : `relative z-10 h-full w-full object-cover transition-[filter] duration-300 ${
                 dragging
@@ -3758,7 +5420,7 @@ const FloorPage: NextPage = () => {
               }`;
           const movieImageStyle = dragMorphToSidecover
             ? {
-                transform: 'rotate(90deg) scale(1.35)',
+                transform: `rotate(90deg) scale(${DRAG_SIDECOVER_IMAGE_SCALE})`,
                 transformOrigin: 'center',
               }
             : undefined;
@@ -3794,6 +5456,7 @@ const FloorPage: NextPage = () => {
           const totalOffsetX = chargeOffsetX + fightOffsetX;
           const totalOffsetY = chargeOffsetY + fightOffsetY;
           const isFightAnimated = Boolean(fightEffect);
+          const isCoverEditorReturning = coverEditorReturnMovieId === movie.id;
 
           return (
             <button
@@ -3810,8 +5473,9 @@ const FloorPage: NextPage = () => {
                 top: movie.y,
                 zIndex: movie.z,
                 transform: `translate(${totalOffsetX}px, ${totalOffsetY}px) rotate(${movie.rotation + fightRotate}deg) scale(${fightScale})`,
-                transition:
-                  isChargingMovie || isFightAnimated
+                transition: isCoverEditorReturning
+                  ? 'left 560ms cubic-bezier(0.2, 0.85, 0.2, 1), top 560ms cubic-bezier(0.2, 0.85, 0.2, 1), transform 560ms cubic-bezier(0.2, 0.85, 0.2, 1)'
+                  : isChargingMovie || isFightAnimated
                     ? 'transform 140ms cubic-bezier(0.24, 0.8, 0.24, 1)'
                     : undefined,
                 touchAction: 'none',
@@ -4022,6 +5686,131 @@ const FloorPage: NextPage = () => {
           </div>
         ) : null}
 
+        {coverEditor ? (
+          <div
+            className="absolute inset-0 z-[1680] flex items-center justify-end px-4 py-6 md:px-8"
+            data-cover-error={coverEditorError ? '1' : '0'}
+            style={{
+              opacity: coverEditorDidEnter ? 1 : 0,
+              transition: 'opacity 180ms ease-out',
+            }}
+            onPointerDown={handleCoverEditorBackdropPointerDown}
+          >
+            <div
+              className="relative h-full w-full"
+              onPointerDown={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <div
+                className="absolute flex items-end"
+                style={{
+                  left: coverEditorPairLeft,
+                  top: coverEditorPairTop,
+                  gap: coverEditorGap,
+                  opacity: coverEditorDidEnter ? 1 : 0,
+                  transform: `translateY(${coverEditorDidEnter ? 0 : 20}px) scale(${coverEditorDidEnter ? 1 : 0.92})`,
+                  transition: coverEditor.saving
+                    ? 'transform 180ms ease-out, opacity 180ms ease-out'
+                    : 'transform 260ms cubic-bezier(0.2, 0.85, 0.2, 1), opacity 180ms ease-out',
+                }}
+              >
+                <button
+                  type="button"
+                  onPointerDown={(event) =>
+                    handleCoverEditorVariantPointerDown(event, 'spine')
+                  }
+                  disabled={coverEditor.saving}
+                  className={`group relative cursor-grab appearance-none border-0 bg-transparent p-0 focus-visible:outline-none active:cursor-grabbing ${
+                    isCoverEditorSpineFocused
+                      ? 'opacity-100'
+                      : 'opacity-95 hover:opacity-100'
+                  }`}
+                  style={{
+                    width: coverEditorSpineWidth,
+                    height: coverEditorFrontHeight,
+                    zIndex: isCoverEditorSpineFocused ? 5 : 3,
+                    transform: isCoverEditorSpineFocused
+                      ? 'translateY(-14px) scale(1.035)'
+                      : 'translateY(0) scale(0.992)',
+                    transition:
+                      'transform 180ms cubic-bezier(0.2, 0.85, 0.2, 1), opacity 160ms ease-out',
+                  }}
+                  >
+                  <div
+                    className="relative h-full w-full overflow-hidden rounded-[8px] transition-[box-shadow] duration-180"
+                    style={{
+                      boxShadow: isCoverEditorSpineFocused
+                        ? '0 22px 34px rgba(0,0,0,0.5)'
+                        : '0 14px 22px rgba(0,0,0,0.36)',
+                    }}
+                  >
+                    <div
+                      className="absolute left-1/2 top-1/2"
+                      style={{
+                        width: CARD_WIDTH,
+                        height: CARD_HEIGHT,
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    >
+                      <img
+                        src={coverEditorSpineImage}
+                        alt={coverEditor.movieTitle}
+                        className="h-full w-full object-contain"
+                        style={{
+                          transform: `rotate(90deg) scale(${SHELF_SPINE_IMAGE_SCALE * 1.62})`,
+                          transformOrigin: 'center',
+                        }}
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onPointerDown={(event) =>
+                    handleCoverEditorVariantPointerDown(event, 'front')
+                  }
+                  disabled={coverEditor.saving}
+                  className={`group relative cursor-grab appearance-none border-0 bg-transparent p-0 focus-visible:outline-none active:cursor-grabbing ${
+                    isCoverEditorFrontFocused
+                      ? 'opacity-100'
+                      : 'opacity-95 hover:opacity-100'
+                  }`}
+                  style={{
+                    width: coverEditorFrontWidth,
+                    height: coverEditorFrontHeight,
+                    zIndex: isCoverEditorFrontFocused ? 5 : 3,
+                    transform: isCoverEditorFrontFocused
+                      ? 'translateY(-14px) scale(1.035)'
+                      : 'translateY(0) scale(0.992)',
+                    transition:
+                      'transform 180ms cubic-bezier(0.2, 0.85, 0.2, 1), opacity 160ms ease-out',
+                  }}
+                  >
+                  <div
+                    className="relative h-full w-full overflow-hidden rounded-[8px] transition-[box-shadow] duration-180"
+                    style={{
+                      boxShadow: isCoverEditorFrontFocused
+                        ? '0 22px 34px rgba(0,0,0,0.5)'
+                        : '0 14px 22px rgba(0,0,0,0.36)',
+                    }}
+                  >
+                    <img
+                      src={coverEditorFrontImage}
+                      alt={coverEditor.movieTitle}
+                      className="h-full w-full object-cover"
+                      draggable={false}
+                    />
+                  </div>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        ) : null}
+
         <input
           ref={csvImportInputRef}
           type="file"
@@ -4049,8 +5838,8 @@ const FloorPage: NextPage = () => {
             top: emptySlot.y + addSlotOffset,
             zIndex: 999,
             transform: isAddSlotResetAnimating
-              ? 'rotate(5deg) translateY(132px)'
-              : 'rotate(5deg)',
+              ? `rotate(5deg) translateY(132px) scale(${isCoverEditorDropActive ? 1.02 : 1})`
+              : `rotate(5deg) scale(${isCoverEditorDropActive ? 1.02 : 1})`,
             transition:
               'transform 320ms cubic-bezier(0.2, 0.85, 0.2, 1), top 230ms cubic-bezier(0.2, 0.85, 0.2, 1)',
           }}

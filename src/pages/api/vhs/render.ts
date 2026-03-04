@@ -36,6 +36,9 @@ const renderRequestSchema = z
     quality: z.number().int().min(1).max(100).optional(),
     background: z.string().min(1).optional(),
     randomSeed: z.string().trim().min(1).max(128).optional(),
+    posterOffsetX: z.number().int().min(-1200).max(1200).optional(),
+    posterOffsetY: z.number().int().min(-1200).max(1200).optional(),
+    posterScale: z.number().min(0.45).max(2.6).optional(),
   })
   .refine((body) => !!body.sourceUrl || !!body.sourcePath, {
     message: 'sourceUrl or sourcePath is required.',

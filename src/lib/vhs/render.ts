@@ -23,6 +23,9 @@ export interface RenderVhsOptions {
   quality?: number;
   background?: string;
   randomSeed?: string;
+  posterOffsetX?: number;
+  posterOffsetY?: number;
+  posterScale?: number;
 }
 
 export interface RenderVhsResult {
@@ -314,6 +317,18 @@ export const renderVhsPoster = async (
         posterScale = 1 + maxScalePct * (scaleFloor + random() * (1 - scaleFloor));
       }
     }
+  }
+
+  if (typeof options.posterOffsetX === 'number' && Number.isFinite(options.posterOffsetX)) {
+    posterOffsetX += Math.round(options.posterOffsetX);
+  }
+
+  if (typeof options.posterOffsetY === 'number' && Number.isFinite(options.posterOffsetY)) {
+    posterOffsetY += Math.round(options.posterOffsetY);
+  }
+
+  if (typeof options.posterScale === 'number' && Number.isFinite(options.posterScale)) {
+    posterScale = clamp(posterScale * options.posterScale, 0.45, 2.6);
   }
 
   const sourceBuffer = await loadSourceBuffer(
