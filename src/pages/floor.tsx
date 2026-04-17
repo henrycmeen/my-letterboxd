@@ -306,6 +306,7 @@ const DRAG_VELOCITY_TILT_MAX = 8.5;
 const DRAG_WOBBLE_TILT_MAX = 3;
 const DRAG_THROW_ROTATION_MAX = 7;
 const DRAG_VELOCITY_SMOOTHING = 0.28;
+const DRAG_HIERARCHY_RECALC_INTERVAL_MS = 120;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
@@ -411,33 +412,90 @@ const isGeneratedCoverPath = (coverImage: string): boolean =>
   coverImage.includes('/api/vhs/generated/') ||
   coverImage.includes(GENERATED_COVER_API_PATH);
 
+const getCoverPathName = (coverImage: string): string => {
+  try {
+    return new URL(coverImage, 'http://local.invalid').pathname;
+  } catch {
+    return coverImage.split(/[?#]/)[0] ?? coverImage;
+  }
+};
+
+const getGeneratedCoverFileName = (coverImage: string): string | null => {
+  const generatedApiMarker = '/api/vhs/generated/';
+  const generatedStaticMarker = '/VHS/generated/';
+  const marker = coverImage.includes(generatedApiMarker)
+    ? generatedApiMarker
+    : coverImage.includes(generatedStaticMarker)
+      ? generatedStaticMarker
+      : null;
+
+  if (!marker) {
+    return null;
+  }
+
+  const markerIndex = coverImage.indexOf(marker);
+  const rawFileName = coverImage
+    .slice(markerIndex + marker.length)
+    .split(/[?#]/)[0]
+    ?.split('/')
+    .pop();
+
+  if (!rawFileName) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(rawFileName);
+  } catch {
+    return rawFileName;
+  }
+};
+
+const getNormalizedGeneratedCoverPath = (coverImage: string): string | null => {
+  const fileName = getGeneratedCoverFileName(coverImage);
+
+  if (!fileName) {
+    return null;
+  }
+
+  return withBasePath(`/api/vhs/generated/${encodeURIComponent(fileName)}`);
+};
+
+const isCurrentGeneratedCoverPath = (coverImage: string): boolean =>
+  isGeneratedCoverPath(coverImage) &&
+  getCoverPathName(coverImage).startsWith(GENERATED_COVER_API_PATH) &&
+  coverImage.includes(`-${COVER_TEMPLATE_ID}-`) &&
+  coverImage.includes(`-${COVER_RENDER_REVISION}-`);
+
 const shouldHydrateBoardCover = (coverImage: string): boolean =>
   isWaitingSlotCover(coverImage) ||
   isBlobCoverImage(coverImage) ||
-  coverImage.startsWith('http://') ||
-  coverImage.startsWith('https://') ||
-  (isGeneratedCoverPath(coverImage) &&
-    (!coverImage.includes(`-${COVER_TEMPLATE_ID}-`) ||
-      !coverImage.includes(`-${COVER_RENDER_REVISION}-`)));
+  ((coverImage.startsWith('http://') || coverImage.startsWith('https://')) &&
+    !isCurrentGeneratedCoverPath(coverImage)) ||
+  (isGeneratedCoverPath(coverImage) && !isCurrentGeneratedCoverPath(coverImage));
 
-const normalizeCoverImage = (coverImage: string): string =>
-  shouldHydrateBoardCover(coverImage) ? WAITING_SLOT_IMAGE : coverImage;
+const normalizeCoverImage = (coverImage: string): string => {
+  if (shouldHydrateBoardCover(coverImage)) {
+    return WAITING_SLOT_IMAGE;
+  }
+
+  return getNormalizedGeneratedCoverPath(coverImage) ?? coverImage;
+};
 
 const getStableCoverImage = (coverImage?: string): string | undefined => {
   if (typeof coverImage !== 'string' || coverImage.length === 0) {
     return undefined;
   }
 
-  return shouldHydrateBoardCover(coverImage) ? undefined : coverImage;
+  return shouldHydrateBoardCover(coverImage)
+    ? undefined
+    : getNormalizedGeneratedCoverPath(coverImage) ?? coverImage;
 };
 
 const normalizePersistedBoardCoverImage = (coverImage: string): string =>
-  isWaitingSlotCover(coverImage) ||
-  isBlobCoverImage(coverImage) ||
-  coverImage.startsWith('http://') ||
-  coverImage.startsWith('https://')
+  shouldHydrateBoardCover(coverImage)
     ? WAITING_SLOT_IMAGE
-    : coverImage;
+    : getNormalizedGeneratedCoverPath(coverImage) ?? coverImage;
 
 const isCoversResponse = (value: unknown): value is CoversResponse => {
   if (!value || typeof value !== 'object') {
@@ -935,6 +993,7 @@ export const FloorScreen = ({
     null
   );
   const dragPointerRafRef = useRef<number | null>(null);
+  const dragHierarchyLastRecalcRef = useRef(0);
   const floorMoviesRef = useRef<FloorMovie[]>([]);
   const sourceMoviesRef = useRef<ClubMovie[]>([]);
   const shelfMoviesRef = useRef<ShelfMovie[]>([]);
@@ -1024,6 +1083,8 @@ export const FloorScreen = ({
   const isCompactPhoneLayout = viewportSize.width <= 680;
   const CARD_WIDTH = Math.round(BASE_CARD_WIDTH * layoutScale);
   const CARD_HEIGHT = Math.round(BASE_CARD_HEIGHT * layoutScale);
+  const floorWidth = Math.max(viewportSize.width, CARD_WIDTH);
+  const floorHeight = Math.max(viewportSize.height, CARD_HEIGHT);
   const ADD_SLOT_HIDDEN_OFFSET = Math.round(BASE_ADD_SLOT_HIDDEN_OFFSET * layoutScale);
   const ADD_SLOT_HOVER_OFFSET = Math.round(BASE_ADD_SLOT_HOVER_OFFSET * layoutScale);
   const COVER_EDITOR_DROP_ZONE_EXTRA = Math.max(
@@ -1885,6 +1946,7 @@ export const FloorScreen = ({
       velocityX: 0,
       velocityY: 0,
     };
+    dragHierarchyLastRecalcRef.current = 0;
 
     setDraggingId(id);
     setFloorMovies((previous) => {
@@ -2120,21 +2182,30 @@ export const FloorScreen = ({
         resetProximityVsCandidate();
       }
 
-      setFloorMovies((previous) =>
-        recalculateHierarchy(
-          previous.map((movie) =>
-            movie.id === drag.id
-              ? {
-                  ...movie,
-                  x,
-                  y,
-                  rotation: dragRotation,
-                }
-              : movie
-          ),
-          bounds.height
-        )
-      );
+      const shouldRecalculateHierarchy =
+        now - dragHierarchyLastRecalcRef.current >=
+        DRAG_HIERARCHY_RECALC_INTERVAL_MS;
+      if (shouldRecalculateHierarchy) {
+        dragHierarchyLastRecalcRef.current = now;
+      }
+
+      setFloorMovies((previous) => {
+        const nextMovies = previous.map((movie) =>
+          movie.id === drag.id
+            ? {
+                ...movie,
+                x,
+                y,
+                rotation: dragRotation,
+                score: getTopScorePercent(y, bounds.height, CARD_HEIGHT),
+              }
+            : movie
+        );
+
+        return shouldRecalculateHierarchy
+          ? recalculateHierarchy(nextMovies, bounds.height)
+          : nextMovies;
+      });
     },
     [
       CARD_HEIGHT,
@@ -2264,6 +2335,7 @@ export const FloorScreen = ({
 
     dragRef.current = null;
     dragPointerPositionRef.current = null;
+    dragHierarchyLastRecalcRef.current = 0;
     setDraggingId(null);
     clearDeleteHoldTimer();
     clearDeleteClearAllTimer();
@@ -4945,12 +5017,12 @@ export const FloorScreen = ({
     const targetX = clamp(
       slot.x - CARD_WIDTH * (0.78 + Math.random() * 0.92),
       0,
-      Math.max(0, getFloorBounds().width - CARD_WIDTH)
+      Math.max(0, floorWidth - CARD_WIDTH)
     );
     const targetY = clamp(
       slot.y - CARD_HEIGHT * (0.08 + Math.random() * 0.58),
       0,
-      Math.max(0, getFloorBounds().height - CARD_HEIGHT)
+      Math.max(0, floorHeight - CARD_HEIGHT)
     );
     const targetRotation = getRandomCardRotation();
     const selectedPreviewCover = previewCoverByMovieId[selectedMovie.id] ?? null;
@@ -5031,10 +5103,11 @@ export const FloorScreen = ({
   }, [
     addMovieToFloor,
     activeSearchCover,
-    getRenderedCoverPromise,
+    floorHeight,
+    floorWidth,
     getAddSlotOffset,
     getEmptySlotPosition,
-    getFloorBounds,
+    getRenderedCoverPromise,
     pendingSearch,
     previewCoverByMovieId,
   ]);
@@ -5234,7 +5307,7 @@ export const FloorScreen = ({
     ? clamp(
         typeof draggingMovie.score === 'number'
           ? draggingMovie.score
-          : getTopScorePercent(draggingMovie.y, getFloorBounds().height, CARD_HEIGHT),
+          : getTopScorePercent(draggingMovie.y, floorHeight, CARD_HEIGHT),
         0,
         100
       )
@@ -5484,12 +5557,12 @@ export const FloorScreen = ({
   const coverEditorPairLeft = clamp(
     emptySlot.x + CARD_WIDTH - coverEditorPairWidth,
     10,
-    Math.max(10, getFloorBounds().width - coverEditorPairWidth - 10)
+    Math.max(10, floorWidth - coverEditorPairWidth - 10)
   );
   const coverEditorPairTop = clamp(
     emptySlot.y - coverEditorPairHeight - 18,
     10,
-    Math.max(10, getFloorBounds().height - coverEditorPairHeight - 10)
+    Math.max(10, floorHeight - coverEditorPairHeight - 10)
   );
   const shelfExpanded = isCompactPhoneLayout
     ? isMobileShelfOpen || isShelfDropActive
@@ -5498,13 +5571,13 @@ export const FloorScreen = ({
     ? MOBILE_SHELF_OPEN_HEIGHT
     : MOBILE_SHELF_PEEK_HEIGHT;
   const remoteTop =
-    getFloorBounds().height -
+    floorHeight -
     (isCompactPhoneLayout ? MOBILE_SHELF_BOTTOM_CLEARANCE : 0) -
     (isRemotePeek ? REMOTE_VISIBLE_PEEK : REMOTE_VISIBLE_DEFAULT);
   const remoteLeft = clamp(
     emptySlot.x - REMOTE_CONTROL_WIDTH - REMOTE_SLOT_GAP,
     12,
-    Math.max(12, getFloorBounds().width - REMOTE_CONTROL_WIDTH - 12)
+    Math.max(12, floorWidth - REMOTE_CONTROL_WIDTH - 12)
   );
   const shelfPanelWidth = SHELF_OPEN_WIDTH;
   const shelfTranslateX =
@@ -6856,7 +6929,7 @@ export const FloorScreen = ({
             style={{
               width: Math.min(
                 620,
-                Math.max(160, Math.round(getFloorBounds().width * (layoutScale < 1 ? 0.52 : 0.42)))
+                Math.max(160, Math.round(floorWidth * (layoutScale < 1 ? 0.52 : 0.42)))
               ),
               left: Math.max(Math.round(16 * layoutScale), emptySlot.x - Math.round(640 * layoutScale)),
               bottom:
