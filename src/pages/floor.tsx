@@ -197,6 +197,7 @@ interface DeleteAnimationState {
   z: number;
   splitDirection: 1 | -1;
   stage: 'cut' | 'hold' | 'drop';
+  destroyEffect: 'samurai' | 'laser';
 }
 
 interface VsPair {
@@ -381,6 +382,14 @@ const getLordOfTheRingsVsResult = (
 
   return { winnerId, loserId };
 };
+
+const isSciFiMovie = (movie: { title: string } | null | undefined): boolean =>
+  Boolean(
+    movie &&
+      /\b(2001|akira|alien|aliens|arrival|blade runner|dune|ex machina|ghost in the shell|interstellar|matrix|moon|predator|robocop|space odyssey|star trek|star wars|terminator|the thing|total recall|tron)\b/i.test(
+        movie.title
+      )
+  );
 
 const getSearchPreviewStep = (tier: SearchPreviewTier) =>
   SEARCH_PREVIEW_STEPS.find((step) => step.tier === tier) ??
@@ -1753,6 +1762,7 @@ export const FloorScreen = ({
           z: Math.max(1400, removedMovie.z + 4),
           splitDirection: Math.random() < 0.5 ? 1 : -1,
           stage: 'cut',
+          destroyEffect: isSciFiMovie(removedMovie) ? 'laser' : 'samurai',
         });
 
         deleteCutTimerRef.current = window.setTimeout(() => {
@@ -5452,6 +5462,36 @@ export const FloorScreen = ({
   const sauronEyeSize = Math.round(
     clamp(Math.min(floorWidth, floorHeight) * 0.34, 220, 420)
   );
+  const fightLightningBolts = Object.entries(vsFightByKey)
+    .map(([key, fight]) => {
+      const first = visibleMovieById.get(fight.pair.firstId);
+      const second = visibleMovieById.get(fight.pair.secondId);
+      if (!first || !second) {
+        return null;
+      }
+
+      const firstCenter = {
+        x: first.x + CARD_WIDTH * 0.5,
+        y: first.y + CARD_HEIGHT * 0.5,
+      };
+      const secondCenter = {
+        x: second.x + CARD_WIDTH * 0.5,
+        y: second.y + CARD_HEIGHT * 0.5,
+      };
+      const deltaX = secondCenter.x - firstCenter.x;
+      const deltaY = secondCenter.y - firstCenter.y;
+      const distance = Math.max(1, Math.hypot(deltaX, deltaY));
+
+      return {
+        key,
+        x: (firstCenter.x + secondCenter.x) / 2,
+        y: (firstCenter.y + secondCenter.y) / 2,
+        width: distance,
+        rotate: (Math.atan2(deltaY, deltaX) * 180) / Math.PI,
+        stage: fight.stage,
+      };
+    })
+    .filter((bolt): bolt is NonNullable<typeof bolt> => Boolean(bolt));
   const movieFightEffects = (() => {
     const effectsByMovieId = new Map<
       number,
@@ -6336,6 +6376,28 @@ export const FloorScreen = ({
             />
           </div>
         ) : null}
+        {fightLightningBolts.map((bolt) => (
+          <div
+            key={bolt.key}
+            className="pointer-events-none absolute z-[1239]"
+            aria-hidden
+            style={{
+              width: bolt.width,
+              height: 72,
+              left: bolt.x - bolt.width / 2,
+              top: bolt.y - 36,
+              opacity: bolt.stage === 'impact' ? 1 : 0.74,
+              transform: `rotate(${bolt.rotate}deg)`,
+            }}
+          >
+            <div
+              className={`vhs-vs-lightning ${
+                bolt.stage === 'impact' ? 'vhs-vs-lightning-impact' : ''
+              }`}
+            />
+            <div className="vhs-vs-lightning vhs-vs-lightning-secondary" />
+          </div>
+        ))}
         {sauronEyeFight ? (
           <div
             className="pointer-events-none absolute z-[1242]"
@@ -6658,9 +6720,14 @@ export const FloorScreen = ({
               </div>
               <div
                 className={`absolute left-[-34%] top-[48%] h-[2px] w-[170%] ${
-                  deleteAnimation.splitDirection === -1
-                    ? 'vhs-delete-samurai-line-reverse'
-                    : 'vhs-delete-samurai-line'
+                  deleteAnimation.destroyEffect === 'laser' ||
+                  isSciFiMovie(deleteAnimation)
+                    ? deleteAnimation.splitDirection === -1
+                      ? 'vhs-delete-laser-line-reverse'
+                      : 'vhs-delete-laser-line'
+                    : deleteAnimation.splitDirection === -1
+                      ? 'vhs-delete-samurai-line-reverse'
+                      : 'vhs-delete-samurai-line'
                 }`}
                 style={{
                   top: `${DELETE_SPLIT_LINE_TOP_PCT}%`,

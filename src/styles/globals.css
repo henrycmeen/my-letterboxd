@@ -174,6 +174,52 @@
   }
 }
 
+@keyframes vhsLaserCut {
+  0% {
+    opacity: 0;
+    transform: translateX(-88%) rotate(1.6deg) scaleX(0.18);
+    filter: hue-rotate(0deg) brightness(1.4);
+  }
+  18% {
+    opacity: 1;
+  }
+  54% {
+    opacity: 1;
+    transform: translateX(4%) rotate(1.6deg) scaleX(1.08);
+    filter: hue-rotate(28deg) brightness(2.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(92%) rotate(1.6deg) scaleX(1.22);
+    filter: hue-rotate(0deg) brightness(1.1);
+  }
+}
+
+@keyframes vhsVsLightningStrike {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0.28) skewX(-16deg);
+    filter: brightness(0.7);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(1.02) skewX(12deg);
+    filter: brightness(1.85);
+  }
+  28% {
+    opacity: 0.45;
+    transform: translateY(-50%) scaleX(0.82) skewX(-8deg);
+  }
+  48% {
+    opacity: 0.95;
+    transform: translateY(-50%) scaleX(1.08) skewX(10deg);
+  }
+  100% {
+    opacity: 0.22;
+    transform: translateY(-50%) scaleX(0.96) skewX(-5deg);
+  }
+}
+
 @keyframes vhsNeonDropBlink {
   0% {
     opacity: 0.62;
@@ -399,6 +445,77 @@
     0 0 12px rgba(255, 255, 255, 0.82),
     0 0 28px rgba(255, 255, 255, 0.42);
   mix-blend-mode: screen;
+}
+
+.vhs-delete-laser-line {
+  animation: vhsLaserCut 300ms cubic-bezier(0.12, 0.92, 0.16, 1) 1 both;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(40, 220, 255, 0) 0%,
+      rgba(73, 240, 255, 0.95) 18%,
+      rgba(255, 255, 255, 1) 48%,
+      rgba(255, 46, 232, 0.96) 68%,
+      rgba(76, 232, 255, 0) 100%
+    );
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.95),
+    0 0 18px rgba(64, 236, 255, 0.8),
+    0 0 42px rgba(236, 48, 255, 0.44);
+  mix-blend-mode: screen;
+}
+
+.vhs-delete-laser-line-reverse {
+  animation: vhsLaserCut 300ms cubic-bezier(0.12, 0.92, 0.16, 1) 1 both reverse;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(40, 220, 255, 0) 0%,
+      rgba(255, 46, 232, 0.96) 28%,
+      rgba(255, 255, 255, 1) 52%,
+      rgba(73, 240, 255, 0.95) 82%,
+      rgba(76, 232, 255, 0) 100%
+    );
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.95),
+    0 0 18px rgba(64, 236, 255, 0.8),
+    0 0 42px rgba(236, 48, 255, 0.44);
+  mix-blend-mode: screen;
+}
+
+.vhs-vs-lightning {
+  animation: vhsVsLightningStrike 180ms steps(2, jump-none) infinite;
+  height: 3px;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform-origin: center;
+  width: 100%;
+  background:
+    linear-gradient(90deg, rgba(90, 224, 255, 0), rgba(174, 244, 255, 0.9), rgba(255, 255, 255, 1), rgba(122, 214, 255, 0.82), rgba(90, 224, 255, 0)),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92) 6px, rgba(70, 220, 255, 0.1) 7px, rgba(70, 220, 255, 0.1) 18px);
+  box-shadow:
+    0 0 10px rgba(224, 250, 255, 0.92),
+    0 0 24px rgba(104, 220, 255, 0.62),
+    0 0 48px rgba(86, 128, 255, 0.28);
+  clip-path: polygon(0 50%, 10% 30%, 18% 60%, 28% 36%, 38% 68%, 50% 28%, 62% 62%, 76% 34%, 88% 58%, 100% 42%, 100% 60%, 88% 76%, 76% 50%, 62% 78%, 50% 46%, 38% 82%, 28% 52%, 18% 78%, 10% 48%, 0 66%);
+  mix-blend-mode: screen;
+}
+
+.vhs-vs-lightning-secondary {
+  animation-delay: -90ms;
+  opacity: 0.54;
+  top: 54%;
+  transform: translateY(-50%) scaleX(0.92) skewX(10deg);
+}
+
+.vhs-vs-lightning-impact {
+  animation-duration: 120ms;
+  height: 5px;
+  box-shadow:
+    0 0 14px rgba(255, 255, 255, 1),
+    0 0 34px rgba(130, 235, 255, 0.82),
+    0 0 76px rgba(106, 122, 255, 0.44);
 }
 
 .vhs-neon-drop-target {
