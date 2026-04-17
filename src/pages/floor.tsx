@@ -5367,6 +5367,14 @@ export const FloorScreen = ({
     )[0] ?? null;
   })();
   const leaderMovieId = leaderMovie?.id ?? null;
+  const lightRayScore = clamp(
+    draggingMovie ? draggingScore : leaderMovie?.score ?? 48,
+    0,
+    100
+  );
+  const lightRayStrength = Math.pow(lightRayScore / 100, 1.32);
+  const lightRayOpacity = 0.22 + lightRayStrength * 0.62;
+  const lightRayWarmth = 0.12 + lightRayStrength * 0.48;
   const leaderSpotlight = (() => {
     if (!leaderMovie) {
       return null;
@@ -6289,19 +6297,29 @@ export const FloorScreen = ({
           style={{
             zIndex: 4,
             opacity:
-              0.36 +
-              (draggingMovie
-                ? clamp(0.16 + dragLightBoost * 0.28 - dragDarkBoost * 0.03, 0, 0.44)
-                : 0),
+              lightRayOpacity -
+              (draggingMovie ? clamp(dragDarkBoost * 0.12, 0, 0.14) : 0),
             transition: 'opacity 180ms ease-out',
             mixBlendMode: 'screen',
-            background: `radial-gradient(68% 52% at 50% -10%, rgba(255,236,168,${
-              0.52 + (draggingMovie ? dragLightBoost * 0.65 : 0)
-            }) 0%, rgba(255,228,146,${
-              0.18 + (draggingMovie ? dragLightBoost * 0.38 : 0)
-            }) 42%, rgba(255,223,138,0) 84%)`,
           }}
-        />
+        >
+          <div
+            className="vhs-light-rays absolute inset-0"
+            style={{
+              background: `conic-gradient(from 188deg at 50% -18%, rgba(255,246,190,${0.36 + lightRayWarmth}) 0deg, rgba(255,226,132,0) 8deg, rgba(255,238,170,${0.18 + lightRayWarmth * 0.58}) 15deg, rgba(255,218,120,0) 25deg, rgba(255,244,196,${0.24 + lightRayWarmth * 0.62}) 34deg, rgba(255,226,142,0) 48deg, rgba(255,236,168,${0.16 + lightRayWarmth * 0.44}) 58deg, rgba(255,220,120,0) 76deg, rgba(255,240,184,${0.28 + lightRayWarmth * 0.64}) 92deg, rgba(255,222,124,0) 116deg, rgba(255,238,176,${0.14 + lightRayWarmth * 0.38}) 132deg, rgba(255,220,120,0) 154deg, rgba(255,246,190,${0.24 + lightRayWarmth * 0.5}) 172deg, rgba(255,226,132,0) 190deg, rgba(255,246,190,${0.18 + lightRayWarmth * 0.46}) 212deg, rgba(255,226,132,0) 238deg, rgba(255,238,176,${0.16 + lightRayWarmth * 0.42}) 252deg, rgba(255,220,120,0) 276deg, rgba(255,246,190,${0.26 + lightRayWarmth * 0.58}) 298deg, rgba(255,226,132,0) 324deg, rgba(255,246,190,${0.2 + lightRayWarmth * 0.48}) 344deg, rgba(255,226,132,0) 360deg)`,
+            }}
+          />
+          <div
+            className="vhs-light-rays-core absolute inset-0"
+            style={{
+              background: `radial-gradient(72% 48% at 50% -14%, rgba(255,246,190,${
+                0.42 + lightRayWarmth * 0.72
+              }) 0%, rgba(255,230,148,${
+                0.14 + lightRayWarmth * 0.42
+              }) 46%, rgba(255,223,138,0) 82%)`,
+            }}
+          />
+        </div>
         {leaderSpotlight && draggingId !== leaderMovieId ? (
           <div
             className="pointer-events-none absolute z-[4]"

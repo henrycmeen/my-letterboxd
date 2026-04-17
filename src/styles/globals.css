@@ -342,6 +342,36 @@
   }
 }
 
+@keyframes vhsLightRaysDrift {
+  0% {
+    transform: translate3d(-1.4%, 0, 0) scaleX(1.02) rotate(-0.45deg);
+    filter: blur(0.2px) brightness(0.96);
+  }
+  50% {
+    transform: translate3d(1.2%, 0.3%, 0) scaleX(1.06) rotate(0.4deg);
+    filter: blur(0.6px) brightness(1.08);
+  }
+  100% {
+    transform: translate3d(-0.8%, 0, 0) scaleX(1.03) rotate(-0.25deg);
+    filter: blur(0.3px) brightness(1);
+  }
+}
+
+@keyframes vhsLightRaysCorePulse {
+  0% {
+    opacity: 0.76;
+    transform: scaleY(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.03);
+  }
+  100% {
+    opacity: 0.82;
+    transform: scaleY(1);
+  }
+}
+
 @keyframes vhsSauronEyePulse {
   0% {
     filter: brightness(0.92) saturate(1.12);
@@ -548,6 +578,19 @@
 .vhs-leader-card-aura {
   animation: vhsLeaderSpotlightPulse 2.9s ease-in-out infinite;
   transform-origin: center;
+}
+
+.vhs-light-rays {
+  animation: vhsLightRaysDrift 8.6s ease-in-out infinite alternate;
+  mask-image: linear-gradient(to bottom, black 0%, black 44%, rgba(0, 0, 0, 0.48) 68%, transparent 100%);
+  opacity: 0.78;
+  transform-origin: top center;
+}
+
+.vhs-light-rays-core {
+  animation: vhsLightRaysCorePulse 5.8s ease-in-out infinite alternate;
+  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.72) 52%, transparent 100%);
+  transform-origin: top center;
 }
 
 .vhs-sauron-eye-aura {
