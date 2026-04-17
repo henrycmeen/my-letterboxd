@@ -197,7 +197,7 @@ interface DeleteAnimationState {
   z: number;
   splitDirection: 1 | -1;
   stage: 'cut' | 'hold' | 'drop';
-  destroyEffect: 'samurai' | 'laser';
+  destroyEffect: 'samurai' | 'laser' | 'black-hole';
 }
 
 interface VsPair {
@@ -390,6 +390,26 @@ const isSciFiMovie = (movie: { title: string } | null | undefined): boolean =>
         movie.title
       )
   );
+
+const isBlackHoleDeleteMovie = (
+  movie: { title: string } | null | undefined
+): boolean =>
+  Boolean(
+    movie &&
+      /\b(star wars|empire strikes back|return of the jedi|force awakens|last jedi|rise of skywalker|rogue one|solo|star trek|interstellar|dune)\b/i.test(
+        movie.title
+      )
+  );
+
+const getDeleteDestroyEffect = (
+  movie: { title: string } | null | undefined
+): DeleteAnimationState['destroyEffect'] => {
+  if (isBlackHoleDeleteMovie(movie)) {
+    return 'black-hole';
+  }
+
+  return isSciFiMovie(movie) ? 'laser' : 'samurai';
+};
 
 const getSearchPreviewStep = (tier: SearchPreviewTier) =>
   SEARCH_PREVIEW_STEPS.find((step) => step.tier === tier) ??
@@ -1762,7 +1782,7 @@ export const FloorScreen = ({
           z: Math.max(1400, removedMovie.z + 4),
           splitDirection: Math.random() < 0.5 ? 1 : -1,
           stage: 'cut',
-          destroyEffect: isSciFiMovie(removedMovie) ? 'laser' : 'samurai',
+          destroyEffect: getDeleteDestroyEffect(removedMovie),
         });
 
         deleteCutTimerRef.current = window.setTimeout(() => {
@@ -6672,10 +6692,29 @@ export const FloorScreen = ({
               left: deleteAnimation.x,
               top: deleteAnimation.y,
               zIndex: deleteAnimation.z,
-              transform: `rotate(${deleteAnimation.rotation}deg)`,
+              transform:
+                deleteAnimation.destroyEffect === 'black-hole' ||
+                isBlackHoleDeleteMovie(deleteAnimation)
+                  ? 'rotate(0deg)'
+                  : `rotate(${deleteAnimation.rotation}deg)`,
             }}
           >
-            <div className="absolute inset-0">
+            <div
+              className={`absolute inset-0 ${
+                deleteAnimation.destroyEffect === 'black-hole' ||
+                isBlackHoleDeleteMovie(deleteAnimation)
+                  ? `vhs-delete-black-hole-${deleteAnimation.stage}`
+                  : ''
+              }`}
+            >
+              {deleteAnimation.destroyEffect === 'black-hole' ||
+              isBlackHoleDeleteMovie(deleteAnimation) ? (
+                <div className="pointer-events-none absolute inset-[-72%] z-[4]">
+                  <div className="vhs-delete-black-hole-disk absolute inset-0" />
+                  <div className="vhs-delete-black-hole-core absolute left-1/2 top-1/2" />
+                  <div className="vhs-delete-black-hole-stars absolute inset-0" />
+                </div>
+              ) : null}
               <div
                 className="absolute inset-0 overflow-hidden"
                 style={{
@@ -6738,8 +6777,11 @@ export const FloorScreen = ({
               </div>
               <div
                 className={`absolute left-[-34%] top-[48%] h-[2px] w-[170%] ${
-                  deleteAnimation.destroyEffect === 'laser' ||
-                  isSciFiMovie(deleteAnimation)
+                  deleteAnimation.destroyEffect === 'black-hole' ||
+                  isBlackHoleDeleteMovie(deleteAnimation)
+                    ? 'opacity-0'
+                    : deleteAnimation.destroyEffect === 'laser' ||
+                        isSciFiMovie(deleteAnimation)
                     ? deleteAnimation.splitDirection === -1
                       ? 'vhs-delete-laser-line-reverse'
                       : 'vhs-delete-laser-line'

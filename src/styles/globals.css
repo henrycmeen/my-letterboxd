@@ -195,6 +195,58 @@
   }
 }
 
+@keyframes vhsBlackHoleConsume {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    filter: brightness(1) saturate(1);
+  }
+  38% {
+    opacity: 0.96;
+    transform: translate3d(0, -3px, 0) rotate(34deg) scale(0.76);
+    filter: brightness(0.88) saturate(1.22);
+  }
+  72% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0) rotate(168deg) scale(0.34);
+    filter: brightness(0.62) saturate(1.8) blur(0.8px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(304deg) scale(0.04);
+    filter: brightness(0.2) saturate(2) blur(2px);
+  }
+}
+
+@keyframes vhsBlackHoleDiskSpin {
+  0% {
+    opacity: 0.2;
+    transform: rotate(0deg) scale(0.66);
+  }
+  32% {
+    opacity: 0.96;
+    transform: rotate(128deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(420deg) scale(0.58);
+  }
+}
+
+@keyframes vhsBlackHoleStars {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) scale(1.18);
+  }
+  28% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-160deg) scale(0.42);
+  }
+}
+
 @keyframes vhsVsLightningStrike {
   0% {
     opacity: 0;
@@ -510,6 +562,53 @@
     0 0 8px rgba(255, 255, 255, 0.95),
     0 0 18px rgba(64, 236, 255, 0.8),
     0 0 42px rgba(236, 48, 255, 0.44);
+  mix-blend-mode: screen;
+}
+
+.vhs-delete-black-hole-cut,
+.vhs-delete-black-hole-hold,
+.vhs-delete-black-hole-drop {
+  animation: vhsBlackHoleConsume 1.08s cubic-bezier(0.2, 0.82, 0.12, 1) 1 both;
+  transform-origin: center;
+}
+
+.vhs-delete-black-hole-disk {
+  animation: vhsBlackHoleDiskSpin 1.08s cubic-bezier(0.18, 0.86, 0.14, 1) 1 both;
+  background:
+    radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 16%, rgba(34, 8, 74, 0.72) 20%, rgba(80, 36, 154, 0.28) 24%, rgba(0, 0, 0, 0) 32%),
+    conic-gradient(from 42deg, rgba(62, 196, 255, 0), rgba(118, 78, 255, 0.72), rgba(255, 104, 222, 0.54), rgba(255, 214, 104, 0.62), rgba(82, 228, 255, 0.46), rgba(62, 196, 255, 0));
+  border-radius: 999px;
+  filter: blur(0.8px);
+  mix-blend-mode: screen;
+}
+
+.vhs-delete-black-hole-core {
+  height: 24%;
+  width: 24%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 52%, rgba(40, 14, 72, 0.82) 68%, rgba(0, 0, 0, 0) 76%);
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 1),
+    0 0 34px rgba(94, 62, 255, 0.46),
+    0 0 72px rgba(255, 104, 222, 0.22);
+  transform: translate(-50%, -50%);
+}
+
+.vhs-delete-black-hole-stars {
+  animation: vhsBlackHoleStars 1.08s cubic-bezier(0.18, 0.86, 0.14, 1) 1 both;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(136, 226, 255, 0.72) 0 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(255, 168, 246, 0.62) 0 1px, transparent 1.7px);
+  background-position:
+    8% 18%,
+    64% 28%,
+    34% 74%;
+  background-size:
+    58px 58px,
+    82px 82px,
+    104px 104px;
+  border-radius: 999px;
   mix-blend-mode: screen;
 }
 
