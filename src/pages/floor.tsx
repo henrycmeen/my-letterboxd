@@ -1417,6 +1417,15 @@ export const FloorScreen = ({
           const boardRaw: unknown = await boardResponse.json();
           if (isFloorBoardResponse(boardRaw) && !ignore) {
             boardVersionRef.current = boardRaw.version;
+            if (boardRaw.movies.length === 0) {
+              lastBoardSignatureRef.current = buildBoardSignature([]);
+              restoredFromBoardRef.current = true;
+              setFloorMovies([]);
+              setSourceMovies([]);
+              setIsInitialBoardLoaded(true);
+              return;
+            }
+
             if (boardRaw.movies.length > 0) {
               const bounds = getFloorBounds();
               const restoredMovies = recalculateHierarchy(
@@ -1754,6 +1763,107 @@ export const FloorScreen = ({
     [clearDeleteClearAllTimer]
   );
 
+  const saveBoardMovies = useCallback(
+    async (
+      boardMovies: ReturnType<typeof toBoardMoviesPayload>,
+      signature: string
+    ): Promise<void> => {
+      const requestBody = {
+        boardId,
+        movies: boardMovies,
+        expectedVersion: boardVersionRef.current ?? undefined,
+      };
+
+      try {
+        const firstResponse = await fetch(withBasePath(`/api/club/floor?boardId=${boardId}`), {
+          method: 'PUT',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (firstResponse.ok) {
+          const payloadRaw: unknown = await firstResponse.json().catch(() => null);
+          if (isFloorBoardResponse(payloadRaw)) {
+            boardVersionRef.current = payloadRaw.version;
+          } else if (boardVersionRef.current !== null) {
+            boardVersionRef.current += 1;
+          }
+
+          lastBoardSignatureRef.current = signature;
+          return;
+        }
+
+        if (firstResponse.status !== 409) {
+          return;
+        }
+
+        const conflictPayloadRaw: unknown = await firstResponse.json().catch(() => null);
+        if (!isFloorBoardConflictResponse(conflictPayloadRaw)) {
+          return;
+        }
+
+        if (typeof conflictPayloadRaw.currentVersion !== 'number') {
+          return;
+        }
+
+        boardVersionRef.current = conflictPayloadRaw.currentVersion;
+        const secondResponse = await fetch(
+          withBasePath(`/api/club/floor?boardId=${boardId}`),
+          {
+            method: 'PUT',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...requestBody,
+              expectedVersion: boardVersionRef.current,
+            }),
+          }
+        );
+
+        if (!secondResponse.ok) {
+          return;
+        }
+
+        const secondPayloadRaw: unknown = await secondResponse.json().catch(() => null);
+        if (isFloorBoardResponse(secondPayloadRaw)) {
+          boardVersionRef.current = secondPayloadRaw.version;
+        } else if (boardVersionRef.current !== null) {
+          boardVersionRef.current += 1;
+        }
+
+        lastBoardSignatureRef.current = signature;
+      } catch {
+        // Keep UI responsive even if board sync fails.
+      }
+    },
+    [boardId]
+  );
+
+  const persistBoardMoviesNow = useCallback(
+    async (nextMovies: FloorMovie[]): Promise<void> => {
+      if (!isInitialBoardLoaded) {
+        return;
+      }
+
+      const boardMovies = toBoardMoviesPayload(nextMovies);
+      const signature = buildBoardSignature(boardMovies);
+      if (signature === lastBoardSignatureRef.current) {
+        return;
+      }
+
+      if (boardSyncTimerRef.current !== null) {
+        window.clearTimeout(boardSyncTimerRef.current);
+        boardSyncTimerRef.current = null;
+      }
+
+      await saveBoardMovies(boardMovies, signature);
+    },
+    [isInitialBoardLoaded, saveBoardMovies]
+  );
+
   const deleteMovieFromFloor = useCallback(
     (movieId: number) => {
       const removedMovie =
@@ -1763,12 +1873,12 @@ export const FloorScreen = ({
       }
 
       const bounds = getFloorBounds();
-      setFloorMovies((previous) =>
-        recalculateHierarchy(
-          previous.filter((movie) => movie.id !== movieId),
-          bounds.height
-        )
+      const nextMovies = recalculateHierarchy(
+        floorMoviesRef.current.filter((movie) => movie.id !== movieId),
+        bounds.height
       );
+      setFloorMovies(nextMovies);
+      void persistBoardMoviesNow(nextMovies);
 
       if (!isWaitingSlotCover(removedMovie.coverImage)) {
         clearDeleteAnimationTimers();
@@ -1829,7 +1939,7 @@ export const FloorScreen = ({
       delete renderedSpineCoverPromiseByMovieIdRef.current[movieId];
       return true;
     },
-    [clearDeleteAnimationTimers, getFloorBounds]
+    [clearDeleteAnimationTimers, getFloorBounds, persistBoardMoviesNow]
   );
 
   const startDeleteClearAllSequence = useCallback(
@@ -2536,83 +2646,7 @@ export const FloorScreen = ({
     }
 
     boardSyncTimerRef.current = window.setTimeout(() => {
-      const syncBoard = async (): Promise<void> => {
-        const requestBody = {
-          boardId,
-          movies: boardMovies,
-          expectedVersion: boardVersionRef.current ?? undefined,
-        };
-
-        try {
-          const firstResponse = await fetch(withBasePath(`/api/club/floor?boardId=${boardId}`), {
-            method: 'PUT',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          if (firstResponse.ok) {
-            const payloadRaw: unknown = await firstResponse.json().catch(() => null);
-            if (isFloorBoardResponse(payloadRaw)) {
-              boardVersionRef.current = payloadRaw.version;
-            } else if (boardVersionRef.current !== null) {
-              boardVersionRef.current += 1;
-            }
-
-            lastBoardSignatureRef.current = signature;
-            return;
-          }
-
-          if (firstResponse.status !== 409) {
-            return;
-          }
-
-          const conflictPayloadRaw: unknown = await firstResponse
-            .json()
-            .catch(() => null);
-          if (!isFloorBoardConflictResponse(conflictPayloadRaw)) {
-            return;
-          }
-
-          if (typeof conflictPayloadRaw.currentVersion === 'number') {
-            boardVersionRef.current = conflictPayloadRaw.currentVersion;
-          } else {
-            return;
-          }
-
-          const secondResponse = await fetch(
-            withBasePath(`/api/club/floor?boardId=${boardId}`),
-            {
-              method: 'PUT',
-              headers: {
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({
-                ...requestBody,
-                expectedVersion: boardVersionRef.current,
-              }),
-            }
-          );
-
-          if (!secondResponse.ok) {
-            return;
-          }
-
-          const secondPayloadRaw: unknown = await secondResponse.json().catch(() => null);
-          if (isFloorBoardResponse(secondPayloadRaw)) {
-            boardVersionRef.current = secondPayloadRaw.version;
-          } else if (boardVersionRef.current !== null) {
-            boardVersionRef.current += 1;
-          }
-
-          lastBoardSignatureRef.current = signature;
-        } catch {
-          // Keep UI responsive even if board sync fails.
-        }
-      };
-
-      void syncBoard();
+      void saveBoardMovies(boardMovies, signature);
     }, BOARD_SYNC_DEBOUNCE_MS);
 
     return () => {
@@ -2621,7 +2655,7 @@ export const FloorScreen = ({
         boardSyncTimerRef.current = null;
       }
     };
-  }, [boardId, floorMovies, isInitialBoardLoaded]);
+  }, [floorMovies, isInitialBoardLoaded, saveBoardMovies]);
 
   useEffect(() => {
     return () => {
