@@ -91,6 +91,50 @@
   }
 }
 
+@keyframes accessCodeDenied {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.94;
+  }
+  72% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes accessCodeAccepted {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  32% {
+    opacity: 0.88;
+    transform: scale(1.01);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes accessRemoteHotspotPulse {
+  0% {
+    box-shadow: 0 0 0 rgba(255, 222, 164, 0);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(255, 222, 164, 0.22),
+      inset 0 0 0 1px rgba(255, 222, 164, 0.38);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(255, 222, 164, 0);
+  }
+}
+
 @keyframes vhsDeleteShake {
   0% {
     transform: translateX(0) translateY(0);
@@ -217,12 +261,59 @@
   }
 }
 
+@keyframes vhsLeaderSpotlightPulse {
+  0% {
+    opacity: 0.82;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0.84;
+    transform: scale(0.99);
+  }
+}
+
+@keyframes vhsLeaderSheenSweep {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(8deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0;
+  }
+  42% {
+    opacity: 0.92;
+  }
+  68% {
+    opacity: 0.18;
+  }
+  100% {
+    transform: translate3d(320%, 0, 0) rotate(8deg);
+    opacity: 0;
+  }
+}
+
 .vhs-delete-shake {
   animation: vhsDeleteShake 190ms ease-in-out infinite;
 }
 
 .vhs-delete-shake-hard {
   animation: vhsDeleteShake 130ms ease-in-out infinite;
+}
+
+.access-code-denied-flash {
+  animation: accessCodeDenied 820ms ease-out 1 both;
+}
+
+.access-code-accepted-flash {
+  animation: accessCodeAccepted 620ms ease-out 1 both;
+}
+
+.access-remote-hotspot-active {
+  animation: accessRemoteHotspotPulse 180ms ease-out 1 both;
 }
 
 .vhs-delete-samurai-line {
@@ -279,6 +370,16 @@
   border: 1px solid rgba(248, 129, 255, 0.42);
   animation: vhsNeonCardPulseSoft 1160ms cubic-bezier(0.2, 0.82, 0.28, 1) infinite;
   mix-blend-mode: screen;
+}
+
+.vhs-leader-spotlight {
+  animation: vhsLeaderSpotlightPulse 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.vhs-leader-card-aura {
+  animation: vhsLeaderSpotlightPulse 2.9s ease-in-out infinite;
+  transform-origin: center;
 }
 
 .retro-gradient {

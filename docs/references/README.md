@@ -1,6 +1,7 @@
-# Reference Images (Local)
+# References (History and Experiments)
 
-This folder is for local visual references and experiments that are not part of runtime.
+This folder is for historical references, visual experiments, and old snapshots
+that are not part of runtime.
 
 ## Structure
 
@@ -10,6 +11,8 @@ This folder is for local visual references and experiments that are not part of 
   - Intermediate template experiments (`_v*.png`) that are not used by the app.
 - `legacy-public-images/`
   - Older images that previously lived in `public/` and are no longer used by runtime code.
+- `code-history/` (optional)
+  - Old code snapshots or notes you want to keep for comparison.
 
 ## Notes
 

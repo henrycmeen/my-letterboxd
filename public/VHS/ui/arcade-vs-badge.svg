@@ -1,0 +1,111 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 505 361" fill="none">
+  <defs>
+    <linearGradient id="edgeGrad" x1="64" y1="48" x2="435" y2="313" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F5E3B2"/>
+      <stop offset="0.18" stop-color="#E5B55B"/>
+      <stop offset="0.48" stop-color="#8B5A1B"/>
+      <stop offset="0.78" stop-color="#D8A74F"/>
+      <stop offset="1" stop-color="#FFF0C7"/>
+    </linearGradient>
+
+    <linearGradient id="bodyGrad" x1="92" y1="68" x2="398" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1C1F27"/>
+      <stop offset="0.42" stop-color="#12151B"/>
+      <stop offset="1" stop-color="#232833"/>
+    </linearGradient>
+
+    <linearGradient id="bodySheen" x1="84" y1="74" x2="421" y2="182" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="0.36" stop-color="#FFFFFF" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <radialGradient id="warmGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(248 160) rotate(90) scale(132 192)">
+      <stop offset="0" stop-color="#FFCA78" stop-opacity="0.34"/>
+      <stop offset="0.4" stop-color="#FFAF57" stop-opacity="0.17"/>
+      <stop offset="1" stop-color="#FF7E39" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="cyanAccent" x1="92" y1="86" x2="192" y2="134" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C5FAFF"/>
+      <stop offset="0.45" stop-color="#73DFFF"/>
+      <stop offset="1" stop-color="#2A96FF" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="amberAccent" x1="310" y1="280" x2="430" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE1A4"/>
+      <stop offset="0.35" stop-color="#FFB248"/>
+      <stop offset="1" stop-color="#FF6E2A" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="letterShadow" x1="0" y1="96" x2="0" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B0D12" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#050608" stop-opacity="0.96"/>
+    </linearGradient>
+
+    <linearGradient id="letterFill" x1="0" y1="94" x2="0" y2="248" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFBEF"/>
+      <stop offset="0.46" stop-color="#FFE3A3"/>
+      <stop offset="0.78" stop-color="#FFBE58"/>
+      <stop offset="1" stop-color="#FF8A3B"/>
+    </linearGradient>
+
+    <linearGradient id="letterHighlight" x1="0" y1="100" x2="0" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFF3D0" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <pattern id="scanlines" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="3.5" fill="#FFFFFF" fill-opacity="0.032"/>
+      <rect y="3.5" width="8" height="4.5" fill="#000000" fill-opacity="0.06"/>
+    </pattern>
+
+    <clipPath id="badgeClip">
+      <path d="M91 112L176 65H343L416 106L396 256L316 298H156L95 262L77 156Z"/>
+    </clipPath>
+
+    <filter id="badgeShadow" x="12" y="4" width="481" height="353" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#badgeShadow)">
+    <path d="M74 104L170 48H352L435 95L412 266L322 313H151L80 271L57 150Z" fill="url(#edgeGrad)"/>
+    <path d="M91 112L176 65H343L416 106L396 256L316 298H156L95 262L77 156Z" fill="url(#bodyGrad)"/>
+    <path d="M91 112L176 65H343L416 106L396 256L316 298H156L95 262L77 156Z" fill="url(#warmGlow)"/>
+    <path d="M91 112L176 65H343L416 106L396 256L316 298H156L95 262L77 156Z" fill="url(#bodySheen)"/>
+
+    <g clip-path="url(#badgeClip)">
+      <path d="M48 155L194 52L466 92L458 127L239 217L37 182Z" fill="#FFFFFF" fill-opacity="0.075"/>
+      <path d="M73 301L222 89L467 111L444 245L261 298L112 292Z" fill="#000000" fill-opacity="0.16"/>
+      <rect x="40" y="50" width="430" height="260" fill="url(#scanlines)" opacity="0.92"/>
+    </g>
+
+    <path d="M92 132L155 82L214 88L145 148Z" fill="url(#cyanAccent)" opacity="0.68"/>
+    <path d="M299 286L368 253L426 178L352 207Z" fill="url(#amberAccent)" opacity="0.78"/>
+
+    <ellipse cx="249" cy="162" rx="138" ry="74" fill="#FFB35C" fill-opacity="0.14" filter="url(#softGlow)"/>
+    <ellipse cx="150" cy="106" rx="44" ry="18" fill="#93EEFF" fill-opacity="0.20" filter="url(#softGlow)"/>
+
+    <g transform="translate(-6 0) skewX(-10)">
+      <path d="M149 110L213 245L277 110" stroke="url(#letterShadow)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round" opacity="0.98"/>
+      <path d="M396 121C372 97 325 95 300 114C283 127 282 148 301 159C317 168 338 168 359 172C384 177 398 187 398 207C398 233 374 248 339 248C310 248 281 240 255 220" stroke="url(#letterShadow)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round" opacity="0.98"/>
+
+      <path d="M149 110L213 245L277 110" stroke="url(#letterFill)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M396 121C372 97 325 95 300 114C283 127 282 148 301 159C317 168 338 168 359 172C384 177 398 187 398 207C398 233 374 248 339 248C310 248 281 240 255 220" stroke="url(#letterFill)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <path d="M153 112L213 239L273 112" stroke="url(#letterHighlight)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+      <path d="M393 119C371 100 327 99 305 116C291 126 291 143 306 151C320 158 340 158 359 162C385 168 401 179 401 202" stroke="url(#letterHighlight)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+    </g>
+
+    <path d="M95 113L181 67H341L414 107" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="3" stroke-linecap="round"/>
+    <path d="M155 298H317L396 257" stroke="#000000" stroke-opacity="0.25" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -6,6 +6,8 @@ import { getTmdbMovieImages, hasTmdbApiKey } from '@/lib/tmdb';
 const querySchema = z.object({
   movieId: z.number().int().positive(),
   limit: z.number().int().min(1).max(60).default(24),
+  kind: z.enum(['all', 'poster', 'backdrop']).default('all'),
+  cache: z.boolean().default(true),
 });
 
 const getQueryValue = (
@@ -29,6 +31,24 @@ const parseOptionalNumber = (value: string | undefined): number | undefined => {
   }
 
   return parsed;
+};
+
+const parseOptionalBoolean = (
+  value: string | undefined
+): boolean | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'yes') {
+    return true;
+  }
+  if (normalized === '0' || normalized === 'false' || normalized === 'no') {
+    return false;
+  }
+
+  return undefined;
 };
 
 export default async function handler(
@@ -59,6 +79,8 @@ export default async function handler(
   const parsedQuery = querySchema.safeParse({
     movieId: parseOptionalNumber(getQueryValue(req.query.movieId)),
     limit: Number(getQueryValue(req.query.limit) ?? 24),
+    kind: getQueryValue(req.query.kind) ?? 'all',
+    cache: parseOptionalBoolean(getQueryValue(req.query.cache)) ?? true,
   });
 
   if (!parsedQuery.success) {
@@ -71,13 +93,19 @@ export default async function handler(
   try {
     const images = await getTmdbMovieImages(
       parsedQuery.data.movieId,
-      parsedQuery.data.limit
+      parsedQuery.data.limit,
+      { useCache: parsedQuery.data.cache }
     );
+
+    const posters =
+      parsedQuery.data.kind === 'backdrop' ? [] : images.posters;
+    const backdrops =
+      parsedQuery.data.kind === 'poster' ? [] : images.backdrops;
 
     return res.status(200).json({
       movieId: parsedQuery.data.movieId,
-      posters: images.posters,
-      backdrops: images.backdrops,
+      posters,
+      backdrops,
     });
   } catch (error) {
     const message =

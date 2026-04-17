@@ -29,6 +29,9 @@ next-env.d.ts
 .DS_Store
 *.pem
 .cache/
+/.tmp/
+__pycache__/
+**/__pycache__/
 
 # local visual/debug artifacts
 /floor-*.png

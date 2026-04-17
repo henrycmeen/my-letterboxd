@@ -5,7 +5,7 @@ Inspect Black VHS Case mockup PSB files and export smart-object/layer inventory 
 Usage:
   python3 scripts/vhs/inspect_black_case_psb.py \
     --source "/Users/you/Downloads/Black VHS Case - Mockup" \
-    --output docs/black-vhs-case-mockup-inventory.json
+    --output docs/engineering/vhs/black-vhs-case-mockup-inventory.json
 """
 
 from __future__ import annotations
@@ -97,7 +97,7 @@ def main():
     )
     parser.add_argument(
         "--output",
-        default="docs/black-vhs-case-mockup-inventory.json",
+        default="docs/engineering/vhs/black-vhs-case-mockup-inventory.json",
         help="Output JSON path",
     )
     args = parser.parse_args()

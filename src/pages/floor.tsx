@@ -9,6 +9,12 @@ import {
   useState,
 } from 'react';
 import { withBasePath } from '@/lib/basePath';
+import {
+  DEFAULT_CLUB_SLUG,
+  getBoardIdFromClubSlug,
+  getClubHomePath,
+  normalizeClubSlug,
+} from '@/lib/clubSlug';
 
 interface ClubMovie {
   id: number;
@@ -210,13 +216,12 @@ interface VsFightState {
   loserId: number | null;
 }
 
-const CARD_WIDTH = 260;
-const CARD_HEIGHT = 390;
+const BASE_CARD_WIDTH = 260;
+const BASE_CARD_HEIGHT = 390;
 const WAITING_SLOT_IMAGE = withBasePath('/VHS/templates/waiting-cover-vhs-black.webp');
 const SEARCH_DEBOUNCE_MS = 90;
 const COVER_TEMPLATE_ID = 'black-case-front-v1';
-const COVER_RENDER_REVISION = 'r11';
-const FLOOR_BOARD_ID = 'default';
+const COVER_RENDER_REVISION = 'r12';
 const CARD_ROTATION_MIN = -9;
 const CARD_ROTATION_MAX = 9;
 const OPEN_EFFECT_ENABLED = ['1', 'true', 'yes', 'on'].includes(
@@ -233,17 +238,21 @@ const SEARCH_PREVIEW_STEPS: Array<{
   { tier: 'low', size: 520, quality: 42 },
   { tier: 'high', size: 1100, quality: 76 },
 ];
-const ADD_SLOT_HIDDEN_OFFSET = Math.round(CARD_HEIGHT * 0.72);
-const ADD_SLOT_HOVER_OFFSET = Math.round(CARD_HEIGHT * 0.4);
-const REMOTE_CONTROL_IMAGE = withBasePath('/VHS/ui/remote-control.webp');
-const VS_BADGE_IMAGE = withBasePath('/VHS/ui/vs.png');
+const BASE_ADD_SLOT_HIDDEN_OFFSET = Math.round(BASE_CARD_HEIGHT * 0.72);
+const BASE_ADD_SLOT_HOVER_OFFSET = Math.round(BASE_CARD_HEIGHT * 0.4);
+const REMOTE_CONTROL_IMAGE = withBasePath('/VHS/ui/remote-control-black-transparent.png');
+const VS_BADGE_IMAGE = withBasePath('/VHS/ui/vs-neo-tokyo.svg');
 const VHS_FRONT_SIDE_IMAGE = withBasePath('/VHS/Front Side.png');
-const FLOOR_BACKGROUND_IMAGE = withBasePath('/VHS/backgrounds/floor-oak.png');
+const FLOOR_BACKGROUND_IMAGE = withBasePath('/VHS/backgrounds/Oak_Veneer_tfjcffgc_4K_BaseColor.jpg');
 const GENERATED_COVER_API_PATH = withBasePath('/api/vhs/generated/');
-const COVER_EDITOR_DROP_ZONE_EXTRA = 22;
-const COVER_EDITOR_DROP_CYCLE_INTERVAL_MS = 120;
-const COVER_EDITOR_DROP_CYCLE_LIMIT = 14;
-const COVER_EDITOR_IMAGE_FETCH_LIMIT = 36;
+const BASE_COVER_EDITOR_DROP_ZONE_EXTRA = 22;
+const COVER_EDITOR_DROP_CYCLE_INTERVAL_MS = 190;
+const COVER_EDITOR_DROP_CYCLE_LIMIT = 10;
+const COVER_EDITOR_DROP_CYCLE_WARMUP_MS = 140;
+const COVER_EDITOR_DROP_CYCLE_RENDER_SIZE = 420;
+const COVER_EDITOR_DROP_CYCLE_RENDER_QUALITY = 46;
+const COVER_EDITOR_IMAGE_FETCH_LIMIT = 60;
+const COVER_RANDOMIZE_POOL_LIMIT = 20;
 const COVER_CUSTOM_SETTINGS_STORAGE_KEY =
   'my-letterboxd-floor-cover-custom-settings-v1';
 const SHELF_TEMPLATE_ID = 'black-case-spine-v3';
@@ -252,43 +261,46 @@ const SHELF_PLACEHOLDER_IMAGE = withBasePath(
   '/VHS/templates/black-case-spine/spine-placeholder-cover-cropped.webp'
 );
 const SHELF_STORAGE_KEY = 'my-letterboxd-floor-shelf-v1';
-const SHELF_OPEN_WIDTH = 252;
-const SHELF_SCROLL_WIDTH = SHELF_OPEN_WIDTH;
-const SHELF_ITEM_WIDTH = 240;
-const SHELF_ITEM_HEIGHT = CARD_HEIGHT;
-const SHELF_STACK_OVERLAP = CARD_HEIGHT - 36;
-const SHELF_PEEK_OFFSET = Math.round(SHELF_OPEN_WIDTH * 0.72);
-const SHELF_DROP_ZONE_EXTRA = 22;
-const SHELF_LIST_TOP_PADDING = 20;
-const SHELF_EXPOSED_STRIP_HEIGHT = SHELF_ITEM_HEIGHT - SHELF_STACK_OVERLAP;
-const SHELF_SPINE_HITBOX_HEIGHT = SHELF_EXPOSED_STRIP_HEIGHT;
+const BASE_SHELF_OPEN_WIDTH = 252;
+const BASE_SHELF_SCROLL_WIDTH = BASE_SHELF_OPEN_WIDTH;
+const BASE_SHELF_ITEM_WIDTH = 240;
+const BASE_SHELF_ITEM_HEIGHT = BASE_CARD_HEIGHT;
+const BASE_SHELF_STACK_OVERLAP = BASE_CARD_HEIGHT - 36;
+const BASE_SHELF_PEEK_OFFSET = Math.round(BASE_SHELF_OPEN_WIDTH * 0.72);
+const BASE_SHELF_DROP_ZONE_EXTRA = 22;
+const BASE_SHELF_LIST_TOP_PADDING = 20;
+const BASE_SHELF_EXPOSED_STRIP_HEIGHT =
+  BASE_SHELF_ITEM_HEIGHT - BASE_SHELF_STACK_OVERLAP;
+const BASE_SHELF_SPINE_HITBOX_HEIGHT = BASE_SHELF_EXPOSED_STRIP_HEIGHT;
 const SHELF_SPINE_HITBOX_TOP = 0;
 const SHELF_SPINE_HITBOX_SIDE_INSET = 0;
-const SHELF_ROW_ART_TOP = Math.round(
-  (SHELF_EXPOSED_STRIP_HEIGHT - SHELF_ITEM_HEIGHT) / 2
+const BASE_SHELF_ROW_ART_TOP = Math.round(
+  (BASE_SHELF_EXPOSED_STRIP_HEIGHT - BASE_SHELF_ITEM_HEIGHT) / 2
 );
 const SHELF_SPINE_IMAGE_SCALE = 0.62;
 const DRAG_SIDECOVER_IMAGE_SCALE = 0.78;
-const REMOTE_CONTROL_WIDTH = Math.round(CARD_WIDTH * 0.5);
-const REMOTE_CONTROL_HEIGHT = Math.round((443 / 181) * REMOTE_CONTROL_WIDTH);
-const REMOTE_VISIBLE_DEFAULT = 78;
-const REMOTE_VISIBLE_PEEK = 140;
-const REMOTE_SLOT_GAP = 14;
-const DELETE_ZONE_HEIGHT = Math.round(CARD_HEIGHT * 0.24);
+const BASE_REMOTE_CONTROL_WIDTH = Math.round(BASE_CARD_WIDTH * 0.8);
+const BASE_REMOTE_CONTROL_HEIGHT = Math.round((443 / 181) * BASE_REMOTE_CONTROL_WIDTH);
+const BASE_REMOTE_VISIBLE_DEFAULT = 280;
+const BASE_REMOTE_VISIBLE_PEEK = 340;
+const BASE_REMOTE_SLOT_GAP = 14;
+const BASE_DELETE_ZONE_HEIGHT = Math.round(BASE_CARD_HEIGHT * 0.24);
 const DELETE_HOLD_MS = 950;
+const DELETE_CLEAR_ALL_EXTRA_HOLD_MS = 1450;
+const DELETE_CLEAR_ALL_STEP_MS = 180;
 const DELETE_CUT_MS = 220;
 const DELETE_POST_CUT_HOLD_MS = 260;
 const DELETE_DROP_MS = 920;
 const DELETE_SPLIT_LEFT_PCT = 49;
 const DELETE_SPLIT_RIGHT_PCT = 53;
 const DELETE_SPLIT_LINE_TOP_PCT = (DELETE_SPLIT_LEFT_PCT + DELETE_SPLIT_RIGHT_PCT) / 2;
-const VS_BADGE_WIDTH = 150;
-const VS_BADGE_HEIGHT = Math.round((361 / 505) * VS_BADGE_WIDTH);
+const BASE_VS_BADGE_WIDTH = 150;
+const BASE_VS_BADGE_HEIGHT = Math.round((361 / 505) * BASE_VS_BADGE_WIDTH);
 const TOP_SCORE_TIE_MIN = 100;
 const PROXIMITY_VS_HOLD_MS = 2000;
-const PROXIMITY_VS_TRIGGER_RADIUS = 170;
-const PROXIMITY_VS_BREAK_RADIUS = 300;
-const PROXIMITY_VS_PULL_MAX = 18;
+const BASE_PROXIMITY_VS_TRIGGER_RADIUS = 170;
+const BASE_PROXIMITY_VS_BREAK_RADIUS = 300;
+const BASE_PROXIMITY_VS_PULL_MAX = 18;
 const DRAG_GRAB_TILT_MAX = 5.5;
 const DRAG_VELOCITY_TILT_MAX = 8.5;
 const DRAG_WOBBLE_TILT_MAX = 3;
@@ -304,8 +316,12 @@ const clampCardRotation = (rotation: number): number =>
 const getRandomCardRotation = (): number =>
   CARD_ROTATION_MIN + Math.random() * (CARD_ROTATION_MAX - CARD_ROTATION_MIN);
 
-const getTopScorePercent = (topY: number, boardHeight: number): number => {
-  const maxTop = Math.max(1, boardHeight - CARD_HEIGHT);
+const getTopScorePercent = (
+  topY: number,
+  boardHeight: number,
+  cardHeight = BASE_CARD_HEIGHT
+): number => {
+  const maxTop = Math.max(1, boardHeight - cardHeight);
   const normalizedTop = clamp(topY, 0, maxTop);
   const score = (1 - normalizedTop / maxTop) * 100;
   return Math.round(score * 10) / 10;
@@ -387,6 +403,9 @@ const isWaitingSlotCover = (coverImage: string): boolean =>
   coverImage.includes('front-placeholder-cover') ||
   coverImage.includes('front-side-cover-flat.webp');
 
+const isBlobCoverImage = (coverImage: string): boolean =>
+  coverImage.startsWith('blob:');
+
 const isGeneratedCoverPath = (coverImage: string): boolean =>
   coverImage.includes('/VHS/generated/') ||
   coverImage.includes('/api/vhs/generated/') ||
@@ -394,6 +413,7 @@ const isGeneratedCoverPath = (coverImage: string): boolean =>
 
 const shouldHydrateBoardCover = (coverImage: string): boolean =>
   isWaitingSlotCover(coverImage) ||
+  isBlobCoverImage(coverImage) ||
   coverImage.startsWith('http://') ||
   coverImage.startsWith('https://') ||
   (isGeneratedCoverPath(coverImage) &&
@@ -402,6 +422,22 @@ const shouldHydrateBoardCover = (coverImage: string): boolean =>
 
 const normalizeCoverImage = (coverImage: string): string =>
   shouldHydrateBoardCover(coverImage) ? WAITING_SLOT_IMAGE : coverImage;
+
+const getStableCoverImage = (coverImage?: string): string | undefined => {
+  if (typeof coverImage !== 'string' || coverImage.length === 0) {
+    return undefined;
+  }
+
+  return shouldHydrateBoardCover(coverImage) ? undefined : coverImage;
+};
+
+const normalizePersistedBoardCoverImage = (coverImage: string): string =>
+  isWaitingSlotCover(coverImage) ||
+  isBlobCoverImage(coverImage) ||
+  coverImage.startsWith('http://') ||
+  coverImage.startsWith('https://')
+    ? WAITING_SLOT_IMAGE
+    : coverImage;
 
 const isCoversResponse = (value: unknown): value is CoversResponse => {
   if (!value || typeof value !== 'object') {
@@ -771,7 +807,7 @@ const toBoardMoviesPayload = (movies: FloorMovie[]) =>
   movies.map((movie) => ({
     id: movie.id,
     title: movie.title,
-    coverImage: movie.coverImage,
+    coverImage: normalizePersistedBoardCoverImage(movie.coverImage),
     x: movie.x,
     y: movie.y,
     rotation: clampCardRotation(movie.rotation),
@@ -812,10 +848,20 @@ const isFloorBoardConflictResponse = (
   return typeof payload.message === 'string' && expectedValid && currentValid;
 };
 
-const FloorPage: NextPage = () => {
+interface FilmClubPageProps {
+  clubSlug?: string;
+}
+
+export const FloorScreen = ({
+  clubSlug = DEFAULT_CLUB_SLUG,
+}: FilmClubPageProps) => {
+  const normalizedClubSlug = normalizeClubSlug(clubSlug);
+  const boardId = getBoardIdFromClubSlug(normalizedClubSlug);
+  const tvPath = withBasePath(getClubHomePath(normalizedClubSlug));
   const [sourceMovies, setSourceMovies] = useState<ClubMovie[]>([]);
   const [floorMovies, setFloorMovies] = useState<FloorMovie[]>([]);
   const [shelfMovies, setShelfMovies] = useState<ShelfMovie[]>([]);
+  const [viewportSize, setViewportSize] = useState({ width: 1280, height: 800 });
   const [isInitialBoardLoaded, setIsInitialBoardLoaded] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [isShelfDropActive, setIsShelfDropActive] = useState(false);
@@ -826,6 +872,11 @@ const FloorPage: NextPage = () => {
   const [isAddSlotResetAnimating, setIsAddSlotResetAnimating] = useState(false);
   const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(null);
   const [deleteArmedId, setDeleteArmedId] = useState<number | null>(null);
+  const [deleteClearAllArmedId, setDeleteClearAllArmedId] = useState<number | null>(
+    null
+  );
+  const [isDeleteClearAllSequenceActive, setIsDeleteClearAllSequenceActive] =
+    useState(false);
   const [deleteAnimation, setDeleteAnimation] = useState<DeleteAnimationState | null>(
     null
   );
@@ -844,6 +895,7 @@ const FloorPage: NextPage = () => {
     useState<ProximityVsCharge | null>(null);
   const [vsFightByKey, setVsFightByKey] = useState<Record<string, VsFightState>>({});
   const [isShelfHovered, setIsShelfHovered] = useState(false);
+  const [isMobileShelfOpen, setIsMobileShelfOpen] = useState(false);
   const [hoveredShelfMovieId, setHoveredShelfMovieId] = useState<number | null>(null);
   const [shelfRecentlyInsertedMovieId, setShelfRecentlyInsertedMovieId] = useState<
     number | null
@@ -857,10 +909,8 @@ const FloorPage: NextPage = () => {
     Record<number, MovieCustomCoverSettings>
   >({});
   const [coverEditor, setCoverEditor] = useState<CoverEditorState | null>(null);
-  const [coverEditorImageOptions, setCoverEditorImageOptions] = useState<
-    TmdbImageOption[]
-  >([]);
-  const [coverEditorImagesLoading, setCoverEditorImagesLoading] = useState(false);
+  const [coverEditorImageOptions] = useState<TmdbImageOption[]>([]);
+  const [coverEditorImagesLoading] = useState(false);
   const [coverEditorError, setCoverEditorError] = useState<string | null>(null);
   const [coverEditorFrontPreview, setCoverEditorFrontPreview] = useState<string | null>(
     null
@@ -879,7 +929,12 @@ const FloorPage: NextPage = () => {
   const floorRef = useRef<HTMLDivElement | null>(null);
   const shelfScrollRef = useRef<HTMLDivElement | null>(null);
   const csvImportInputRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const dragPointerPositionRef = useRef<{ clientX: number; clientY: number } | null>(
+    null
+  );
+  const dragPointerRafRef = useRef<number | null>(null);
   const floorMoviesRef = useRef<FloorMovie[]>([]);
   const sourceMoviesRef = useRef<ClubMovie[]>([]);
   const shelfMoviesRef = useRef<ShelfMovie[]>([]);
@@ -895,6 +950,10 @@ const FloorPage: NextPage = () => {
   const deleteArmedIdRef = useRef<number | null>(null);
   const deleteHoldTimerRef = useRef<number | null>(null);
   const deleteHoldMovieIdRef = useRef<number | null>(null);
+  const deleteClearAllArmedIdRef = useRef<number | null>(null);
+  const deleteClearAllTimerRef = useRef<number | null>(null);
+  const deleteClearAllMovieIdRef = useRef<number | null>(null);
+  const deleteClearAllSequenceTimerRef = useRef<number | null>(null);
   const deleteInZoneRef = useRef(false);
   const deleteCutTimerRef = useRef<number | null>(null);
   const deleteDropTimerRef = useRef<number | null>(null);
@@ -916,7 +975,7 @@ const FloorPage: NextPage = () => {
   const moveMovieToShelfRef = useRef<
     ((movieId: number, insertIndex?: number) => void) | null
   >(null);
-  const openCoverEditorForMovieRef = useRef<((movieId: number) => void) | null>(null);
+  const randomizeMovieCoverPairRef = useRef<((movieId: number) => void) | null>(null);
   const beginDragFromShelfRef = useRef<
     ((movie: ShelfMovie, pointerEvent: PointerEvent) => void) | null
   >(null);
@@ -949,11 +1008,109 @@ const FloorPage: NextPage = () => {
   const coverEditorDropCycleMovieIdRef = useRef<number | null>(null);
   const coverEditorDropCycleIndexRef = useRef(0);
   const coverEditorDropCyclePoolRef = useRef<string[]>([]);
+  const coverEditorDropCycleRenderedCacheRef = useRef<Record<string, string>>({});
+  const randomizeMovieCoverInFlightRef = useRef<Record<number, true>>({});
   const coverEditorAdjustDragRef = useRef<CoverEditorAdjustDragState | null>(null);
   const coverEditorEnterRafRef = useRef<number | null>(null);
   const coverEditorReturnTimerRef = useRef<number | null>(null);
   const shelfDragCandidateRef = useRef<ShelfDragCandidate | null>(null);
   const csvImportInFlightRef = useRef(false);
+
+  const layoutScale = clamp(
+    Math.min(viewportSize.width / 580, viewportSize.height / 900),
+    0.62,
+    1
+  );
+  const isCompactPhoneLayout = viewportSize.width <= 680;
+  const CARD_WIDTH = Math.round(BASE_CARD_WIDTH * layoutScale);
+  const CARD_HEIGHT = Math.round(BASE_CARD_HEIGHT * layoutScale);
+  const ADD_SLOT_HIDDEN_OFFSET = Math.round(BASE_ADD_SLOT_HIDDEN_OFFSET * layoutScale);
+  const ADD_SLOT_HOVER_OFFSET = Math.round(BASE_ADD_SLOT_HOVER_OFFSET * layoutScale);
+  const COVER_EDITOR_DROP_ZONE_EXTRA = Math.max(
+    14,
+    Math.round(BASE_COVER_EDITOR_DROP_ZONE_EXTRA * layoutScale)
+  );
+  const SHELF_OPEN_WIDTH = Math.round(BASE_SHELF_OPEN_WIDTH * layoutScale);
+  const SHELF_SCROLL_WIDTH = Math.round(BASE_SHELF_SCROLL_WIDTH * layoutScale);
+  const SHELF_ITEM_WIDTH = Math.round(BASE_SHELF_ITEM_WIDTH * layoutScale);
+  const SHELF_ITEM_HEIGHT = CARD_HEIGHT;
+  const SHELF_STACK_OVERLAP = Math.max(18, Math.round(BASE_SHELF_STACK_OVERLAP * layoutScale));
+  const SHELF_PEEK_OFFSET = Math.round(BASE_SHELF_PEEK_OFFSET * layoutScale);
+  const SHELF_DROP_ZONE_EXTRA = Math.max(
+    14,
+    Math.round(BASE_SHELF_DROP_ZONE_EXTRA * layoutScale)
+  );
+  const SHELF_LIST_TOP_PADDING = Math.round(BASE_SHELF_LIST_TOP_PADDING * layoutScale);
+  const SHELF_EXPOSED_STRIP_HEIGHT = Math.max(18, SHELF_ITEM_HEIGHT - SHELF_STACK_OVERLAP);
+  const SHELF_SPINE_HITBOX_HEIGHT = SHELF_EXPOSED_STRIP_HEIGHT;
+  const SHELF_ROW_ART_TOP = Math.round(
+    (SHELF_EXPOSED_STRIP_HEIGHT - SHELF_ITEM_HEIGHT) / 2
+  );
+  const MOBILE_SHELF_PEEK_HEIGHT = Math.max(76, Math.round(88 * layoutScale));
+  const MOBILE_SHELF_OPEN_HEIGHT = Math.max(138, Math.round(176 * layoutScale));
+  const MOBILE_SHELF_ITEM_LENGTH = Math.max(132, Math.round(CARD_HEIGHT * 0.54));
+  const MOBILE_SHELF_ITEM_HEIGHT = Math.max(
+    42,
+    Math.round(SHELF_EXPOSED_STRIP_HEIGHT * 1.18)
+  );
+  const MOBILE_SHELF_SIDE_PADDING = Math.max(12, Math.round(14 * layoutScale));
+  const MOBILE_SHELF_ITEM_GAP = Math.max(10, Math.round(12 * layoutScale));
+  const MOBILE_SHELF_HANDLE_WIDTH = Math.max(68, Math.round(84 * layoutScale));
+  const MOBILE_SHELF_BOTTOM_CLEARANCE = isCompactPhoneLayout
+    ? MOBILE_SHELF_OPEN_HEIGHT + Math.max(12, Math.round(16 * layoutScale))
+    : 0;
+  const REMOTE_CONTROL_WIDTH = Math.round(BASE_REMOTE_CONTROL_WIDTH * layoutScale);
+  const REMOTE_CONTROL_HEIGHT = Math.round(BASE_REMOTE_CONTROL_HEIGHT * layoutScale);
+  const REMOTE_VISIBLE_DEFAULT = Math.max(
+    48,
+    Math.round(BASE_REMOTE_VISIBLE_DEFAULT * layoutScale)
+  );
+  const REMOTE_VISIBLE_PEEK = Math.max(88, Math.round(BASE_REMOTE_VISIBLE_PEEK * layoutScale));
+  const REMOTE_SLOT_GAP = Math.max(8, Math.round(BASE_REMOTE_SLOT_GAP * layoutScale));
+  const DELETE_ZONE_HEIGHT = Math.max(30, Math.round(BASE_DELETE_ZONE_HEIGHT * layoutScale));
+  const VS_BADGE_WIDTH = Math.round(BASE_VS_BADGE_WIDTH * layoutScale);
+  const VS_BADGE_HEIGHT = Math.round(BASE_VS_BADGE_HEIGHT * layoutScale);
+  const PROXIMITY_VS_TRIGGER_RADIUS = Math.max(
+    120,
+    Math.round(BASE_PROXIMITY_VS_TRIGGER_RADIUS * layoutScale)
+  );
+  const PROXIMITY_VS_BREAK_RADIUS = Math.max(
+    210,
+    Math.round(BASE_PROXIMITY_VS_BREAK_RADIUS * layoutScale)
+  );
+  const PROXIMITY_VS_PULL_MAX = BASE_PROXIMITY_VS_PULL_MAX * layoutScale;
+
+  useEffect(() => {
+    const updateViewportSize = () => {
+      const viewport = window.visualViewport;
+      setViewportSize({
+        width: Math.round(viewport?.width ?? window.innerWidth),
+        height: Math.round(viewport?.height ?? window.innerHeight),
+      });
+    };
+
+    updateViewportSize();
+    const viewport = window.visualViewport;
+    window.addEventListener('resize', updateViewportSize);
+    viewport?.addEventListener('resize', updateViewportSize);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportSize);
+      viewport?.removeEventListener('resize', updateViewportSize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isCompactPhoneLayout && isMobileShelfOpen) {
+      setIsMobileShelfOpen(false);
+    }
+  }, [isCompactPhoneLayout, isMobileShelfOpen]);
+
+  useEffect(() => {
+    if ((pendingSearch || coverEditor) && isMobileShelfOpen) {
+      setIsMobileShelfOpen(false);
+    }
+  }, [coverEditor, isMobileShelfOpen, pendingSearch]);
 
   const getFloorBounds = useCallback(() => {
     const rect = floorRef.current?.getBoundingClientRect();
@@ -972,11 +1129,30 @@ const FloorPage: NextPage = () => {
 
   const getEmptySlotPosition = useCallback(() => {
     const bounds = getFloorBounds();
+    const rightInset = isCompactPhoneLayout
+      ? Math.max(14, Math.round(18 * layoutScale))
+      : 28;
+    const bottomInset = 24 + MOBILE_SHELF_BOTTOM_CLEARANCE;
     return {
-      x: clamp(bounds.width - CARD_WIDTH - 28, 0, Math.max(0, bounds.width - CARD_WIDTH)),
-      y: clamp(bounds.height - CARD_HEIGHT - 24, 0, Math.max(0, bounds.height - CARD_HEIGHT)),
+      x: clamp(
+        bounds.width - CARD_WIDTH - rightInset,
+        0,
+        Math.max(0, bounds.width - CARD_WIDTH)
+      ),
+      y: clamp(
+        bounds.height - CARD_HEIGHT - bottomInset,
+        0,
+        Math.max(0, bounds.height - CARD_HEIGHT)
+      ),
     };
-  }, [getFloorBounds]);
+  }, [
+    CARD_HEIGHT,
+    CARD_WIDTH,
+    MOBILE_SHELF_BOTTOM_CLEARANCE,
+    getFloorBounds,
+    isCompactPhoneLayout,
+    layoutScale,
+  ]);
 
   const updateShelfDropInsertIndex = useCallback((next: number | null) => {
     if (shelfDropInsertIndexRef.current === next) {
@@ -987,7 +1163,8 @@ const FloorPage: NextPage = () => {
     setShelfDropInsertIndex(next);
   }, []);
 
-  const getShelfDropInsertIndexFromPointer = useCallback((clientY: number): number => {
+  const getShelfDropInsertIndexFromPointer = useCallback(
+    (clientX: number, clientY: number): number => {
     const totalMovies = shelfMoviesRef.current.length;
     if (totalMovies <= 0) {
       return 0;
@@ -998,14 +1175,30 @@ const FloorPage: NextPage = () => {
       return 0;
     }
 
-    const scrollRect = scrollElement.getBoundingClientRect();
-    const step = SHELF_EXPOSED_STRIP_HEIGHT;
-    const relativeY =
-      clientY - scrollRect.top + scrollElement.scrollTop - SHELF_LIST_TOP_PADDING;
-    const rawIndex = Math.round(relativeY / step);
+      const scrollRect = scrollElement.getBoundingClientRect();
 
-    return clamp(rawIndex, 0, totalMovies);
-  }, []);
+      if (isCompactPhoneLayout) {
+        const step = MOBILE_SHELF_ITEM_LENGTH + MOBILE_SHELF_ITEM_GAP;
+        const relativeX =
+          clientX - scrollRect.left + scrollElement.scrollLeft - MOBILE_SHELF_SIDE_PADDING;
+        const rawIndex = Math.round(relativeX / step);
+        return clamp(rawIndex, 0, totalMovies);
+      }
+
+      const step = SHELF_EXPOSED_STRIP_HEIGHT;
+      const relativeY =
+        clientY - scrollRect.top + scrollElement.scrollTop - SHELF_LIST_TOP_PADDING;
+      const rawIndex = Math.round(relativeY / step);
+
+      return clamp(rawIndex, 0, totalMovies);
+    },
+    [
+      isCompactPhoneLayout,
+      MOBILE_SHELF_ITEM_GAP,
+      MOBILE_SHELF_ITEM_LENGTH,
+      MOBILE_SHELF_SIDE_PADDING,
+    ]
+  );
 
   const addMovieToFloor = useCallback(
     (movie: ClubMovie, x: number, y: number, rotationOverride?: number) => {
@@ -1101,9 +1294,7 @@ const FloorPage: NextPage = () => {
 
     const loadMovies = async () => {
       try {
-        const boardResponse = await fetch(
-          withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`)
-        );
+        const boardResponse = await fetch(withBasePath(`/api/club/floor?boardId=${boardId}`));
         if (boardResponse.ok) {
           const boardRaw: unknown = await boardResponse.json();
           if (isFloorBoardResponse(boardRaw) && !ignore) {
@@ -1120,7 +1311,7 @@ const FloorPage: NextPage = () => {
                   rotation: clampCardRotation(movie.rotation),
                   z: movie.z ?? 1,
                   rank: movie.rank ?? 1,
-                  score: movie.score ?? getTopScorePercent(movie.y, bounds.height),
+                  score: movie.score ?? getTopScorePercent(movie.y, bounds.height, CARD_HEIGHT),
                 })),
                 bounds.height
               );
@@ -1248,7 +1439,7 @@ const FloorPage: NextPage = () => {
     return () => {
       ignore = true;
     };
-  }, [getFloorBounds]);
+  }, [boardId, getFloorBounds]);
 
   useEffect(() => {
     if (restoredFromBoardRef.current) {
@@ -1391,6 +1582,20 @@ const FloorPage: NextPage = () => {
     }
   }, []);
 
+  const clearDeleteClearAllTimer = useCallback(() => {
+    if (deleteClearAllTimerRef.current !== null) {
+      window.clearTimeout(deleteClearAllTimerRef.current);
+      deleteClearAllTimerRef.current = null;
+    }
+  }, []);
+
+  const clearDeleteClearAllSequenceTimer = useCallback(() => {
+    if (deleteClearAllSequenceTimerRef.current !== null) {
+      window.clearTimeout(deleteClearAllSequenceTimerRef.current);
+      deleteClearAllSequenceTimerRef.current = null;
+    }
+  }, []);
+
   const clearDeleteAnimationTimers = useCallback(() => {
     if (deleteCutTimerRef.current !== null) {
       window.clearTimeout(deleteCutTimerRef.current);
@@ -1405,6 +1610,171 @@ const FloorPage: NextPage = () => {
       deleteCleanupTimerRef.current = null;
     }
   }, []);
+
+  const scheduleDeleteClearAllHold = useCallback(
+    (movieId: number) => {
+      if (
+        deleteClearAllArmedIdRef.current === movieId ||
+        deleteClearAllMovieIdRef.current === movieId
+      ) {
+        return;
+      }
+
+      clearDeleteClearAllTimer();
+      deleteClearAllMovieIdRef.current = movieId;
+      deleteClearAllTimerRef.current = window.setTimeout(() => {
+        const activeDragId = dragRef.current?.id ?? null;
+        if (
+          activeDragId === movieId &&
+          deleteInZoneRef.current &&
+          deleteArmedIdRef.current === movieId
+        ) {
+          setDeleteClearAllArmedId(movieId);
+        }
+      }, DELETE_CLEAR_ALL_EXTRA_HOLD_MS);
+    },
+    [clearDeleteClearAllTimer]
+  );
+
+  const deleteMovieFromFloor = useCallback(
+    (movieId: number) => {
+      const removedMovie =
+        floorMoviesRef.current.find((movie) => movie.id === movieId) ?? null;
+      if (!removedMovie) {
+        return false;
+      }
+
+      const bounds = getFloorBounds();
+      setFloorMovies((previous) =>
+        recalculateHierarchy(
+          previous.filter((movie) => movie.id !== movieId),
+          bounds.height
+        )
+      );
+
+      if (!isWaitingSlotCover(removedMovie.coverImage)) {
+        clearDeleteAnimationTimers();
+        setDeleteAnimation({
+          id: removedMovie.id,
+          title: removedMovie.title,
+          coverImage: removedMovie.coverImage,
+          x: removedMovie.x,
+          y: removedMovie.y,
+          rotation: clampCardRotation(removedMovie.rotation),
+          z: Math.max(1400, removedMovie.z + 4),
+          splitDirection: Math.random() < 0.5 ? 1 : -1,
+          stage: 'cut',
+        });
+
+        deleteCutTimerRef.current = window.setTimeout(() => {
+          setDeleteAnimation((current) =>
+            current && current.id === movieId
+              ? { ...current, stage: 'hold' }
+              : current
+          );
+        }, DELETE_CUT_MS);
+
+        deleteDropTimerRef.current = window.setTimeout(() => {
+          setDeleteAnimation((current) =>
+            current && current.id === movieId
+              ? { ...current, stage: 'drop' }
+              : current
+          );
+        }, DELETE_CUT_MS + DELETE_POST_CUT_HOLD_MS);
+
+        deleteCleanupTimerRef.current = window.setTimeout(() => {
+          setDeleteAnimation((current) =>
+            current && current.id === movieId ? null : current
+          );
+        }, DELETE_CUT_MS + DELETE_POST_CUT_HOLD_MS + DELETE_DROP_MS);
+      }
+
+      setSourceMovies((previous) => previous.filter((movie) => movie.id !== movieId));
+      setPreviewCoverByMovieId((previous) => {
+        const stalePreview = previous[movieId];
+        if (stalePreview) {
+          URL.revokeObjectURL(stalePreview);
+        }
+
+        const { [movieId]: _removed, ...rest } = previous;
+        return rest;
+      });
+      setPreviewTierByMovieId((previous) => {
+        const { [movieId]: _removed, ...rest } = previous;
+        return rest;
+      });
+      setProximityVsPairs((current) =>
+        current.filter((pair) => !pairHasMovie(pair, movieId))
+      );
+      delete renderedCoverPromiseByMovieIdRef.current[movieId];
+      delete renderedSpineCoverPromiseByMovieIdRef.current[movieId];
+      return true;
+    },
+    [clearDeleteAnimationTimers, getFloorBounds]
+  );
+
+  const startDeleteClearAllSequence = useCallback(
+    (triggerMovieId: number) => {
+      const movieById = new Map(
+        floorMoviesRef.current.map((movie) => [movie.id, movie] as const)
+      );
+      const queue = floorMoviesRef.current
+        .map((movie) => movie.id)
+        .sort((leftId, rightId) => {
+          if (leftId === triggerMovieId) {
+            return -1;
+          }
+          if (rightId === triggerMovieId) {
+            return 1;
+          }
+
+          const leftMovie = movieById.get(leftId);
+          const rightMovie = movieById.get(rightId);
+          if (!leftMovie || !rightMovie) {
+            return 0;
+          }
+
+          if (rightMovie.y !== leftMovie.y) {
+            return rightMovie.y - leftMovie.y;
+          }
+
+          return rightMovie.z - leftMovie.z;
+        });
+
+      if (queue.length === 0) {
+        return;
+      }
+
+      clearDeleteClearAllSequenceTimer();
+      setIsDeleteClearAllSequenceActive(true);
+
+      const removeNext = (index: number) => {
+        const movieId = queue[index];
+        if (movieId === undefined) {
+          setIsDeleteClearAllSequenceActive(false);
+          deleteClearAllSequenceTimerRef.current = null;
+          return;
+        }
+
+        deleteMovieFromFloor(movieId);
+
+        if (index >= queue.length - 1) {
+          deleteClearAllSequenceTimerRef.current = window.setTimeout(() => {
+            setIsDeleteClearAllSequenceActive(false);
+            deleteClearAllSequenceTimerRef.current = null;
+          }, DELETE_CUT_MS + DELETE_POST_CUT_HOLD_MS + DELETE_DROP_MS);
+          return;
+        }
+
+        deleteClearAllSequenceTimerRef.current = window.setTimeout(() => {
+          removeNext(index + 1);
+        }, DELETE_CLEAR_ALL_STEP_MS);
+      };
+
+      removeNext(0);
+    },
+    [clearDeleteClearAllSequenceTimer, deleteMovieFromFloor]
+  );
 
   const clearProximityVsHoldTimer = useCallback(() => {
     if (proximityVsHoldTimerRef.current !== null) {
@@ -1461,6 +1831,10 @@ const FloorPage: NextPage = () => {
   }, [clearProximityVsChargeAnimation, clearProximityVsHoldTimer]);
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>, id: number) => {
+    if (isDeleteClearAllSequenceActive) {
+      return;
+    }
+
     const isMovieInFight = Object.values(vsFightByKeyRef.current).some((fight) =>
       pairHasMovie(fight.pair, id)
     );
@@ -1471,12 +1845,17 @@ const FloorPage: NextPage = () => {
     event.preventDefault();
     shelfDragCandidateRef.current = null;
     setPendingSearch(null);
+    setIsAddSlotPeek(false);
+    setIsMobileShelfOpen(false);
     clearDeleteHoldTimer();
+    clearDeleteClearAllTimer();
     resetProximityVsCandidate();
     deleteInZoneRef.current = false;
     deleteHoldMovieIdRef.current = null;
+    deleteClearAllMovieIdRef.current = null;
     setDeleteCandidateId(null);
     setDeleteArmedId(null);
+    setDeleteClearAllArmedId(null);
     setIsShelfDropActive(false);
     setIsCoverEditorDropActive(false);
     updateShelfDropInsertIndex(null);
@@ -1523,35 +1902,19 @@ const FloorPage: NextPage = () => {
   };
 
   const handleGlobalPointerMove = useCallback(
-    (event: PointerEvent) => {
+    (clientX: number, clientY: number) => {
       const drag = dragRef.current;
-
       if (!drag) {
-        const shelfDragCandidate = shelfDragCandidateRef.current;
-        if (!shelfDragCandidate) {
-          return;
-        }
-
-        const distance = Math.hypot(
-          event.clientX - shelfDragCandidate.startClientX,
-          event.clientY - shelfDragCandidate.startClientY
-        );
-        if (distance < 8) {
-          return;
-        }
-
-        shelfDragCandidateRef.current = null;
-        beginDragFromShelfRef.current?.(shelfDragCandidate.movie, event);
         return;
       }
 
       const bounds = getFloorBounds();
-      const x = clamp(event.clientX - bounds.left - drag.offsetX, 0, Math.max(0, bounds.width - CARD_WIDTH));
-      const y = clamp(event.clientY - bounds.top - drag.offsetY, 0, Math.max(0, bounds.height - CARD_HEIGHT));
+      const x = clamp(clientX - bounds.left - drag.offsetX, 0, Math.max(0, bounds.width - CARD_WIDTH));
+      const y = clamp(clientY - bounds.top - drag.offsetY, 0, Math.max(0, bounds.height - CARD_HEIGHT));
       const now = performance.now();
       const dtMs = Math.max(1, now - drag.lastTimestamp);
-      const instantVx = (event.clientX - drag.lastClientX) / dtMs;
-      const instantVy = (event.clientY - drag.lastClientY) / dtMs;
+      const instantVx = (clientX - drag.lastClientX) / dtMs;
+      const instantVy = (clientY - drag.lastClientY) / dtMs;
       const velocityX =
         drag.velocityX * (1 - DRAG_VELOCITY_SMOOTHING) +
         instantVx * DRAG_VELOCITY_SMOOTHING;
@@ -1575,8 +1938,8 @@ const FloorPage: NextPage = () => {
       );
       dragRef.current = {
         ...drag,
-        lastClientX: event.clientX,
-        lastClientY: event.clientY,
+        lastClientX: clientX,
+        lastClientY: clientY,
         lastTimestamp: now,
         velocityX,
         velocityY,
@@ -1585,17 +1948,20 @@ const FloorPage: NextPage = () => {
       const draggedCenterY = y + CARD_HEIGHT * 0.5;
       const shelfDropZoneWidth =
         SHELF_OPEN_WIDTH + SHELF_DROP_ZONE_EXTRA + CARD_WIDTH * 0.12;
-      const isInShelfDropZone = draggedCenterX <= shelfDropZoneWidth;
+      const mobileShelfDropZoneTop = bounds.height - MOBILE_SHELF_OPEN_HEIGHT;
+      const isInShelfDropZone = isCompactPhoneLayout
+        ? isMobileShelfOpen &&
+          draggedCenterY >= mobileShelfDropZoneTop &&
+          draggedCenterX >= MOBILE_SHELF_SIDE_PADDING &&
+          draggedCenterX <= bounds.width - MOBILE_SHELF_SIDE_PADDING
+        : draggedCenterX <= shelfDropZoneWidth;
       if (isShelfDropActiveRef.current !== isInShelfDropZone) {
         setIsShelfDropActive(isInShelfDropZone);
       }
 
       const slotPosition = getEmptySlotPosition();
-      const activeAddSlotOffset = pendingSearch
-        ? 0
-        : isAddSlotPeek
-          ? ADD_SLOT_HOVER_OFFSET
-          : ADD_SLOT_HIDDEN_OFFSET;
+      // Keep the drop-zone target stable while dragging so first-drop hit testing is reliable.
+      const activeAddSlotOffset = 0;
       const editorDropZoneLeft = slotPosition.x - COVER_EDITOR_DROP_ZONE_EXTRA;
       const editorDropZoneTop =
         slotPosition.y + activeAddSlotOffset - COVER_EDITOR_DROP_ZONE_EXTRA;
@@ -1618,7 +1984,10 @@ const FloorPage: NextPage = () => {
       }
 
       if (isInShelfDropZone) {
-        const nextInsertIndex = getShelfDropInsertIndexFromPointer(event.clientY);
+        const nextInsertIndex = getShelfDropInsertIndexFromPointer(
+          clientX,
+          clientY
+        );
         updateShelfDropInsertIndex(nextInsertIndex);
       } else {
         updateShelfDropInsertIndex(null);
@@ -1652,8 +2021,13 @@ const FloorPage: NextPage = () => {
             if (activeDragId === drag.id && deleteInZoneRef.current) {
               setDeleteArmedId(drag.id);
               setDeleteCandidateId(drag.id);
+              scheduleDeleteClearAllHold(drag.id);
             }
           }, DELETE_HOLD_MS);
+        }
+
+        if (deleteArmedIdRef.current === drag.id) {
+          scheduleDeleteClearAllHold(drag.id);
         }
       } else {
         if (deleteCandidateIdRef.current === drag.id) {
@@ -1662,9 +2036,16 @@ const FloorPage: NextPage = () => {
         if (deleteArmedIdRef.current === drag.id) {
           setDeleteArmedId(null);
         }
+        if (deleteClearAllArmedIdRef.current === drag.id) {
+          setDeleteClearAllArmedId(null);
+        }
         if (deleteHoldMovieIdRef.current === drag.id) {
           clearDeleteHoldTimer();
           deleteHoldMovieIdRef.current = null;
+        }
+        if (deleteClearAllMovieIdRef.current === drag.id) {
+          clearDeleteClearAllTimer();
+          deleteClearAllMovieIdRef.current = null;
         }
       }
 
@@ -1756,16 +2137,88 @@ const FloorPage: NextPage = () => {
       );
     },
     [
+      CARD_HEIGHT,
+      CARD_WIDTH,
+      DELETE_ZONE_HEIGHT,
+      MOBILE_SHELF_OPEN_HEIGHT,
+      MOBILE_SHELF_SIDE_PADDING,
+      PROXIMITY_VS_BREAK_RADIUS,
+      PROXIMITY_VS_TRIGGER_RADIUS,
+      SHELF_DROP_ZONE_EXTRA,
+      SHELF_OPEN_WIDTH,
       clearDeleteHoldTimer,
+      clearDeleteClearAllTimer,
       getEmptySlotPosition,
       getFloorBounds,
-      isAddSlotPeek,
-      pendingSearch,
-      resetProximityVsCandidate,
-      startProximityVsChargeAnimation,
       getShelfDropInsertIndexFromPointer,
+      isCompactPhoneLayout,
+      isMobileShelfOpen,
+      resetProximityVsCandidate,
+      scheduleDeleteClearAllHold,
+      startProximityVsChargeAnimation,
       updateShelfDropInsertIndex,
     ]
+  );
+
+  const flushPendingDragPointerMove = useCallback(() => {
+    if (dragPointerRafRef.current !== null) {
+      window.cancelAnimationFrame(dragPointerRafRef.current);
+      dragPointerRafRef.current = null;
+    }
+
+    const pendingPointer = dragPointerPositionRef.current;
+    if (!pendingPointer) {
+      return;
+    }
+
+    dragPointerPositionRef.current = null;
+    handleGlobalPointerMove(pendingPointer.clientX, pendingPointer.clientY);
+  }, [handleGlobalPointerMove]);
+
+  const handleWindowPointerMove = useCallback(
+    (event: PointerEvent) => {
+      const drag = dragRef.current;
+
+      if (!drag) {
+        const shelfDragCandidate = shelfDragCandidateRef.current;
+        if (!shelfDragCandidate) {
+          return;
+        }
+
+        const distance = Math.hypot(
+          event.clientX - shelfDragCandidate.startClientX,
+          event.clientY - shelfDragCandidate.startClientY
+        );
+        if (distance < 8) {
+          return;
+        }
+
+        shelfDragCandidateRef.current = null;
+        beginDragFromShelfRef.current?.(shelfDragCandidate.movie, event);
+        return;
+      }
+
+      dragPointerPositionRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+
+      if (dragPointerRafRef.current !== null) {
+        return;
+      }
+
+      dragPointerRafRef.current = window.requestAnimationFrame(() => {
+        dragPointerRafRef.current = null;
+        const pendingPointer = dragPointerPositionRef.current;
+        if (!pendingPointer) {
+          return;
+        }
+
+        dragPointerPositionRef.current = null;
+        handleGlobalPointerMove(pendingPointer.clientX, pendingPointer.clientY);
+      });
+    },
+    [handleGlobalPointerMove]
   );
 
   const handleGlobalPointerUp = useCallback(() => {
@@ -1787,11 +2240,15 @@ const FloorPage: NextPage = () => {
       return;
     }
 
+    flushPendingDragPointerMove();
+
     const bounds = getFloorBounds();
     const draggedMovieId = drag.id;
     const shouldMoveToShelf = isShelfDropActiveRef.current;
-    const shouldOpenCoverEditor = isCoverEditorDropActiveRef.current;
+    const shouldRandomizeCover = isCoverEditorDropActiveRef.current;
     const dropInsertIndex = shelfDropInsertIndexRef.current;
+    const shouldClearBoard =
+      deleteClearAllArmedIdRef.current === draggedMovieId && deleteInZoneRef.current;
     const shouldDelete =
       deleteArmedIdRef.current === draggedMovieId && deleteInZoneRef.current;
     const turnDirection =
@@ -1806,13 +2263,17 @@ const FloorPage: NextPage = () => {
     );
 
     dragRef.current = null;
+    dragPointerPositionRef.current = null;
     setDraggingId(null);
     clearDeleteHoldTimer();
+    clearDeleteClearAllTimer();
     resetProximityVsCandidate();
     deleteInZoneRef.current = false;
     deleteHoldMovieIdRef.current = null;
+    deleteClearAllMovieIdRef.current = null;
     setDeleteCandidateId(null);
     setDeleteArmedId(null);
+    setDeleteClearAllArmedId(null);
     setIsShelfDropActive(false);
     setIsCoverEditorDropActive(false);
     updateShelfDropInsertIndex(null);
@@ -1822,94 +2283,57 @@ const FloorPage: NextPage = () => {
       return;
     }
 
-    if (shouldOpenCoverEditor) {
+    if (shouldRandomizeCover) {
       setPendingSearch(null);
       setIsAddSlotPeek(false);
       setActiveSearchCover(null);
+      setCoverEditor(null);
+      if (coverEditorReturnTimerRef.current !== null) {
+        window.clearTimeout(coverEditorReturnTimerRef.current);
+      }
+      setCoverEditorReturnMovieId(draggedMovieId);
+      coverEditorReturnTimerRef.current = window.setTimeout(() => {
+        setCoverEditorReturnMovieId((current) =>
+          current === draggedMovieId ? null : current
+        );
+        coverEditorReturnTimerRef.current = null;
+      }, 640);
       setFloorMovies((previous) =>
         recalculateHierarchy(
           previous.map((movie) =>
             movie.id === draggedMovieId
               ? {
-                  ...movie,
-                  rotation: releaseRotation,
-                }
+                ...movie,
+                x: clamp(
+                  movie.x - CARD_WIDTH * (0.56 + Math.random() * 0.2),
+                  0,
+                  Math.max(0, bounds.width - CARD_WIDTH)
+                ),
+                y: clamp(
+                  movie.y - CARD_HEIGHT * (0.1 + Math.random() * 0.12),
+                  0,
+                  Math.max(0, bounds.height - CARD_HEIGHT)
+                ),
+                rotation: clampCardRotation(
+                  releaseRotation + (Math.random() - 0.5) * 5.2
+                ),
+              }
               : movie
           ),
           bounds.height
         )
       );
-      openCoverEditorForMovieRef.current?.(draggedMovieId);
+      randomizeMovieCoverPairRef.current?.(draggedMovieId);
+      return;
+    }
+
+    if (shouldClearBoard) {
+      startDeleteClearAllSequence(draggedMovieId);
       return;
     }
 
     if (shouldDelete) {
-      const removedMovie =
-        floorMovies.find((movie) => movie.id === draggedMovieId) ?? null;
-      setFloorMovies((previous) =>
-        recalculateHierarchy(
-          previous.filter((movie) => movie.id !== draggedMovieId),
-          bounds.height
-        )
-      );
-
-      if (removedMovie && !isWaitingSlotCover(removedMovie.coverImage)) {
-        clearDeleteAnimationTimers();
-        setDeleteAnimation({
-          id: removedMovie.id,
-          title: removedMovie.title,
-          coverImage: removedMovie.coverImage,
-          x: removedMovie.x,
-          y: removedMovie.y,
-          rotation: clampCardRotation(removedMovie.rotation),
-          z: Math.max(1400, removedMovie.z + 4),
-          splitDirection: Math.random() < 0.5 ? 1 : -1,
-          stage: 'cut',
-        });
-
-        deleteCutTimerRef.current = window.setTimeout(() => {
-          setDeleteAnimation((current) =>
-            current && current.id === draggedMovieId
-              ? { ...current, stage: 'hold' }
-              : current
-          );
-        }, DELETE_CUT_MS);
-
-        deleteDropTimerRef.current = window.setTimeout(() => {
-          setDeleteAnimation((current) =>
-            current && current.id === draggedMovieId
-              ? { ...current, stage: 'drop' }
-              : current
-          );
-        }, DELETE_CUT_MS + DELETE_POST_CUT_HOLD_MS);
-
-        deleteCleanupTimerRef.current = window.setTimeout(() => {
-          setDeleteAnimation((current) =>
-            current && current.id === draggedMovieId ? null : current
-          );
-        }, DELETE_CUT_MS + DELETE_POST_CUT_HOLD_MS + DELETE_DROP_MS);
-      }
-
-      setSourceMovies((previous) =>
-        previous.filter((movie) => movie.id !== draggedMovieId)
-      );
-      setPreviewCoverByMovieId((previous) => {
-        const stalePreview = previous[draggedMovieId];
-        if (stalePreview) {
-          URL.revokeObjectURL(stalePreview);
-        }
-
-        const { [draggedMovieId]: _removed, ...rest } = previous;
-        return rest;
-      });
-      setPreviewTierByMovieId((previous) => {
-        const { [draggedMovieId]: _removed, ...rest } = previous;
-        return rest;
-      });
-      setProximityVsPairs((current) =>
-        current.filter((pair) => !pairHasMovie(pair, draggedMovieId))
-      );
-      delete renderedCoverPromiseByMovieIdRef.current[draggedMovieId];
+      deleteMovieFromFloor(draggedMovieId);
       return;
     }
 
@@ -1927,23 +2351,30 @@ const FloorPage: NextPage = () => {
       )
     );
   }, [
-    clearDeleteAnimationTimers,
+    clearDeleteClearAllTimer,
     clearDeleteHoldTimer,
-    floorMovies,
+    deleteMovieFromFloor,
+    flushPendingDragPointerMove,
     getFloorBounds,
     resetProximityVsCandidate,
+    startDeleteClearAllSequence,
     updateShelfDropInsertIndex,
   ]);
 
   useEffect(() => {
-    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('pointermove', handleWindowPointerMove);
     window.addEventListener('pointerup', handleGlobalPointerUp);
 
     return () => {
-      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      if (dragPointerRafRef.current !== null) {
+        window.cancelAnimationFrame(dragPointerRafRef.current);
+        dragPointerRafRef.current = null;
+      }
+      dragPointerPositionRef.current = null;
+      window.removeEventListener('pointermove', handleWindowPointerMove);
       window.removeEventListener('pointerup', handleGlobalPointerUp);
     };
-  }, [handleGlobalPointerMove, handleGlobalPointerUp]);
+  }, [handleGlobalPointerUp, handleWindowPointerMove]);
 
   useEffect(() => {
     const leader = [...floorMovies].sort((a, b) => a.rank - b.rank)[0];
@@ -1977,22 +2408,19 @@ const FloorPage: NextPage = () => {
     boardSyncTimerRef.current = window.setTimeout(() => {
       const syncBoard = async (): Promise<void> => {
         const requestBody = {
-          boardId: FLOOR_BOARD_ID,
+          boardId,
           movies: boardMovies,
           expectedVersion: boardVersionRef.current ?? undefined,
         };
 
         try {
-          const firstResponse = await fetch(
-            withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`),
-            {
-              method: 'PUT',
-              headers: {
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify(requestBody),
-            }
-          );
+          const firstResponse = await fetch(withBasePath(`/api/club/floor?boardId=${boardId}`), {
+            method: 'PUT',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
 
           if (firstResponse.ok) {
             const payloadRaw: unknown = await firstResponse.json().catch(() => null);
@@ -2024,7 +2452,7 @@ const FloorPage: NextPage = () => {
           }
 
           const secondResponse = await fetch(
-            withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`),
+            withBasePath(`/api/club/floor?boardId=${boardId}`),
             {
               method: 'PUT',
               headers: {
@@ -2063,7 +2491,7 @@ const FloorPage: NextPage = () => {
         boardSyncTimerRef.current = null;
       }
     };
-  }, [floorMovies, isInitialBoardLoaded]);
+  }, [boardId, floorMovies, isInitialBoardLoaded]);
 
   useEffect(() => {
     return () => {
@@ -2084,6 +2512,8 @@ const FloorPage: NextPage = () => {
       }
       vsFightTimersRef.current = [];
       clearDeleteHoldTimer();
+      clearDeleteClearAllTimer();
+      clearDeleteClearAllSequenceTimer();
       clearDeleteAnimationTimers();
       resetProximityVsCandidate();
       shelfDragCandidateRef.current = null;
@@ -2097,7 +2527,13 @@ const FloorPage: NextPage = () => {
       }
       coverEditorAdjustDragRef.current = null;
     };
-  }, [clearDeleteAnimationTimers, clearDeleteHoldTimer, resetProximityVsCandidate]);
+  }, [
+    clearDeleteAnimationTimers,
+    clearDeleteClearAllSequenceTimer,
+    clearDeleteClearAllTimer,
+    clearDeleteHoldTimer,
+    resetProximityVsCandidate,
+  ]);
 
   useEffect(() => {
     floorMoviesRef.current = floorMovies;
@@ -2110,6 +2546,18 @@ const FloorPage: NextPage = () => {
   useEffect(() => {
     shelfMoviesRef.current = shelfMovies;
   }, [shelfMovies]);
+
+  useEffect(() => {
+    if (floorMovies.length === 0 || shelfMovies.length === 0) {
+      return;
+    }
+
+    const floorMovieIds = new Set(floorMovies.map((movie) => movie.id));
+    setShelfMovies((previous) => {
+      const next = previous.filter((movie) => !floorMovieIds.has(movie.id));
+      return next.length === previous.length ? previous : next;
+    });
+  }, [floorMovies, shelfMovies]);
 
   useEffect(() => {
     const visibleMovieIds = new Set(
@@ -2158,6 +2606,10 @@ const FloorPage: NextPage = () => {
   useEffect(() => {
     deleteArmedIdRef.current = deleteArmedId;
   }, [deleteArmedId]);
+
+  useEffect(() => {
+    deleteClearAllArmedIdRef.current = deleteClearAllArmedId;
+  }, [deleteClearAllArmedId]);
 
   useEffect(() => {
     isShelfDropActiveRef.current = isShelfDropActive;
@@ -2387,7 +2839,30 @@ const FloorPage: NextPage = () => {
     [handleCsvImportFile]
   );
 
+  const focusSearchInput = useCallback(() => {
+    const input = searchInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.focus({ preventScroll: true });
+    const valueLength = input.value.length;
+    try {
+      input.setSelectionRange(valueLength, valueLength);
+    } catch {
+      // iOS can reject selection updates during focus transitions.
+    }
+  }, []);
+
   const handleEmptySlotClick = () => {
+    setIsMobileShelfOpen(false);
+    focusSearchInput();
+
+    if (pendingSearch) {
+      setIsAddSlotPeek(true);
+      return;
+    }
+
     setPendingSearch({
       query: '',
       results: [],
@@ -2396,6 +2871,19 @@ const FloorPage: NextPage = () => {
     });
     setIsAddSlotPeek(true);
   };
+
+  const handleSearchInputChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const nextQuery = event.target.value;
+    setPendingSearch((current) =>
+      current
+        ? {
+            ...current,
+            query: nextQuery,
+            selectedIndex: 0,
+          }
+        : current
+    );
+  }, []);
 
   const getAddSlotOffset = useCallback(() => {
     if (pendingSearch) {
@@ -2408,6 +2896,26 @@ const FloorPage: NextPage = () => {
 
     return ADD_SLOT_HIDDEN_OFFSET;
   }, [isAddSlotPeek, pendingSearch]);
+
+  useEffect(() => {
+    const input = searchInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    if (!pendingSearch) {
+      if (document.activeElement === input) {
+        input.blur();
+      }
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      if (document.activeElement !== input) {
+        focusSearchInput();
+      }
+    });
+  }, [focusSearchInput, pendingSearch]);
 
   const triggerCoverEditorReturnAnimation = useCallback((movieId: number) => {
     if (!Number.isFinite(movieId) || movieId <= 0) {
@@ -2436,6 +2944,17 @@ const FloorPage: NextPage = () => {
       if (coverEditorReturnTimerRef.current !== null) {
         window.clearTimeout(coverEditorReturnTimerRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      for (const renderedUrl of Object.values(
+        coverEditorDropCycleRenderedCacheRef.current
+      )) {
+        URL.revokeObjectURL(renderedUrl);
+      }
+      coverEditorDropCycleRenderedCacheRef.current = {};
     };
   }, []);
 
@@ -2506,6 +3025,8 @@ const FloorPage: NextPage = () => {
       const params = new URLSearchParams({
         movieId: String(normalizedMovieId),
         limit: String(COVER_EDITOR_IMAGE_FETCH_LIMIT),
+        kind: 'all',
+        cache: '1',
       });
 
       try {
@@ -2516,7 +3037,7 @@ const FloorPage: NextPage = () => {
           ? await imageResponse.json()
           : null;
         const options = isTmdbImagesResponse(imagePayloadRaw)
-          ? [...imagePayloadRaw.backdrops, ...imagePayloadRaw.posters]
+          ? [...imagePayloadRaw.posters, ...imagePayloadRaw.backdrops]
           : [];
 
         if (options.length > 0) {
@@ -2554,21 +3075,16 @@ const FloorPage: NextPage = () => {
   }, []);
 
   const buildCoverEditorDropCyclePool = useCallback(
-    (movieCoverImage: string, options: TmdbImageOption[]): string[] => {
-      const posterPreviewUrls = options
+    (options: TmdbImageOption[]): string[] => {
+      const posterSourceUrls = options
         .filter((option) => option.kind === 'poster')
-        .map((option) => option.previewUrl);
-      const backdropPreviewUrls = options
-        .filter((option) => option.kind === 'backdrop')
-        .map((option) => option.previewUrl);
+        .map((option) => option.sourceUrl);
       const primaryPool =
-        posterPreviewUrls.length > 0
-          ? posterPreviewUrls
-          : options.map((option) => option.previewUrl);
+        posterSourceUrls.length > 0
+          ? posterSourceUrls
+          : options.map((option) => option.sourceUrl);
       const mergedPool = [
-        movieCoverImage,
         ...primaryPool.slice(0, COVER_EDITOR_DROP_CYCLE_LIMIT),
-        ...backdropPreviewUrls.slice(0, 4),
       ];
 
       const uniquePool: string[] = [];
@@ -2584,134 +3100,310 @@ const FloorPage: NextPage = () => {
     []
   );
 
-  const openCoverEditorForMovie = useCallback(
+  const fetchCoverEditorDropCycleRenderedCover = useCallback(
+    async (
+      movieId: number,
+      sourceUrl: string,
+      signal: AbortSignal
+    ): Promise<string | null> => {
+      const cacheKey = `${movieId}:${sourceUrl}`;
+      const cached = coverEditorDropCycleRenderedCacheRef.current[cacheKey];
+      if (cached) {
+        return cached;
+      }
+
+      const response = await fetch(withBasePath('/api/vhs/render'), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sourceUrl,
+          templateId: COVER_TEMPLATE_ID,
+          width: COVER_EDITOR_DROP_CYCLE_RENDER_SIZE,
+          height: COVER_EDITOR_DROP_CYCLE_RENDER_SIZE,
+          fit: 'cover',
+          format: 'webp',
+          quality: COVER_EDITOR_DROP_CYCLE_RENDER_QUALITY,
+          background: 'transparent',
+          randomSeed: `drop-cycle-${movieId}`,
+        }),
+        signal,
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const renderedBlob = await response.blob();
+      if (signal.aborted) {
+        return null;
+      }
+
+      const renderedUrl = URL.createObjectURL(renderedBlob);
+      coverEditorDropCycleRenderedCacheRef.current[cacheKey] = renderedUrl;
+      return renderedUrl;
+    },
+    []
+  );
+
+  const randomizeMovieCoverPair = useCallback(
     async (movieId: number) => {
       if (!Number.isFinite(movieId) || movieId <= 0) {
         return;
       }
 
       const normalizedMovieId = Math.floor(movieId);
-      const currentFloorCoverImage =
-        floorMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
-          ?.coverImage ??
-        sourceMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
-          ?.coverImage ??
-        null;
-      const currentSpineCoverImage =
-        shelfMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
-          ?.coverImage ??
-        shelfPreviewCoverByMovieId[normalizedMovieId] ??
-        null;
-      const existingSettings =
-        customCoverSettingsByMovieIdRef.current[normalizedMovieId];
+      if (randomizeMovieCoverInFlightRef.current[normalizedMovieId]) {
+        return;
+      }
+      randomizeMovieCoverInFlightRef.current[normalizedMovieId] = true;
 
       stopCoverEditorDropCycle();
       setPendingSearch(null);
       setIsAddSlotPeek(false);
       setActiveSearchCover(null);
-      setCoverEditorError(null);
-      setCoverEditorImageOptions([]);
-      setCoverEditorFrontPreview(currentFloorCoverImage);
-      setCoverEditorSpinePreview(currentSpineCoverImage);
+      setCoverEditor(null);
 
-      const movieTitle =
-        floorMoviesRef.current.find((entry) => entry.id === normalizedMovieId)?.title ??
-        shelfMoviesRef.current.find((entry) => entry.id === normalizedMovieId)?.title ??
-        sourceMoviesRef.current.find((entry) => entry.id === normalizedMovieId)?.title ??
-        `Movie ${normalizedMovieId}`;
+      const renderVariant = async (
+        variant: CoverVariant,
+        variantSettings: CustomCoverVariantSettings
+      ): Promise<string | null> => {
+        const templateId = variant === 'front' ? COVER_TEMPLATE_ID : SHELF_TEMPLATE_ID;
+        const response = await fetch(withBasePath('/api/vhs/custom-cover'), {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            movieId: normalizedMovieId,
+            sourceUrl: variantSettings.sourceUrl,
+            sourceKind: variantSettings.sourceKind,
+            templateId,
+            fit: 'cover',
+            format: 'webp',
+            quality: 92,
+            background: 'transparent',
+            posterOffsetX: Math.round(variantSettings.offsetX),
+            posterOffsetY: Math.round(variantSettings.offsetY),
+            posterScale: variantSettings.scale,
+          }),
+        });
+        if (!response.ok) {
+          return null;
+        }
+        const payloadRaw: unknown = await response.json();
+        if (!payloadRaw || typeof payloadRaw !== 'object') {
+          return null;
+        }
+        const coverImage = (payloadRaw as { coverImage?: unknown }).coverImage;
+        return typeof coverImage === 'string' ? coverImage : null;
+      };
 
-      setCoverEditor({
-        movieId: normalizedMovieId,
-        movieTitle,
-        focusVariant: 'front',
-        frontImageIndex: 0,
-        spineImageIndex: 0,
-        frontOffsetX: existingSettings?.front.offsetX ?? 0,
-        frontOffsetY: existingSettings?.front.offsetY ?? 0,
-        frontScale: existingSettings?.front.scale ?? 1,
-        spineOffsetX: existingSettings?.spine.offsetX ?? 0,
-        spineOffsetY: existingSettings?.spine.offsetY ?? 0,
-        spineScale: existingSettings?.spine.scale ?? 1,
-        saving: false,
-      });
-
-      const applyImageOptions = (
-        imageOptions: TmdbImageOption[],
-        requestFailed: boolean
-      ) => {
-        setCoverEditorImageOptions(imageOptions);
+      try {
+        const { options: imageOptions } = await fetchTmdbImageOptions(normalizedMovieId);
         if (imageOptions.length === 0) {
-          setCoverEditorImagesLoading(false);
-          setCoverEditorError(
-            requestFailed
-              ? 'Klarte ikke å hente TMDB-bilder akkurat nå.'
-              : 'Fant ingen TMDB-bilder for denne filmen akkurat nå.'
-          );
           return;
         }
 
-        const resolveIndexFromSettings = (
-          variant: CoverVariant,
-          variantSettings?: CustomCoverVariantSettings
-        ): number => {
-          const preferredPool = getCoverEditorOptionPoolIndices(imageOptions, variant);
-          const fallbackIndex = preferredPool[0] ?? 0;
-          if (!variantSettings) {
-            return fallbackIndex;
+        const pickRandomOption = (pool: TmdbImageOption[]): TmdbImageOption | null => {
+          if (pool.length === 0) {
+            return null;
           }
-
-          const sourceIndex = imageOptions.findIndex(
-            (option) => option.sourceUrl === variantSettings.sourceUrl
-          );
-          if (sourceIndex >= 0) {
-            return sourceIndex;
-          }
-
-          const kindIndex = imageOptions.findIndex(
-            (option) => option.kind === variantSettings.sourceKind
-          );
-          return kindIndex >= 0 ? kindIndex : fallbackIndex;
+          return pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? null;
         };
 
-        const frontIndex = resolveIndexFromSettings('front', existingSettings?.front);
-        const spineIndex = resolveIndexFromSettings('spine', existingSettings?.spine);
-        setCoverEditor((current) => {
-          if (!current || current.movieId !== normalizedMovieId) {
-            return current;
+        const frontPool = getCoverEditorOptionPoolIndices(imageOptions, 'front')
+          .map((index) => imageOptions[index] ?? null)
+          .filter((option): option is TmdbImageOption => Boolean(option))
+          .slice(0, COVER_RANDOMIZE_POOL_LIMIT);
+        const spinePool = getCoverEditorOptionPoolIndices(imageOptions, 'spine')
+          .map((index) => imageOptions[index] ?? null)
+          .filter((option): option is TmdbImageOption => Boolean(option))
+          .slice(0, COVER_RANDOMIZE_POOL_LIMIT);
+        if (frontPool.length === 0 || spinePool.length === 0) {
+          return;
+        }
+
+        const existingSettings = customCoverSettingsByMovieIdRef.current[normalizedMovieId];
+        const currentFrontSourceUrl = existingSettings?.front.sourceUrl ?? null;
+        const currentSpineSourceUrl = existingSettings?.spine.sourceUrl ?? null;
+        const currentFrontCoverImage =
+          floorMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
+            ?.coverImage ??
+          sourceMoviesRef.current.find((entry) => entry.id === normalizedMovieId)
+            ?.coverImage ??
+          null;
+        const frontCandidates = currentFrontSourceUrl
+          ? frontPool.filter((option) => option.sourceUrl !== currentFrontSourceUrl)
+          : frontPool;
+        const spineCandidates = currentSpineSourceUrl
+          ? spinePool.filter((option) => option.sourceUrl !== currentSpineSourceUrl)
+          : spinePool;
+
+        let frontOption = pickRandomOption(
+          frontCandidates.length > 0 ? frontCandidates : frontPool
+        );
+        let spineOption = pickRandomOption(
+          spineCandidates.length > 0 ? spineCandidates : spinePool
+        );
+        if (!frontOption || !spineOption) {
+          return;
+        }
+
+        const pickedSameAsCurrent =
+          Boolean(currentFrontSourceUrl) &&
+          Boolean(currentSpineSourceUrl) &&
+          frontOption.sourceUrl === currentFrontSourceUrl &&
+          spineOption.sourceUrl === currentSpineSourceUrl;
+
+        if (pickedSameAsCurrent) {
+          const alternateFront = pickRandomOption(
+            frontPool.filter((option) => option.sourceUrl !== currentFrontSourceUrl)
+          );
+          const alternateSpine = pickRandomOption(
+            spinePool.filter((option) => option.sourceUrl !== currentSpineSourceUrl)
+          );
+
+          if (alternateFront) {
+            frontOption = alternateFront;
+          } else if (alternateSpine) {
+            spineOption = alternateSpine;
+          } else {
+            return;
           }
+        }
 
-          return {
-            ...current,
-            frontImageIndex: frontIndex,
-            spineImageIndex: spineIndex,
-          };
-        });
-        setCoverEditorImagesLoading(false);
-        setCoverEditorError(null);
-      };
+        let settings: MovieCustomCoverSettings = {
+          front: {
+            sourceUrl: frontOption.sourceUrl,
+            sourceKind: frontOption.kind,
+            offsetX: 0,
+            offsetY: 0,
+            scale: 1,
+          },
+          spine: {
+            sourceUrl: spineOption.sourceUrl,
+            sourceKind: spineOption.kind,
+            offsetX: 0,
+            offsetY: 0,
+            scale: 1,
+          },
+        };
 
-      const cachedOptions = coverEditorImageOptionsCacheRef.current[normalizedMovieId] ?? [];
-      if (cachedOptions.length > 0) {
-        setCoverEditorImagesLoading(false);
-        applyImageOptions(cachedOptions, false);
-        return;
+        const [initialFrontCoverImage, spineCoverImage] = await Promise.all([
+          renderVariant('front', settings.front),
+          renderVariant('spine', settings.spine),
+        ]);
+        let frontCoverImage = initialFrontCoverImage;
+        if (!frontCoverImage || !spineCoverImage) {
+          return;
+        }
+
+        if (currentFrontCoverImage && frontCoverImage === currentFrontCoverImage) {
+          const alternateFrontOption = pickRandomOption(
+            frontPool.filter((option) => option.sourceUrl !== settings.front.sourceUrl)
+          );
+          if (alternateFrontOption) {
+            const alternateFrontSettings: CustomCoverVariantSettings = {
+              sourceUrl: alternateFrontOption.sourceUrl,
+              sourceKind: alternateFrontOption.kind,
+              offsetX: 0,
+              offsetY: 0,
+              scale: 1,
+            };
+            const alternateFrontCoverImage = await renderVariant(
+              'front',
+              alternateFrontSettings
+            );
+            if (alternateFrontCoverImage) {
+              settings = {
+                ...settings,
+                front: alternateFrontSettings,
+              };
+              frontCoverImage = alternateFrontCoverImage;
+            }
+          }
+        }
+
+        if (currentFrontCoverImage && frontCoverImage === currentFrontCoverImage) {
+          return;
+        }
+
+        setCustomCoverSettingsByMovieId((previous) => ({
+          ...previous,
+          [normalizedMovieId]: settings,
+        }));
+        customCoverSettingsByMovieIdRef.current = {
+          ...customCoverSettingsByMovieIdRef.current,
+          [normalizedMovieId]: settings,
+        };
+        delete customFrontCoverCacheRef.current[normalizedMovieId];
+        delete customSpineCoverCacheRef.current[normalizedMovieId];
+        delete customFrontCoverPromiseRef.current[normalizedMovieId];
+        delete customSpineCoverPromiseRef.current[normalizedMovieId];
+        delete renderedCoverPromiseByMovieIdRef.current[normalizedMovieId];
+        delete renderedSpineCoverPromiseByMovieIdRef.current[normalizedMovieId];
+
+        customFrontCoverCacheRef.current[normalizedMovieId] = {
+          hash: getCustomVariantSettingsHash(settings.front),
+          coverImage: frontCoverImage,
+        };
+        customSpineCoverCacheRef.current[normalizedMovieId] = {
+          hash: getCustomVariantSettingsHash(settings.spine),
+          coverImage: spineCoverImage,
+        };
+
+        setFloorMovies((previous) =>
+          previous.map((entry) =>
+            entry.id === normalizedMovieId
+              ? {
+                  ...entry,
+                  coverImage: frontCoverImage,
+                }
+              : entry
+          )
+        );
+        setSourceMovies((previous) =>
+          previous.map((entry) =>
+            entry.id === normalizedMovieId
+              ? {
+                  ...entry,
+                  coverImage: frontCoverImage,
+                }
+              : entry
+          )
+        );
+        setShelfPreviewCoverByMovieId((previous) => ({
+          ...previous,
+          [normalizedMovieId]: spineCoverImage,
+        }));
+        setShelfMovies((previous) =>
+          previous.map((entry) =>
+            entry.id === normalizedMovieId
+              ? {
+                  ...entry,
+                  coverImage: spineCoverImage,
+                  frontCoverImage: frontCoverImage,
+                }
+              : entry
+          )
+        );
+
+        triggerCoverEditorReturnAnimation(normalizedMovieId);
+      } finally {
+        delete randomizeMovieCoverInFlightRef.current[normalizedMovieId];
       }
-
-      setCoverEditorImagesLoading(true);
-      const { options: imageOptions, requestFailed } = await fetchTmdbImageOptions(
-        normalizedMovieId
-      );
-      applyImageOptions(imageOptions, requestFailed);
     },
     [
       fetchTmdbImageOptions,
       getCoverEditorOptionPoolIndices,
-      shelfPreviewCoverByMovieId,
       stopCoverEditorDropCycle,
+      triggerCoverEditorReturnAnimation,
     ]
   );
-  openCoverEditorForMovieRef.current = (movieId: number) => {
-    void openCoverEditorForMovie(movieId);
+  randomizeMovieCoverPairRef.current = (movieId: number) => {
+    void randomizeMovieCoverPair(movieId);
   };
 
   useEffect(() => {
@@ -2728,6 +3420,7 @@ const FloorPage: NextPage = () => {
       return;
     }
 
+    const controller = new AbortController();
     let effectCanceled = false;
     const startDropCycle = (pool: string[]) => {
       if (effectCanceled) {
@@ -2769,32 +3462,72 @@ const FloorPage: NextPage = () => {
     };
 
     setCoverEditorDropCycleImage(draggingMovie.coverImage);
-    const cachedOptions = coverEditorImageOptionsCacheRef.current[normalizedMovieId] ?? [];
-    if (cachedOptions.length > 0) {
-      startDropCycle(
-        buildCoverEditorDropCyclePool(draggingMovie.coverImage, cachedOptions)
-      );
-      return () => {
-        effectCanceled = true;
-      };
-    }
+    startDropCycle([draggingMovie.coverImage]);
 
     if (coverEditorDropCycleAbortRef.current) {
       coverEditorDropCycleAbortRef.current.abort();
       coverEditorDropCycleAbortRef.current = null;
     }
-
-    const controller = new AbortController();
     coverEditorDropCycleAbortRef.current = controller;
-    void fetchTmdbImageOptions(normalizedMovieId, controller.signal).then(({ options }) => {
+
+    const loadCycleImages = async (options: TmdbImageOption[]) => {
+      const sourcePool = buildCoverEditorDropCyclePool(options);
+      if (sourcePool.length === 0) {
+        return;
+      }
+
+      for (const sourceUrl of sourcePool) {
+        if (effectCanceled || controller.signal.aborted) {
+          break;
+        }
+
+        try {
+          const renderedUrl = await fetchCoverEditorDropCycleRenderedCover(
+            normalizedMovieId,
+            sourceUrl,
+            controller.signal
+          );
+          if (!renderedUrl) {
+            continue;
+          }
+
+          const currentPool = coverEditorDropCyclePoolRef.current;
+          if (currentPool.includes(renderedUrl)) {
+            continue;
+          }
+
+          coverEditorDropCyclePoolRef.current = [...currentPool, renderedUrl];
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            break;
+          }
+        }
+      }
+    };
+
+    const cachedOptions = coverEditorImageOptionsCacheRef.current[normalizedMovieId] ?? [];
+    const warmupTimer = window.setTimeout(() => {
       if (effectCanceled || controller.signal.aborted) {
         return;
       }
-      startDropCycle(buildCoverEditorDropCyclePool(draggingMovie.coverImage, options));
-    });
+
+      if (cachedOptions.length > 0) {
+        void loadCycleImages(cachedOptions);
+        return;
+      }
+
+      void fetchTmdbImageOptions(normalizedMovieId, controller.signal)
+        .then(({ options }) => loadCycleImages(options))
+        .catch((error) => {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return;
+          }
+        });
+    }, COVER_EDITOR_DROP_CYCLE_WARMUP_MS);
 
     return () => {
       effectCanceled = true;
+      window.clearTimeout(warmupTimer);
       if (coverEditorDropCycleAbortRef.current === controller) {
         controller.abort();
         coverEditorDropCycleAbortRef.current = null;
@@ -2804,6 +3537,7 @@ const FloorPage: NextPage = () => {
     buildCoverEditorDropCyclePool,
     coverEditor,
     draggingId,
+    fetchCoverEditorDropCycleRenderedCover,
     fetchTmdbImageOptions,
     isCoverEditorDropActive,
     stopCoverEditorDropCycle,
@@ -3552,7 +4286,15 @@ const FloorPage: NextPage = () => {
         return existing;
       }
 
-      const promise = fetchRenderedSpineCoverForMovie(movieId).catch(() => null);
+      const promise = fetchRenderedSpineCoverForMovie(movieId)
+        .catch(() => null)
+        .then((rendered) => {
+          if (!rendered) {
+            delete renderedSpineCoverPromiseByMovieIdRef.current[movieId];
+          }
+
+          return rendered;
+        });
       renderedSpineCoverPromiseByMovieIdRef.current[movieId] = promise;
       return promise;
     },
@@ -3573,6 +4315,11 @@ const FloorPage: NextPage = () => {
       const promise = fetchRenderedCoverForMovie(movieId)
         .catch(() => null)
         .then((rendered) => {
+          if (!rendered) {
+            delete renderedCoverPromiseByMovieIdRef.current[movieId];
+            return null;
+          }
+
           // Keep a spine variant hot in cache as soon as front cover work starts.
           void getRenderedSpineCoverPromise(movieId);
           return rendered;
@@ -3622,7 +4369,12 @@ const FloorPage: NextPage = () => {
           const parsed: unknown = JSON.parse(raw);
           if (isShelfStoragePayload(parsed) && parsed.movies.length > 0) {
             if (!cancelled) {
-              setShelfMovies(parsed.movies);
+              setShelfMovies(
+                parsed.movies.map((movie) => ({
+                  ...movie,
+                  frontCoverImage: getStableCoverImage(movie.frontCoverImage),
+                }))
+              );
             }
             return;
           }
@@ -3868,6 +4620,8 @@ const FloorPage: NextPage = () => {
     setShelfMovies((previous) => {
       const existing = previous.find((entry) => entry.id === movie.id);
       const withoutMovie = previous.filter((entry) => entry.id !== movie.id);
+      const stableExistingFrontCover = getStableCoverImage(existing?.frontCoverImage);
+      const stableMovieFrontCover = getStableCoverImage(movie.coverImage);
       const nextEntry: ShelfMovie = {
         id: movie.id,
         title: movie.title,
@@ -3875,7 +4629,7 @@ const FloorPage: NextPage = () => {
           existing?.coverImage ??
           shelfPreviewCoverByMovieId[movie.id] ??
           SHELF_PLACEHOLDER_IMAGE,
-        frontCoverImage: movie.coverImage,
+        frontCoverImage: stableExistingFrontCover ?? stableMovieFrontCover,
       };
 
       return [
@@ -3898,7 +4652,27 @@ const FloorPage: NextPage = () => {
                 ...entry,
                 title: renderedCover.title,
                 coverImage: renderedCover.coverImage,
-                frontCoverImage: entry.frontCoverImage ?? movie.coverImage,
+                frontCoverImage:
+                  getStableCoverImage(entry.frontCoverImage) ??
+                  getStableCoverImage(movie.coverImage),
+              }
+            : entry
+        )
+      );
+    });
+
+    void getRenderedCoverPromise(movie.id).then((renderedCover) => {
+      if (!renderedCover) {
+        return;
+      }
+
+      setShelfMovies((previous) =>
+        previous.map((entry) =>
+          entry.id === renderedCover.id
+            ? {
+                ...entry,
+                title: renderedCover.title,
+                frontCoverImage: renderedCover.coverImage,
               }
             : entry
         )
@@ -3921,10 +4695,11 @@ const FloorPage: NextPage = () => {
         0,
         Math.max(0, bounds.height - CARD_HEIGHT)
       );
+      const stableFrontCoverImage = getStableCoverImage(movie.frontCoverImage);
       const fallbackMovie: ClubMovie = {
         id: movie.id,
         title: movie.title,
-        coverImage: movie.frontCoverImage ?? WAITING_SLOT_IMAGE,
+        coverImage: stableFrontCoverImage ?? WAITING_SLOT_IMAGE,
       };
       const baseRotation = getRandomCardRotation();
       const pointerXWithinCard = pointerEvent.clientX - bounds.left - targetX;
@@ -3934,11 +4709,14 @@ const FloorPage: NextPage = () => {
 
       setPendingSearch(null);
       clearDeleteHoldTimer();
+      clearDeleteClearAllTimer();
       resetProximityVsCandidate();
       deleteInZoneRef.current = false;
       deleteHoldMovieIdRef.current = null;
+      deleteClearAllMovieIdRef.current = null;
       setDeleteCandidateId(null);
       setDeleteArmedId(null);
+      setDeleteClearAllArmedId(null);
       setIsShelfDropActive(false);
       setIsCoverEditorDropActive(false);
       updateShelfDropInsertIndex(null);
@@ -4022,6 +4800,7 @@ const FloorPage: NextPage = () => {
       });
     },
     [
+      clearDeleteClearAllTimer,
       clearDeleteHoldTimer,
       getFloorBounds,
       getRenderedCoverPromise,
@@ -4033,6 +4812,10 @@ const FloorPage: NextPage = () => {
 
   const handleShelfPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>, movie: ShelfMovie) => {
+      if (isDeleteClearAllSequenceActive) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
 
@@ -4042,7 +4825,7 @@ const FloorPage: NextPage = () => {
         startClientY: event.clientY,
       };
     },
-    []
+    [isDeleteClearAllSequenceActive]
   );
 
   const restoreMovieFromShelf = useCallback(
@@ -4090,10 +4873,11 @@ const FloorPage: NextPage = () => {
             Math.max(0, bounds.height - CARD_HEIGHT)
           );
       const targetRotation = clampCardRotation((Math.random() - 0.5) * 8);
+      const stableFrontCoverImage = getStableCoverImage(shelfMovie.frontCoverImage);
       const fallbackMovie: ClubMovie = {
         id: shelfMovie.id,
         title: shelfMovie.title,
-        coverImage: shelfMovie.frontCoverImage ?? WAITING_SLOT_IMAGE,
+        coverImage: stableFrontCoverImage ?? WAITING_SLOT_IMAGE,
       };
 
       addMovieToFloor(fallbackMovie, targetX, targetY, targetRotation);
@@ -4170,16 +4954,16 @@ const FloorPage: NextPage = () => {
     );
     const targetRotation = getRandomCardRotation();
     const selectedPreviewCover = previewCoverByMovieId[selectedMovie.id] ?? null;
-    const selectedSourceCover = getSearchMovieSourceImage(selectedMovie);
     const throwCoverImage =
       selectedPreviewCover ??
       activeSearchCover ??
-      selectedSourceCover ??
       WAITING_SLOT_IMAGE;
+    const fallbackFloorCoverImage =
+      getStableCoverImage(throwCoverImage) ?? WAITING_SLOT_IMAGE;
     const fallbackMovie: ClubMovie = {
       id: selectedMovie.id,
       title: selectedMovie.title,
-      coverImage: throwCoverImage,
+      coverImage: fallbackFloorCoverImage,
     };
     const renderedCoverPromise = getRenderedCoverPromise(selectedMovie.id);
 
@@ -4255,13 +5039,9 @@ const FloorPage: NextPage = () => {
     previewCoverByMovieId,
   ]);
 
-  useEffect(() => {
-    if (!pendingSearch) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) {
+  const handleSearchInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!pendingSearch || event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
 
@@ -4303,49 +5083,13 @@ const FloorPage: NextPage = () => {
           return {
             ...current,
             selectedIndex:
-              (current.selectedIndex - 1 + current.results.length) %
-              current.results.length,
+              (current.selectedIndex - 1 + current.results.length) % current.results.length,
           };
         });
-        return;
       }
-
-      if (event.key === 'Backspace') {
-        event.preventDefault();
-        setPendingSearch((current) =>
-          current
-            ? {
-                ...current,
-                query: current.query.slice(0, -1),
-                selectedIndex: 0,
-              }
-            : current
-        );
-        return;
-      }
-
-      if (event.key.length !== 1) {
-        return;
-      }
-
-      event.preventDefault();
-      setPendingSearch((current) =>
-        current
-          ? {
-              ...current,
-              query: `${current.query}${event.key}`,
-              selectedIndex: 0,
-            }
-          : current
-      );
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [confirmPendingSearch, pendingSearch]);
+    },
+    [confirmPendingSearch, pendingSearch]
+  );
 
   useEffect(() => {
     if (!pendingSearch) {
@@ -4467,11 +5211,9 @@ const FloorPage: NextPage = () => {
     }
 
     const selectedPreview = previewCoverByMovieId[selectedMovie.id];
-    if (!selectedPreview) {
-      return;
+    if (selectedPreview) {
+      setActiveSearchCover(selectedPreview);
     }
-
-    setActiveSearchCover(selectedPreview);
   }, [pendingSearch, previewCoverByMovieId]);
 
   const emptySlot = getEmptySlotPosition();
@@ -4479,13 +5221,9 @@ const FloorPage: NextPage = () => {
     pendingSearch?.results[pendingSearch.selectedIndex] ?? null;
   const selectedSearchPreviewCover =
     selectedSearchMovie ? previewCoverByMovieId[selectedSearchMovie.id] : undefined;
-  const selectedSearchSourceCover = selectedSearchMovie
-    ? getSearchMovieSourceImage(selectedSearchMovie)
-    : null;
   const addSlotCoverImage =
     selectedSearchPreviewCover ??
     activeSearchCover ??
-    selectedSearchSourceCover ??
     WAITING_SLOT_IMAGE;
   const addSlotHasCoverImage = Boolean(addSlotCoverImage);
   const draggingMovie =
@@ -4496,7 +5234,7 @@ const FloorPage: NextPage = () => {
     ? clamp(
         typeof draggingMovie.score === 'number'
           ? draggingMovie.score
-          : getTopScorePercent(draggingMovie.y, getFloorBounds().height),
+          : getTopScorePercent(draggingMovie.y, getFloorBounds().height, CARD_HEIGHT),
         0,
         100
       )
@@ -4508,6 +5246,35 @@ const FloorPage: NextPage = () => {
   const visibleFloorMovies = floorMovies.filter(
     (movie) => !isWaitingSlotCover(movie.coverImage)
   );
+  const leaderMovie = (() => {
+    if (visibleFloorMovies.length === 0) {
+      return null;
+    }
+
+    return [...visibleFloorMovies].sort(
+      (a, b) => a.rank - b.rank || b.score - a.score || a.id - b.id
+    )[0] ?? null;
+  })();
+  const leaderMovieId = leaderMovie?.id ?? null;
+  const leaderSpotlight = (() => {
+    if (!leaderMovie) {
+      return null;
+    }
+
+    const centerX = leaderMovie.x + CARD_WIDTH * 0.5;
+    const centerY = leaderMovie.y + CARD_HEIGHT * 0.5;
+    const leaderScore = clamp(leaderMovie.score, 0, 100) / 100;
+    const width = Math.round(CARD_WIDTH * (1.65 + leaderScore * 0.45));
+    const height = Math.round(CARD_HEIGHT * (1.18 + leaderScore * 0.28));
+
+    return {
+      centerX,
+      centerY,
+      width,
+      height,
+      score: leaderScore,
+    };
+  })();
   const topScoreTiePair = (() => {
     if (visibleFloorMovies.length < 2) {
       return null;
@@ -4709,8 +5476,8 @@ const FloorPage: NextPage = () => {
   const isCoverEditorSpineFocused = coverEditor?.focusVariant === 'spine';
   const coverEditorFrontWidth = CARD_WIDTH;
   const coverEditorFrontHeight = CARD_HEIGHT;
-  const coverEditorSpineWidth = 76;
-  const coverEditorGap = 12;
+  const coverEditorSpineWidth = Math.max(48, Math.round(76 * layoutScale));
+  const coverEditorGap = Math.max(8, Math.round(12 * layoutScale));
   const coverEditorPairWidth =
     coverEditorSpineWidth + coverEditorGap + coverEditorFrontWidth;
   const coverEditorPairHeight = coverEditorFrontHeight;
@@ -4724,8 +5491,15 @@ const FloorPage: NextPage = () => {
     10,
     Math.max(10, getFloorBounds().height - coverEditorPairHeight - 10)
   );
+  const shelfExpanded = isCompactPhoneLayout
+    ? isMobileShelfOpen || isShelfDropActive
+    : isShelfHovered || isShelfDropActive;
+  const mobileShelfPanelHeight = shelfExpanded
+    ? MOBILE_SHELF_OPEN_HEIGHT
+    : MOBILE_SHELF_PEEK_HEIGHT;
   const remoteTop =
     getFloorBounds().height -
+    (isCompactPhoneLayout ? MOBILE_SHELF_BOTTOM_CLEARANCE : 0) -
     (isRemotePeek ? REMOTE_VISIBLE_PEEK : REMOTE_VISIBLE_DEFAULT);
   const remoteLeft = clamp(
     emptySlot.x - REMOTE_CONTROL_WIDTH - REMOTE_SLOT_GAP,
@@ -4734,16 +5508,22 @@ const FloorPage: NextPage = () => {
   );
   const shelfPanelWidth = SHELF_OPEN_WIDTH;
   const shelfTranslateX =
-    isShelfHovered || isShelfDropActive ? 0 : -SHELF_PEEK_OFFSET;
+    shelfExpanded ? 0 : -SHELF_PEEK_OFFSET;
   const shelfMovieIdSet = new Set(shelfMovies.map((movie) => movie.id));
   const shelfShouldReserveGap =
     isShelfDropActive &&
     draggingMovie !== null &&
     !shelfMovieIdSet.has(draggingMovie.id);
-  const shelfInsertGap = SHELF_EXPOSED_STRIP_HEIGHT;
+  const shelfInsertGap = isCompactPhoneLayout
+    ? Math.round(MOBILE_SHELF_ITEM_LENGTH * 0.72)
+    : SHELF_EXPOSED_STRIP_HEIGHT;
   const shelfInsertGapIndex = shelfShouldReserveGap
     ? clamp(shelfDropInsertIndex ?? shelfMovies.length, 0, shelfMovies.length)
     : null;
+  const handleMobileShelfToggle = useCallback(() => {
+    setHoveredShelfMovieId(null);
+    setIsMobileShelfOpen((current) => !current);
+  }, []);
   const handleShelfScroll = useCallback(() => {
     setHoveredShelfMovieId(null);
     const activeDrag = dragRef.current;
@@ -4751,11 +5531,15 @@ const FloorPage: NextPage = () => {
       return;
     }
 
-    const nextInsertIndex = getShelfDropInsertIndexFromPointer(activeDrag.lastClientY);
+    const nextInsertIndex = getShelfDropInsertIndexFromPointer(
+      activeDrag.lastClientX,
+      activeDrag.lastClientY
+    );
     updateShelfDropInsertIndex(nextInsertIndex);
   }, [getShelfDropInsertIndexFromPointer, updateShelfDropInsertIndex]);
 
   const handlePowerOnClick = () => {
+    setIsMobileShelfOpen(false);
     const boardMovies = toBoardMoviesPayload(floorMovies);
     const signature = JSON.stringify(
       boardMovies.map((movie) => [
@@ -4769,7 +5553,7 @@ const FloorPage: NextPage = () => {
     );
 
     const navigateToTv = () => {
-      window.location.href = withBasePath('/');
+      window.location.href = tvPath;
     };
 
     if (signature === lastBoardSignatureRef.current) {
@@ -4777,13 +5561,13 @@ const FloorPage: NextPage = () => {
       return;
     }
 
-    void fetch(withBasePath(`/api/club/floor?boardId=${FLOOR_BOARD_ID}`), {
+    void fetch(withBasePath(`/api/club/floor?boardId=${boardId}`), {
       method: 'PUT',
       headers: {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        boardId: FLOOR_BOARD_ID,
+        boardId,
         movies: boardMovies,
       }),
       keepalive: true,
@@ -5001,131 +5785,307 @@ const FloorPage: NextPage = () => {
   );
 
   return (
-    <main className="h-screen w-full overflow-hidden bg-white">
+    <main className="h-[100dvh] w-full overflow-hidden bg-white">
       <div
         ref={floorRef}
         className="relative h-full w-full bg-cover bg-center"
         style={{ backgroundImage: `url('${FLOOR_BACKGROUND_IMAGE}')` }}
       >
-        <div
-          className="absolute bottom-0 left-0 top-0 z-[1320]"
-          style={{
-            width: shelfPanelWidth,
-            transform: `translateX(${shelfTranslateX}px)`,
-            transition: 'transform 260ms cubic-bezier(0.24, 0.86, 0.24, 1)',
-          }}
-          onMouseEnter={() => setIsShelfHovered(true)}
-          onMouseLeave={() => setIsShelfHovered(false)}
-          onFocus={() => setIsShelfHovered(true)}
-          onBlur={() => setIsShelfHovered(false)}
-        >
+        {isCompactPhoneLayout ? (
           <div
-            ref={shelfScrollRef}
-            className="shelf-scroll-hidden absolute bottom-0 right-0 top-0 overflow-y-auto pl-[14px] pr-[10px]"
-            onScroll={handleShelfScroll}
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[1320] px-3"
             style={{
-              width: SHELF_SCROLL_WIDTH,
-              scrollBehavior: 'smooth',
-              scrollSnapType: 'none',
-              background: 'transparent',
+              paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
             }}
           >
             <div
-              className="flex flex-col items-center pb-12"
-              style={{ paddingTop: SHELF_LIST_TOP_PADDING }}
+              className="pointer-events-auto relative overflow-hidden rounded-[26px] border border-white/18"
+              style={{
+                height: mobileShelfPanelHeight,
+                background:
+                  'linear-gradient(to top, rgba(16,16,18,0.9) 0%, rgba(22,22,25,0.78) 52%, rgba(35,35,39,0.56) 100%)',
+                boxShadow:
+                  '0 18px 42px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                transition:
+                  'height 240ms cubic-bezier(0.24, 0.86, 0.24, 1), box-shadow 220ms ease-out',
+              }}
             >
-              {shelfMovies.map((movie, index) => {
-                const isLifted = hoveredShelfMovieId === movie.id;
-                const isRecentlyInserted = shelfRecentlyInsertedMovieId === movie.id;
-                const baseZIndex = shelfMovies.length - index;
-                return (
-                  <div
-                    key={movie.id}
-                    className="relative overflow-hidden"
-                    style={{
-                      width: SHELF_ITEM_WIDTH,
-                      height: SHELF_EXPOSED_STRIP_HEIGHT,
-                      pointerEvents: 'none',
-                      marginTop:
-                        index === 0
-                          ? shelfInsertGapIndex === 0
-                            ? shelfInsertGap
-                            : 0
-                          : shelfInsertGapIndex === index
-                            ? shelfInsertGap
-                            : 0,
-                      zIndex: isLifted ? shelfMovies.length + 16 : baseZIndex,
-                      transition: 'margin-top 180ms ease-out, filter 180ms ease-out',
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onPointerDown={(event) => handleShelfPointerDown(event, movie)}
-                      onPointerEnter={() => setHoveredShelfMovieId(movie.id)}
-                      onPointerLeave={() =>
-                        setHoveredShelfMovieId((current) =>
-                          current === movie.id ? null : current
-                        )
-                      }
-                      onFocus={() => setHoveredShelfMovieId(movie.id)}
-                      onBlur={() =>
-                        setHoveredShelfMovieId((current) =>
-                          current === movie.id ? null : current
-                        )
-                      }
-                      className="absolute appearance-none border-0 bg-transparent p-0"
-                      style={{
-                        pointerEvents: 'auto',
-                        left: SHELF_SPINE_HITBOX_SIDE_INSET,
-                        right: SHELF_SPINE_HITBOX_SIDE_INSET,
-                        top: SHELF_SPINE_HITBOX_TOP,
-                        height: SHELF_SPINE_HITBOX_HEIGHT,
-                        zIndex: 4,
-                      }}
-                      aria-label={`Legg ${movie.title} tilbake på gulvet`}
-                    />
-                    <div
-                      className="pointer-events-none absolute inset-0 transition-[filter] duration-200 ease-out"
-                      style={{
-                        filter: isLifted || isRecentlyInserted ? 'brightness(1.04)' : 'brightness(1)',
-                      }}
-                    >
+              <button
+                type="button"
+                aria-label={isMobileShelfOpen ? 'Lukk hylle' : 'Åpne hylle'}
+                onClick={handleMobileShelfToggle}
+                className="absolute left-1/2 top-2 z-[5] -translate-x-1/2 appearance-none border-0 bg-transparent p-0"
+                style={{
+                  width: MOBILE_SHELF_HANDLE_WIDTH,
+                  height: 28,
+                }}
+              >
+                <div
+                  className="absolute left-1/2 top-[6px] -translate-x-1/2 rounded-full bg-white/55"
+                  style={{
+                    width: Math.round(MOBILE_SHELF_HANDLE_WIDTH * 0.46),
+                    height: 4,
+                  }}
+                />
+                <div
+                  className="absolute left-1/2 top-[14px] -translate-x-1/2 rounded-full bg-white/22"
+                  style={{
+                    width: Math.round(MOBILE_SHELF_HANDLE_WIDTH * 0.66),
+                    height: 12,
+                  }}
+                />
+              </button>
+              <div
+                ref={shelfScrollRef}
+                className="shelf-scroll-hidden absolute inset-x-0 bottom-0 overflow-x-auto overflow-y-hidden"
+                onScroll={handleShelfScroll}
+                style={{
+                  height: mobileShelfPanelHeight,
+                  paddingLeft: MOBILE_SHELF_SIDE_PADDING,
+                  paddingRight: MOBILE_SHELF_SIDE_PADDING,
+                  paddingTop: 34,
+                  paddingBottom: Math.max(12, Math.round(14 * layoutScale)),
+                  scrollBehavior: 'smooth',
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
+                <div
+                  className="flex h-full items-end"
+                  style={{
+                    gap: MOBILE_SHELF_ITEM_GAP,
+                    width: 'max-content',
+                  }}
+                >
+                  {shelfMovies.map((movie, index) => {
+                    const isLifted = hoveredShelfMovieId === movie.id;
+                    const isRecentlyInserted = shelfRecentlyInsertedMovieId === movie.id;
+                    const baseZIndex = shelfMovies.length - index;
+                    return (
                       <div
-                        className="absolute left-0"
+                        key={movie.id}
+                        className="relative overflow-hidden rounded-[16px]"
                         style={{
-                          top: SHELF_ROW_ART_TOP,
-                          width: SHELF_ITEM_WIDTH,
-                          height: SHELF_ITEM_HEIGHT,
+                          width: MOBILE_SHELF_ITEM_LENGTH,
+                          height: MOBILE_SHELF_ITEM_HEIGHT,
+                          flex: '0 0 auto',
+                          pointerEvents: 'none',
+                          marginLeft:
+                            index === 0
+                              ? shelfInsertGapIndex === 0
+                                ? shelfInsertGap
+                                : 0
+                              : shelfInsertGapIndex === index
+                                ? shelfInsertGap
+                                : 0,
+                          zIndex: isLifted ? shelfMovies.length + 16 : baseZIndex,
+                          transition:
+                            'margin-left 180ms ease-out, transform 180ms ease-out, filter 180ms ease-out',
+                          transform:
+                            isLifted || isRecentlyInserted
+                              ? 'translateY(-2px)'
+                              : 'translateY(0)',
                         }}
                       >
-                        <img
-                          src={movie.coverImage}
-                          alt={movie.title}
-                          className={`h-full w-full object-contain ${
-                            isLifted
-                              ? 'drop-shadow-[0_24px_28px_rgba(0,0,0,0.58)]'
-                              : 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.48)]'
-                          }`}
+                        <button
+                          type="button"
+                          onPointerDown={(event) => handleShelfPointerDown(event, movie)}
+                          onPointerEnter={() => setHoveredShelfMovieId(movie.id)}
+                          onPointerLeave={() =>
+                            setHoveredShelfMovieId((current) =>
+                              current === movie.id ? null : current
+                            )
+                          }
+                          onFocus={() => setHoveredShelfMovieId(movie.id)}
+                          onBlur={() =>
+                            setHoveredShelfMovieId((current) =>
+                              current === movie.id ? null : current
+                            )
+                          }
+                          className="absolute inset-0 appearance-none border-0 bg-transparent p-0"
                           style={{
-                            transform: `rotate(90deg) scale(${SHELF_SPINE_IMAGE_SCALE})`,
-                            transformOrigin: 'center',
+                            pointerEvents: 'auto',
+                            zIndex: 4,
                           }}
-                          draggable={false}
+                          aria-label={`Legg ${movie.title} tilbake på gulvet`}
                         />
+                        <div
+                          className="pointer-events-none absolute inset-0 rounded-[16px] border border-white/10 transition-[filter,background-color] duration-200 ease-out"
+                          style={{
+                            background:
+                              'linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 26%, rgba(0,0,0,0.14) 100%)',
+                            filter:
+                              isLifted || isRecentlyInserted
+                                ? 'brightness(1.06)'
+                                : 'brightness(1)',
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute left-1/2 top-1/2"
+                          style={{
+                            width: CARD_WIDTH,
+                            height: CARD_HEIGHT,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                        >
+                          <img
+                            src={movie.coverImage}
+                            alt={movie.title}
+                            className={`h-full w-full object-contain ${
+                              isLifted
+                                ? 'drop-shadow-[0_24px_28px_rgba(0,0,0,0.58)]'
+                                : 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.48)]'
+                            }`}
+                            style={{
+                              transform: `rotate(90deg) scale(${SHELF_SPINE_IMAGE_SCALE})`,
+                              transformOrigin: 'center',
+                            }}
+                            draggable={false}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {shelfInsertGapIndex === shelfMovies.length ? (
-                <div
-                  aria-hidden
-                  style={{ height: shelfInsertGap, width: 1, pointerEvents: 'none' }}
-                />
-              ) : null}
+                    );
+                  })}
+                  {shelfInsertGapIndex === shelfMovies.length ? (
+                    <div
+                      aria-hidden
+                      style={{
+                        width: shelfInsertGap,
+                        height: 1,
+                        flex: '0 0 auto',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div
+            className="absolute bottom-0 left-0 top-0 z-[1320]"
+            style={{
+              width: shelfPanelWidth,
+              transform: `translateX(${shelfTranslateX}px)`,
+              transition: 'transform 260ms cubic-bezier(0.24, 0.86, 0.24, 1)',
+            }}
+            onMouseEnter={() => setIsShelfHovered(true)}
+            onMouseLeave={() => setIsShelfHovered(false)}
+            onFocus={() => setIsShelfHovered(true)}
+            onBlur={() => setIsShelfHovered(false)}
+          >
+            <div
+              ref={shelfScrollRef}
+              className="shelf-scroll-hidden absolute bottom-0 right-0 top-0 overflow-y-auto pl-[14px] pr-[10px]"
+              onScroll={handleShelfScroll}
+              style={{
+                width: SHELF_SCROLL_WIDTH,
+                scrollBehavior: 'smooth',
+                scrollSnapType: 'none',
+                background: 'transparent',
+              }}
+            >
+              <div
+                className="flex flex-col items-center pb-12"
+                style={{ paddingTop: SHELF_LIST_TOP_PADDING }}
+              >
+                {shelfMovies.map((movie, index) => {
+                  const isLifted = hoveredShelfMovieId === movie.id;
+                  const isRecentlyInserted = shelfRecentlyInsertedMovieId === movie.id;
+                  const baseZIndex = shelfMovies.length - index;
+                  return (
+                    <div
+                      key={movie.id}
+                      className="relative overflow-hidden"
+                      style={{
+                        width: SHELF_ITEM_WIDTH,
+                        height: SHELF_EXPOSED_STRIP_HEIGHT,
+                        pointerEvents: 'none',
+                        marginTop:
+                          index === 0
+                            ? shelfInsertGapIndex === 0
+                              ? shelfInsertGap
+                              : 0
+                            : shelfInsertGapIndex === index
+                              ? shelfInsertGap
+                              : 0,
+                        zIndex: isLifted ? shelfMovies.length + 16 : baseZIndex,
+                        transition: 'margin-top 180ms ease-out, filter 180ms ease-out',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={(event) => handleShelfPointerDown(event, movie)}
+                        onPointerEnter={() => setHoveredShelfMovieId(movie.id)}
+                        onPointerLeave={() =>
+                          setHoveredShelfMovieId((current) =>
+                            current === movie.id ? null : current
+                          )
+                        }
+                        onFocus={() => setHoveredShelfMovieId(movie.id)}
+                        onBlur={() =>
+                          setHoveredShelfMovieId((current) =>
+                            current === movie.id ? null : current
+                          )
+                        }
+                        className="absolute appearance-none border-0 bg-transparent p-0"
+                        style={{
+                          pointerEvents: 'auto',
+                          left: SHELF_SPINE_HITBOX_SIDE_INSET,
+                          right: SHELF_SPINE_HITBOX_SIDE_INSET,
+                          top: SHELF_SPINE_HITBOX_TOP,
+                          height: SHELF_SPINE_HITBOX_HEIGHT,
+                          zIndex: 4,
+                        }}
+                        aria-label={`Legg ${movie.title} tilbake på gulvet`}
+                      />
+                      <div
+                        className="pointer-events-none absolute inset-0 transition-[filter] duration-200 ease-out"
+                        style={{
+                          filter:
+                            isLifted || isRecentlyInserted
+                              ? 'brightness(1.04)'
+                              : 'brightness(1)',
+                        }}
+                      >
+                        <div
+                          className="absolute left-0"
+                          style={{
+                            top: SHELF_ROW_ART_TOP,
+                            width: SHELF_ITEM_WIDTH,
+                            height: SHELF_ITEM_HEIGHT,
+                          }}
+                        >
+                          <img
+                            src={movie.coverImage}
+                            alt={movie.title}
+                            className={`h-full w-full object-contain ${
+                              isLifted
+                                ? 'drop-shadow-[0_24px_28px_rgba(0,0,0,0.58)]'
+                                : 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.48)]'
+                            }`}
+                            style={{
+                              transform: `rotate(90deg) scale(${SHELF_SPINE_IMAGE_SCALE})`,
+                              transformOrigin: 'center',
+                            }}
+                            draggable={false}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {shelfInsertGapIndex === shelfMovies.length ? (
+                  <div
+                    aria-hidden
+                    style={{ height: shelfInsertGap, width: 1, pointerEvents: 'none' }}
+                  />
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div
           className="pointer-events-none absolute inset-0"
@@ -5186,6 +6146,31 @@ const FloorPage: NextPage = () => {
             }) 42%, rgba(255,223,138,0) 84%)`,
           }}
         />
+        {leaderSpotlight && draggingId !== leaderMovieId ? (
+          <div
+            className="pointer-events-none absolute z-[4]"
+            style={{
+              left: leaderSpotlight.centerX - leaderSpotlight.width / 2,
+              top: leaderSpotlight.centerY - leaderSpotlight.height * 0.56,
+              width: leaderSpotlight.width,
+              height: leaderSpotlight.height,
+              opacity: 0.34 + leaderSpotlight.score * 0.12,
+            }}
+          >
+            <div
+              className="vhs-leader-spotlight absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at center, rgba(255,238,182,${
+                  0.22 + leaderSpotlight.score * 0.12
+                }) 0%, rgba(255,218,138,${
+                  0.09 + leaderSpotlight.score * 0.05
+                }) 36%, rgba(255,192,110,0.035) 60%, rgba(255,192,110,0) 78%)`,
+                filter: 'blur(20px)',
+                mixBlendMode: 'screen',
+              }}
+            />
+          </div>
+        ) : null}
         {draggingId !== null ? (
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0"
@@ -5275,6 +6260,11 @@ const FloorPage: NextPage = () => {
             dragging &&
             isShelfDropActive &&
             !shelfMovieIdSet.has(movie.id);
+          const isLeaderMovie =
+            leaderMovieId === movie.id &&
+            !dragging &&
+            !isDeleteClearAllSequenceActive &&
+            deleteClearAllArmedId === null;
           const movieImageSource = dragMorphToSidecover
             ? shelfPreviewCoverByMovieId[movie.id] ?? SHELF_PLACEHOLDER_IMAGE
             : isCoverEditorDropPreview
@@ -5299,6 +6289,20 @@ const FloorPage: NextPage = () => {
             : undefined;
           const deleteCandidate = dragging && deleteCandidateId === movie.id;
           const deleteArmed = dragging && deleteArmedId === movie.id;
+          const clearAllShaking =
+            deleteClearAllArmedId !== null || isDeleteClearAllSequenceActive;
+          const clearAllShakeDurationMs = Math.round(
+            150 + randomFromSeed(movie.id + 491) * 160
+          );
+          const clearAllShakeDelayMs = -Math.round(
+            randomFromSeed(movie.id + 907) * clearAllShakeDurationMs
+          );
+          const clearAllShakeStyle = clearAllShaking
+            ? {
+                animationDuration: `${clearAllShakeDurationMs}ms`,
+                animationDelay: `${clearAllShakeDelayMs}ms`,
+              }
+            : undefined;
           const chargePair = activeCharge?.pair ?? null;
           const isChargingMovie =
             chargePair !== null &&
@@ -5345,7 +6349,9 @@ const FloorPage: NextPage = () => {
                 left: movie.x,
                 top: movie.y,
                 zIndex: movie.z,
-                transform: `translate(${totalOffsetX}px, ${totalOffsetY}px) rotate(${movie.rotation + fightRotate}deg) scale(${fightScale})`,
+                transform: `translate(${totalOffsetX}px, ${totalOffsetY}px) rotate(${movie.rotation + fightRotate}deg) scale(${
+                  fightScale * (isLeaderMovie ? 1.018 : 1)
+                })`,
                 transition: isCoverEditorReturning
                   ? 'left 560ms cubic-bezier(0.2, 0.85, 0.2, 1), top 560ms cubic-bezier(0.2, 0.85, 0.2, 1), transform 560ms cubic-bezier(0.2, 0.85, 0.2, 1)'
                   : isChargingMovie || isFightAnimated
@@ -5362,20 +6368,36 @@ const FloorPage: NextPage = () => {
                     ? 'vhs-delete-shake-hard'
                     : deleteCandidate
                       ? 'vhs-delete-shake'
+                      : clearAllShaking
+                        ? 'vhs-delete-shake'
                       : ''
                 }`}
+                style={clearAllShakeStyle}
               >
                 <div
                   className={`pointer-events-none absolute inset-[-10%] z-0 rounded-[26px] blur-[10px] transition-opacity duration-300 ${
-                    dragging
+                    isLeaderMovie
+                      ? 'opacity-88'
+                      : dragging
                       ? 'opacity-72'
                       : 'opacity-48 group-hover:opacity-72'
                   }`}
                   style={{
-                    background:
-                      'radial-gradient(70% 74% at 48% 58%, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.28) 44%, rgba(0,0,0,0) 80%)',
+                    background: isLeaderMovie
+                      ? 'radial-gradient(72% 76% at 48% 58%, rgba(255,213,126,0.28) 0%, rgba(0,0,0,0.26) 38%, rgba(0,0,0,0) 78%)'
+                      : 'radial-gradient(70% 74% at 48% 58%, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.28) 44%, rgba(0,0,0,0) 80%)',
                   }}
                 />
+                {isLeaderMovie ? (
+                  <div
+                    className="pointer-events-none absolute inset-[-6%] z-[1] rounded-[24px] vhs-leader-card-aura"
+                    style={{
+                      background:
+                        'radial-gradient(78% 82% at 50% 50%, rgba(255,230,172,0.18) 0%, rgba(255,208,142,0.08) 42%, rgba(255,208,142,0) 76%)',
+                      filter: 'blur(8px)',
+                    }}
+                  />
+                ) : null}
                 {OPEN_EFFECT_ENABLED && !dragMorphToSidecover ? (
                   <div
                     className={`absolute -bottom-4 -right-4 -left-[-20%] h-[102%] transition-all duration-300 ${
@@ -5396,7 +6418,12 @@ const FloorPage: NextPage = () => {
                   src={movieImageSource}
                   alt={movie.title}
                   className={movieImageClassName}
-                  style={movieImageStyle}
+                  style={{
+                    ...(movieImageStyle ?? {}),
+                    filter: isLeaderMovie
+                      ? 'brightness(1.07) saturate(1.08) contrast(1.03)'
+                      : undefined,
+                  }}
                   draggable={false}
                 />
               </div>
@@ -5711,16 +6738,52 @@ const FloorPage: NextPage = () => {
           aria-hidden
           onChange={handleCsvInputChange}
         />
+        <input
+          ref={searchInputRef}
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          aria-label="Søk etter film"
+          className="absolute left-0 top-0 h-px w-px border-0 p-0 opacity-0 pointer-events-none"
+          tabIndex={pendingSearch ? 0 : -1}
+          value={pendingSearch?.query ?? ''}
+          onChange={handleSearchInputChange}
+          onKeyDown={handleSearchInputKeyDown}
+        />
         <button
           type="button"
           onClick={handleEmptySlotClick}
           onDoubleClick={handleAddSlotDoubleClick}
           onDragOver={handleAddSlotDragOver}
           onDrop={handleAddSlotDrop}
-          onMouseEnter={() => setIsAddSlotPeek(true)}
-          onMouseLeave={() => setIsAddSlotPeek(false)}
-          onFocus={() => setIsAddSlotPeek(true)}
-          onBlur={() => setIsAddSlotPeek(false)}
+          onMouseEnter={() => {
+            if (draggingId !== null) {
+              return;
+            }
+            setIsAddSlotPeek(true);
+          }}
+          onMouseLeave={() => {
+            if (draggingId !== null) {
+              return;
+            }
+            setIsAddSlotPeek(false);
+          }}
+          onFocus={() => {
+            if (draggingId !== null) {
+              return;
+            }
+            setIsAddSlotPeek(true);
+          }}
+          onBlur={() => {
+            if (draggingId !== null) {
+              return;
+            }
+            setIsAddSlotPeek(false);
+          }}
           className="absolute group cursor-pointer appearance-none border-0 bg-transparent p-0 text-left"
           style={{
             width: CARD_WIDTH,
@@ -5729,7 +6792,9 @@ const FloorPage: NextPage = () => {
             top: emptySlot.y + addSlotOffset,
             zIndex: 999,
             transform: isAddSlotResetAnimating
-              ? `rotate(5deg) translateY(132px) scale(${isCoverEditorDropActive ? 1.02 : 1})`
+              ? `rotate(5deg) translateY(${Math.round(132 * layoutScale)}px) scale(${
+                  isCoverEditorDropActive ? 1.02 : 1
+                })`
               : `rotate(5deg) scale(${isCoverEditorDropActive ? 1.02 : 1})`,
             transition:
               'transform 320ms cubic-bezier(0.2, 0.85, 0.2, 1), top 230ms cubic-bezier(0.2, 0.85, 0.2, 1)',
@@ -5787,10 +6852,16 @@ const FloorPage: NextPage = () => {
         </button>
         {pendingSearch ? (
           <div
-            className="pointer-events-none absolute z-[1200] w-[42vw] max-w-[620px] min-w-[220px] text-right text-white"
+            className="pointer-events-none absolute z-[1200] text-right text-white"
             style={{
-              left: Math.max(16, emptySlot.x - 640),
-              bottom: 56,
+              width: Math.min(
+                620,
+                Math.max(160, Math.round(getFloorBounds().width * (layoutScale < 1 ? 0.52 : 0.42)))
+              ),
+              left: Math.max(Math.round(16 * layoutScale), emptySlot.x - Math.round(640 * layoutScale)),
+              bottom:
+                Math.max(24, Math.round(56 * layoutScale)) +
+                (isCompactPhoneLayout ? MOBILE_SHELF_BOTTOM_CLEARANCE - 12 : 0),
               textShadow: '0 2px 14px rgba(0,0,0,0.45)',
             }}
           >
@@ -5809,5 +6880,7 @@ const FloorPage: NextPage = () => {
     </main>
   );
 };
+
+const FloorPage: NextPage = () => <FloorScreen />;
 
 export default FloorPage;

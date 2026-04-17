@@ -2,8 +2,26 @@
 
 A film club app built with Next.js that fetches movie data from TMDB and renders VHS-style covers.
 
+## Repository Layout
+
+- `src/`
+  Application code (pages, APIs, render logic, UI components)
+- `data/`
+  Local runtime database and state storage (SQLite + legacy JSON migration source)
+- `public/VHS/`
+  Runtime-facing static assets (templates, backgrounds, UI images)
+- `assets/`
+  Source design files and non-runtime asset sources (PSD/PSB)
+- `docs/`
+  Product and engineering documentation (vision, architecture, references)
+- `scripts/`
+  Local tooling for template extraction, audits, and prototyping
+
 ## What It Does
 
+- Uses a landing page at the base path where the user enters a club code
+- Supports multiple club routes (`/filmklubb/default`, `/filmklubb/nasjonalarkivet`)
+- Stores each club board separately by `board_id` in SQLite
 - Fetches movies from TMDB (`popular`, `top_rated`, `upcoming`, `now_playing`)
 - Caches TMDB list/search responses and source image files on disk
 - Generates VHS cover images in cache (`.cache/vhs/generated`) and serves them via API
@@ -109,7 +127,8 @@ The project stores runtime/generated content in three places:
 
 This keeps static design assets in `public/VHS/templates` and runtime data in dedicated cache/data roots.
 
-For operational rules and folder ownership, see `docs/runtime-image-structure.md`.
+For operational rules and folder ownership, see
+`docs/engineering/runtime-image-structure.md`.
 
 ## Current Cover Pipeline (`renderer=sharp`)
 

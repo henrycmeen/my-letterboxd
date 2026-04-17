@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="505" height="361" viewBox="0 0 505 361" fill="none">
+  <defs>
+    <linearGradient id="plate" x1="38" y1="85" x2="427" y2="318" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EF2A22"/>
+      <stop offset="0.48" stop-color="#DA1C18"/>
+      <stop offset="1" stop-color="#A90A10"/>
+    </linearGradient>
+    <linearGradient id="stripe" x1="92" y1="112" x2="409" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8F0"/>
+      <stop offset="1" stop-color="#EDE2D8"/>
+    </linearGradient>
+    <linearGradient id="shadowEdge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#180708"/>
+      <stop offset="1" stop-color="#090304"/>
+    </linearGradient>
+    <linearGradient id="letterTop" x1="111" y1="76" x2="410" y2="292" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8F1"/>
+      <stop offset="1" stop-color="#E4D9D0"/>
+    </linearGradient>
+    <linearGradient id="letterUnder" x1="218" y1="76" x2="420" y2="312" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF8A2C"/>
+      <stop offset="1" stop-color="#FF4C30"/>
+    </linearGradient>
+    <pattern id="dust" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(15)">
+      <circle cx="2" cy="2" r="1.2" fill="#20090A" fill-opacity="0.08"/>
+    </pattern>
+    <filter id="drop" x="-20%" y="-20%" width="140%" height="180%">
+      <feOffset dx="0" dy="9"/>
+      <feGaussianBlur stdDeviation="11" result="b"/>
+      <feColorMatrix in="b" type="matrix"
+        values="0 0 0 0 0.06
+                0 0 0 0 0.03
+                0 0 0 0 0.03
+                0 0 0 0.35 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+    <clipPath id="plateClip">
+      <path d="M58 104L347 72L471 132L379 299L138 311L34 212L58 104Z"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#drop)">
+    <ellipse cx="252" cy="304" rx="183" ry="22" fill="#120607" fill-opacity="0.22"/>
+    <path d="M58 104L347 72L471 132L379 299L138 311L34 212L58 104Z" fill="url(#plate)" stroke="#160708" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M75 114L336 84L445 138L361 285L146 296L56 208L75 114Z" fill="#000" fill-opacity="0.09"/>
+
+    <g clip-path="url(#plateClip)">
+      <path d="M44 148L329 113L453 174" stroke="url(#stripe)" stroke-width="18" stroke-linecap="square" opacity="0.95"/>
+      <path d="M53 197H447" stroke="#120607" stroke-width="28" opacity="0.24"/>
+      <path d="M37 232L246 206" stroke="#FFF8F0" stroke-width="6" opacity="0.5"/>
+      <rect x="32" y="92" width="120" height="30" transform="rotate(-8 32 92)" fill="#F7ECE0"/>
+      <rect x="48" y="95" width="82" height="10" transform="rotate(-8 48 95)" fill="#D71A18"/>
+      <rect x="293" y="244" width="170" height="52" transform="rotate(-16 293 244)" fill="#160708" fill-opacity="0.22"/>
+      <rect x="285" y="232" width="176" height="48" transform="rotate(-16 285 232)" fill="#FF5034" fill-opacity="0.9"/>
+      <rect x="297" y="239" width="144" height="9" transform="rotate(-16 297 239)" fill="#FFF8F0" fill-opacity="0.62"/>
+      <path d="M273 89L433 164" stroke="#7B0A0D" stroke-width="30" opacity="0.72"/>
+      <path d="M247 272L368 240" stroke="#FFF8F0" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+      <rect x="0" y="0" width="505" height="361" fill="url(#dust)"/>
+    </g>
+
+    <path d="M84.83,87.44 L131.26,87.44 L154.50,229.14 L232.94,87.44 L283.36,87.44 L176.35,277.00 L118.06,277.00 L84.83,87.44 Z M439.12,93.42 L431.28,133.55 Q416.90,126.44 402.92,122.95 Q388.99,119.46 375.66,119.46 Q357.38,119.46 347.15,125.18 Q336.95,130.87 336.95,141.03 Q336.95,147.49 341.46,151.14 Q345.97,154.76 360.02,158.17 L380.09,163.13 Q405.24,169.47 416.98,181.49 Q428.72,193.48 428.72,212.49 Q428.72,243.36 405.28,262.05 Q381.88,280.70 342.39,280.70 Q323.99,280.70 305.75,277.24 Q287.55,273.83 270.16,267.09 L277.92,225.85 Q294.78,235.60 310.71,240.44 Q326.67,245.27 342.15,245.27 Q358.89,245.27 369.37,238.41 Q379.85,231.54 379.85,220.90 Q379.85,213.91 375.14,210.05 Q370.46,206.15 354.58,202.09 L334.63,197.13 Q312.57,191.69 301.77,179.91 Q290.96,168.08 290.96,149.27 Q290.96,119.70 313.63,101.87 Q336.30,84.03 374.65,84.03 Q390.01,84.03 406.17,86.39 Q422.38,88.74 439.12,93.42 Z" fill="url(#shadowEdge)"/>
+    <path d="M79.83,81.44 L126.26,81.44 L149.50,223.14 L227.94,81.44 L278.36,81.44 L171.35,271.00 L113.06,271.00 L79.83,81.44 Z M434.12,87.42 L426.28,127.55 Q411.90,120.44 397.92,116.95 Q383.99,113.46 370.66,113.46 Q352.38,113.46 342.15,119.18 Q331.95,124.87 331.95,135.03 Q331.95,141.49 336.46,145.14 Q340.97,148.76 355.02,152.17 L375.09,157.13 Q400.24,163.47 411.98,175.49 Q423.72,187.48 423.72,206.49 Q423.72,237.36 400.28,256.05 Q376.88,274.70 337.39,274.70 Q318.99,274.70 300.75,271.24 Q282.55,267.83 265.16,261.09 L272.92,219.85 Q289.78,229.60 305.71,234.44 Q321.67,239.27 337.15,239.27 Q353.89,239.27 364.37,232.41 Q374.85,225.54 374.85,214.90 Q374.85,207.91 370.14,204.05 Q365.46,200.15 349.58,196.09 L329.63,191.13 Q307.57,185.69 296.77,173.91 Q285.96,162.08 285.96,143.27 Q285.96,113.70 308.63,95.87 Q331.30,78.03 369.65,78.03 Q385.01,78.03 401.17,80.39 Q417.38,82.74 434.12,87.42 Z" fill="url(#letterUnder)"/>
+    <path d="M74.83,75.44 L121.26,75.44 L144.50,217.14 L222.94,75.44 L273.36,75.44 L166.35,265.00 L108.06,265.00 L74.83,75.44 Z M429.12,81.42 L421.28,121.55 Q406.90,114.44 392.92,110.95 Q378.99,107.46 365.66,107.46 Q347.38,107.46 337.15,113.18 Q326.95,118.87 326.95,129.03 Q326.95,135.49 331.46,139.14 Q335.97,142.76 350.02,146.17 L370.09,151.13 Q395.24,157.47 406.98,169.49 Q418.72,181.48 418.72,200.49 Q418.72,231.36 395.28,250.05 Q371.88,268.70 332.39,268.70 Q313.99,268.70 295.75,265.24 Q277.55,261.83 260.16,255.09 L267.92,213.85 Q284.78,223.60 300.71,228.44 Q316.67,233.27 332.15,233.27 Q348.89,233.27 359.37,226.41 Q369.85,219.54 369.85,208.90 Q369.85,201.91 365.14,198.05 Q360.46,194.15 344.58,190.09 L324.63,185.13 Q302.57,179.69 291.77,167.91 Q280.96,156.08 280.96,137.27 Q280.96,107.70 303.63,89.87 Q326.30,72.03 364.65,72.03 Q380.01,72.03 396.17,74.39 Q412.38,76.74 429.12,81.42 Z" fill="url(#letterTop)"/>
+
+    <path d="M248 147L271 139L262 164Z" fill="#FFF8F0" fill-opacity="0.9"/>
+    <path d="M243 144L266 136L257 161Z" fill="#160708" fill-opacity="0.2"/>
+    <circle cx="86" cy="242" r="7" fill="#F7ECE0"/>
+    <circle cx="106" cy="233" r="3" fill="#160708" fill-opacity="0.74"/>
+    <path d="M70 251H137" stroke="#FFF8F0" stroke-width="5" stroke-linecap="round" opacity="0.54"/>
+    <path d="M82 245H161" stroke="#160708" stroke-width="8" stroke-linecap="round" opacity="0.30"/>
+  </g>
+</svg>

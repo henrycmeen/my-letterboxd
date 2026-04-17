@@ -70,6 +70,7 @@ const tmdbImageEntrySchema = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   vote_average: z.number().optional().default(0),
+  vote_count: z.number().optional().default(0),
 });
 
 const tmdbMovieImagesResponseSchema = z.object({
@@ -84,6 +85,7 @@ export interface TmdbMovieImageOption {
   width: number;
   height: number;
   voteAverage: number;
+  voteCount: number;
 }
 
 export interface TmdbMovieImages {
@@ -577,11 +579,13 @@ const toMovieImageOption = (
   width: image.width,
   height: image.height,
   voteAverage: image.vote_average ?? 0,
+  voteCount: image.vote_count ?? 0,
 });
 
 export const getTmdbMovieImages = async (
   movieId: number,
-  limit = 24
+  limit = 24,
+  options?: { useCache?: boolean }
 ): Promise<TmdbMovieImages> => {
   if (!Number.isFinite(movieId) || movieId <= 0) {
     return {
@@ -592,15 +596,21 @@ export const getTmdbMovieImages = async (
 
   const normalizedId = Math.floor(movieId);
   const cappedLimit = Math.max(1, Math.min(Math.floor(limit), 60));
+  const useCache = options?.useCache ?? true;
   const cachePath = getImagesCachePath(normalizedId);
-  const cached = await readFreshCache(cachePath, tmdbMovieImagesResponseSchema);
+  const cached = useCache
+    ? await readFreshCache(cachePath, tmdbMovieImagesResponseSchema)
+    : null;
 
   let payload: z.infer<typeof tmdbMovieImagesResponseSchema>;
   if (cached) {
     payload = tmdbMovieImagesResponseSchema.parse(cached);
   } else {
     const url = new URL(`${TMDB_BASE_URL}/movie/${normalizedId}/images`);
-    url.searchParams.set('include_image_language', 'en,null');
+    url.searchParams.set(
+      'include_image_language',
+      'null,en,nb,no,sv,da,de,fr,es,it,pt,ja,ko,zh,ru,pl,tr'
+    );
 
     const { url: requestUrl, requestInit } = createTmdbRequest(url);
     const response = await fetchWithRetry(requestUrl, requestInit);
@@ -610,13 +620,16 @@ export const getTmdbMovieImages = async (
 
     const rawData: unknown = await response.json();
     payload = tmdbMovieImagesResponseSchema.parse(rawData);
-    await writeCache(cachePath, payload);
+    if (useCache) {
+      await writeCache(cachePath, payload);
+    }
   }
 
   const sortByRank = (
     left: z.infer<typeof tmdbImageEntrySchema>,
     right: z.infer<typeof tmdbImageEntrySchema>
   ): number =>
+    (right.vote_count ?? 0) - (left.vote_count ?? 0) ||
     (right.vote_average ?? 0) - (left.vote_average ?? 0) ||
     right.width * right.height - left.width * left.height;
 
