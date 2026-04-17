@@ -214,6 +214,7 @@ interface VsFightState {
   stage: 'fight' | 'lunge' | 'impact';
   winnerId: number | null;
   loserId: number | null;
+  easterEgg: 'sauron-eye' | null;
 }
 
 const BASE_CARD_WIDTH = 260;
@@ -353,6 +354,33 @@ const getVsPairKey = (pair: VsPair): string => `${pair.firstId}-${pair.secondId}
 
 const hasVsPair = (pairs: VsPair[], candidate: VsPair): boolean =>
   pairs.some((pair) => isSameVsPair(pair, candidate));
+
+const isLordOfTheRingsMovie = (movie: { title: string } | null | undefined): boolean =>
+  Boolean(
+    movie &&
+      /\b(lord of the rings|ringenes herre|fellowship of the ring|two towers|return of the king)\b/i.test(
+        movie.title
+      )
+  );
+
+const getLordOfTheRingsVsResult = (
+  movies: FloorMovie[],
+  pair: VsPair
+): { winnerId: number; loserId: number } | null => {
+  const first = movies.find((movie) => movie.id === pair.firstId) ?? null;
+  const second = movies.find((movie) => movie.id === pair.secondId) ?? null;
+  const firstIsLordOfTheRings = isLordOfTheRingsMovie(first);
+  const secondIsLordOfTheRings = isLordOfTheRingsMovie(second);
+
+  if (!first || !second || (!firstIsLordOfTheRings && !secondIsLordOfTheRings)) {
+    return null;
+  }
+
+  const winnerId = firstIsLordOfTheRings ? first.id : second.id;
+  const loserId = winnerId === first.id ? second.id : first.id;
+
+  return { winnerId, loserId };
+};
 
 const getSearchPreviewStep = (tier: SearchPreviewTier) =>
   SEARCH_PREVIEW_STEPS.find((step) => step.tier === tier) ??
@@ -5416,6 +5444,14 @@ export const FloorScreen = ({
       };
     })
     .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge));
+  const sauronEyeFight =
+    vsBadges.find((badge) => badge.fight?.easterEgg === 'sauron-eye') ?? null;
+  const sauronEyeWinner = sauronEyeFight?.fight?.winnerId
+    ? visibleMovieById.get(sauronEyeFight.fight.winnerId)
+    : null;
+  const sauronEyeSize = Math.round(
+    clamp(Math.min(floorWidth, floorHeight) * 0.34, 220, 420)
+  );
   const movieFightEffects = (() => {
     const effectsByMovieId = new Map<
       number,
@@ -5672,6 +5708,10 @@ export const FloorScreen = ({
         ...current,
         [pairKey]: true,
       }));
+      const lordOfTheRingsResult = getLordOfTheRingsVsResult(
+        floorMoviesRef.current,
+        pair
+      );
       setVsFightByKey((current) => ({
         ...current,
         [pairKey]: {
@@ -5679,6 +5719,7 @@ export const FloorScreen = ({
           stage: 'fight',
           winnerId: null,
           loserId: null,
+          easterEgg: lordOfTheRingsResult ? 'sauron-eye' : null,
         },
       }));
 
@@ -5705,47 +5746,49 @@ export const FloorScreen = ({
         });
       };
       const fetchResultPromise: Promise<{ winnerId: number; loserId: number } | null> =
-        (async () => {
-          try {
-            const response = await fetch(withBasePath('/api/club/vs'), {
-              method: 'POST',
-              headers: {
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({
-                movieAId: contenderAId,
-                movieBId: contenderBId,
-              }),
-            });
+        lordOfTheRingsResult
+          ? Promise.resolve(lordOfTheRingsResult)
+          : (async () => {
+              try {
+                const response = await fetch(withBasePath('/api/club/vs'), {
+                  method: 'POST',
+                  headers: {
+                    'content-type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    movieAId: contenderAId,
+                    movieBId: contenderBId,
+                  }),
+                });
 
-            if (!response.ok) {
-              return null;
-            }
+                if (!response.ok) {
+                  return null;
+                }
 
-            const payloadRaw: unknown = await response.json().catch(() => null);
-            if (!payloadRaw || typeof payloadRaw !== 'object') {
-              return null;
-            }
+                const payloadRaw: unknown = await response.json().catch(() => null);
+                if (!payloadRaw || typeof payloadRaw !== 'object') {
+                  return null;
+                }
 
-            const payload = payloadRaw as {
-              winnerId?: unknown;
-              loserId?: unknown;
-            };
-            if (
-              typeof payload.winnerId !== 'number' ||
-              typeof payload.loserId !== 'number'
-            ) {
-              return null;
-            }
+                const payload = payloadRaw as {
+                  winnerId?: unknown;
+                  loserId?: unknown;
+                };
+                if (
+                  typeof payload.winnerId !== 'number' ||
+                  typeof payload.loserId !== 'number'
+                ) {
+                  return null;
+                }
 
-            return {
-              winnerId: payload.winnerId,
-              loserId: payload.loserId,
-            };
-          } catch {
-            return null;
-          }
-        })();
+                return {
+                  winnerId: payload.winnerId,
+                  loserId: payload.loserId,
+                };
+              } catch {
+                return null;
+              }
+            })();
       const scheduleFightStep = (delayMs: number, action: () => void) => {
         const timer = window.setTimeout(() => {
           vsFightTimersRef.current = vsFightTimersRef.current.filter(
@@ -6291,6 +6334,43 @@ export const FloorScreen = ({
                   '0 0 28px rgba(255,220,140,0.52), 0 0 56px rgba(255,190,110,0.25)',
               }}
             />
+          </div>
+        ) : null}
+        {sauronEyeFight ? (
+          <div
+            className="pointer-events-none absolute z-[1242]"
+            aria-hidden
+            style={{
+              width: sauronEyeSize,
+              height: Math.round(sauronEyeSize * 0.62),
+              left: sauronEyeFight.center.x - sauronEyeSize / 2,
+              top: sauronEyeFight.center.y - sauronEyeSize * 0.44,
+              opacity: sauronEyeFight.fight?.stage === 'impact' ? 0.98 : 0.88,
+              transform:
+                sauronEyeFight.fight?.stage === 'impact'
+                  ? 'translate3d(0, -8px, 0) scale(1.08)'
+                  : 'translate3d(0, 0, 0) scale(1)',
+              transition:
+                'opacity 180ms ease-out, transform 220ms cubic-bezier(0.2, 0.85, 0.2, 1)',
+            }}
+          >
+            <div className="vhs-sauron-eye-aura absolute inset-[-46%]" />
+            <div className="vhs-sauron-eye absolute inset-0">
+              <div className="vhs-sauron-eye-iris absolute left-1/2 top-1/2" />
+              <div className="vhs-sauron-eye-slit absolute left-1/2 top-1/2" />
+              <div className="vhs-sauron-eye-flare absolute inset-0" />
+            </div>
+            {sauronEyeWinner ? (
+              <div
+                className="absolute left-1/2 top-[104%] h-[2px] -translate-x-1/2 rounded-full"
+                style={{
+                  width: Math.round(sauronEyeSize * 0.52),
+                  background:
+                    'linear-gradient(90deg, rgba(255,88,36,0), rgba(255,188,74,0.92), rgba(255,88,36,0))',
+                  boxShadow: '0 0 20px rgba(255,112,42,0.62)',
+                }}
+              />
+            ) : null}
           </div>
         ) : null}
         {vsBadges.map((badge, index) => (

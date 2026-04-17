@@ -296,6 +296,57 @@
   }
 }
 
+@keyframes vhsSauronEyePulse {
+  0% {
+    filter: brightness(0.92) saturate(1.12);
+    transform: scaleX(0.96) scaleY(0.92);
+  }
+  48% {
+    filter: brightness(1.3) saturate(1.36);
+    transform: scaleX(1.04) scaleY(1);
+  }
+  100% {
+    filter: brightness(1) saturate(1.18);
+    transform: scaleX(0.98) scaleY(0.95);
+  }
+}
+
+@keyframes vhsSauronIrisBurn {
+  0% {
+    box-shadow:
+      0 0 18px rgba(255, 80, 28, 0.56),
+      0 0 46px rgba(255, 126, 33, 0.28);
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  52% {
+    box-shadow:
+      0 0 30px rgba(255, 226, 100, 0.8),
+      0 0 74px rgba(255, 92, 28, 0.5);
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  100% {
+    box-shadow:
+      0 0 22px rgba(255, 100, 32, 0.62),
+      0 0 58px rgba(255, 116, 30, 0.34);
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+
+@keyframes vhsSauronAura {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.94) rotate(-1deg);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(1.05) rotate(1deg);
+  }
+  100% {
+    opacity: 0.58;
+    transform: scale(0.98) rotate(-0.5deg);
+  }
+}
+
 .vhs-delete-shake {
   animation: vhsDeleteShake 190ms ease-in-out infinite;
 }
@@ -380,6 +431,60 @@
 .vhs-leader-card-aura {
   animation: vhsLeaderSpotlightPulse 2.9s ease-in-out infinite;
   transform-origin: center;
+}
+
+.vhs-sauron-eye-aura {
+  animation: vhsSauronAura 1.4s ease-in-out infinite;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 172, 42, 0.28) 0%, rgba(224, 54, 20, 0.2) 34%, rgba(60, 8, 4, 0) 72%),
+    conic-gradient(from 22deg, rgba(255, 150, 40, 0), rgba(255, 90, 24, 0.28), rgba(255, 218, 94, 0.18), rgba(255, 80, 18, 0.24), rgba(255, 150, 40, 0));
+  filter: blur(18px);
+  mix-blend-mode: screen;
+  transform-origin: center;
+}
+
+.vhs-sauron-eye {
+  animation: vhsSauronEyePulse 820ms ease-in-out infinite;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 246, 122, 0.95) 0%, rgba(255, 132, 36, 0.86) 13%, rgba(138, 22, 11, 0.82) 32%, rgba(24, 5, 4, 0.9) 55%, rgba(0, 0, 0, 0) 72%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 92, 22, 0.76) 0%, rgba(142, 20, 8, 0.48) 48%, rgba(0, 0, 0, 0) 74%);
+  border-radius: 999px / 56%;
+  box-shadow:
+    inset 0 0 42px rgba(255, 226, 102, 0.18),
+    inset 0 -18px 36px rgba(24, 2, 2, 0.72),
+    0 0 22px rgba(255, 82, 24, 0.52),
+    0 0 78px rgba(255, 60, 18, 0.28);
+  mix-blend-mode: screen;
+  overflow: hidden;
+  transform-origin: center;
+}
+
+.vhs-sauron-eye-iris {
+  animation: vhsSauronIrisBurn 620ms ease-in-out infinite;
+  width: 23%;
+  height: 76%;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(255, 250, 160, 1) 0%, rgba(255, 178, 52, 0.92) 28%, rgba(124, 12, 4, 0.94) 64%, rgba(8, 0, 0, 0.96) 100%);
+}
+
+.vhs-sauron-eye-slit {
+  width: 4.8%;
+  height: 98%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.96) 28%, rgba(0, 0, 0, 0.98) 70%, rgba(0, 0, 0, 0.18));
+  box-shadow:
+    0 0 8px rgba(0, 0, 0, 0.94),
+    0 0 20px rgba(0, 0, 0, 0.74);
+  transform: translate(-50%, -50%);
+}
+
+.vhs-sauron-eye-flare {
+  background:
+    linear-gradient(90deg, rgba(255, 92, 20, 0), rgba(255, 216, 92, 0.34), rgba(255, 92, 20, 0)),
+    repeating-linear-gradient(100deg, rgba(255, 230, 120, 0.08), rgba(255, 230, 120, 0.08) 1px, rgba(0, 0, 0, 0) 4px, rgba(0, 0, 0, 0) 11px);
+  mix-blend-mode: screen;
+  opacity: 0.82;
 }
 
 .retro-gradient {
