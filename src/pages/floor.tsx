@@ -5427,8 +5427,8 @@ export const FloorScreen = ({
     100
   );
   const lightRayStrength = Math.pow(lightRayScore / 100, 1.32);
-  const lightRayOpacity = 0.22 + lightRayStrength * 0.62;
-  const lightRayWarmth = 0.12 + lightRayStrength * 0.48;
+  const lightRayOpacity = 0.12 + lightRayStrength * 0.34;
+  const lightRayWarmth = 0.04 + lightRayStrength * 0.18;
   const leaderSpotlight = (() => {
     if (!leaderMovie) {
       return null;
@@ -6353,6 +6353,9 @@ export const FloorScreen = ({
             opacity:
               lightRayOpacity -
               (draggingMovie ? clamp(dragDarkBoost * 0.12, 0, 0.14) : 0),
+            bottom: 'auto',
+            height: '46%',
+            overflow: 'hidden',
             transition: 'opacity 180ms ease-out',
             mixBlendMode: 'screen',
           }}
@@ -6360,7 +6363,13 @@ export const FloorScreen = ({
           <div
             className="vhs-light-rays absolute inset-0"
             style={{
-              background: `conic-gradient(from 188deg at 50% -18%, rgba(255,246,190,${0.36 + lightRayWarmth}) 0deg, rgba(255,226,132,0) 8deg, rgba(255,238,170,${0.18 + lightRayWarmth * 0.58}) 15deg, rgba(255,218,120,0) 25deg, rgba(255,244,196,${0.24 + lightRayWarmth * 0.62}) 34deg, rgba(255,226,142,0) 48deg, rgba(255,236,168,${0.16 + lightRayWarmth * 0.44}) 58deg, rgba(255,220,120,0) 76deg, rgba(255,240,184,${0.28 + lightRayWarmth * 0.64}) 92deg, rgba(255,222,124,0) 116deg, rgba(255,238,176,${0.14 + lightRayWarmth * 0.38}) 132deg, rgba(255,220,120,0) 154deg, rgba(255,246,190,${0.24 + lightRayWarmth * 0.5}) 172deg, rgba(255,226,132,0) 190deg, rgba(255,246,190,${0.18 + lightRayWarmth * 0.46}) 212deg, rgba(255,226,132,0) 238deg, rgba(255,238,176,${0.16 + lightRayWarmth * 0.42}) 252deg, rgba(255,220,120,0) 276deg, rgba(255,246,190,${0.26 + lightRayWarmth * 0.58}) 298deg, rgba(255,226,132,0) 324deg, rgba(255,246,190,${0.2 + lightRayWarmth * 0.48}) 344deg, rgba(255,226,132,0) 360deg)`,
+              background: `
+                linear-gradient(104deg, rgba(255,246,190,${0.11 + lightRayWarmth}) 0%, rgba(255,226,132,0) 18%),
+                linear-gradient(78deg, rgba(255,226,132,0) 10%, rgba(255,238,176,${0.13 + lightRayWarmth * 0.72}) 24%, rgba(255,226,132,0) 41%),
+                linear-gradient(96deg, rgba(255,226,132,0) 34%, rgba(255,246,196,${0.1 + lightRayWarmth * 0.62}) 48%, rgba(255,226,132,0) 64%),
+                linear-gradient(116deg, rgba(255,226,132,0) 54%, rgba(255,238,176,${0.11 + lightRayWarmth * 0.7}) 68%, rgba(255,226,132,0) 84%),
+                radial-gradient(72% 34% at 50% 0%, rgba(255,246,190,${0.13 + lightRayWarmth}) 0%, rgba(255,226,132,0) 78%)
+              `,
             }}
           />
           <div

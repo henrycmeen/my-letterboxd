@@ -681,14 +681,14 @@
 
 .vhs-light-rays {
   animation: vhsLightRaysDrift 8.6s ease-in-out infinite alternate;
-  mask-image: linear-gradient(to bottom, black 0%, black 44%, rgba(0, 0, 0, 0.48) 68%, transparent 100%);
-  opacity: 0.78;
+  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.82) 30%, rgba(0, 0, 0, 0.18) 68%, transparent 100%);
+  opacity: 0.58;
   transform-origin: top center;
 }
 
 .vhs-light-rays-core {
   animation: vhsLightRaysCorePulse 5.8s ease-in-out infinite alternate;
-  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.72) 52%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.54) 42%, transparent 100%);
   transform-origin: top center;
 }
 
