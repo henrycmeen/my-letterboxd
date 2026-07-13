@@ -240,7 +240,9 @@ const BASE_ADD_SLOT_HOVER_OFFSET = Math.round(BASE_CARD_HEIGHT * 0.4);
 const REMOTE_CONTROL_IMAGE = withBasePath('/VHS/ui/remote-control-black-transparent.png');
 const VS_BADGE_IMAGE = withBasePath('/VHS/ui/vs-neo-tokyo.svg');
 const VHS_FRONT_SIDE_IMAGE = withBasePath('/VHS/Front Side.png');
-const FLOOR_BACKGROUND_IMAGE = withBasePath('/VHS/backgrounds/Oak_Veneer_tfjcffgc_4K_BaseColor.jpg');
+const FLOOR_BACKGROUND_IMAGE = withBasePath(
+  '/VHS/backgrounds/oak-veneer-floor.avif'
+);
 const GENERATED_COVER_API_PATH = withBasePath('/api/vhs/generated/');
 const BASE_COVER_EDITOR_DROP_ZONE_EXTRA = 22;
 const COVER_EDITOR_DROP_CYCLE_INTERVAL_MS = 190;
