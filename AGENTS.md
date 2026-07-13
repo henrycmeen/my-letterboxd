@@ -1,5 +1,7 @@
 # Agent Rules
 
+Read `PROJECT_AUTONOMY.md` as well. Both files apply; the stricter rule wins.
+
 ## Floor Selection Design
 - Do not render visible text labels, instructions, buttons, cards, sidebars, scoreboards, or decorative frames.
 - Keep the floor selection view visually minimal: floor background + VHS cassettes only.
