@@ -5784,6 +5784,10 @@ export const FloorScreen = ({
 
   const handlePowerOnClick = () => {
     setIsMobileShelfOpen(false);
+    if (boardSyncTimerRef.current !== null) {
+      window.clearTimeout(boardSyncTimerRef.current);
+      boardSyncTimerRef.current = null;
+    }
     const boardMovies = toBoardMoviesPayload(floorMovies);
     const signature = buildBoardSignature(boardMovies);
 

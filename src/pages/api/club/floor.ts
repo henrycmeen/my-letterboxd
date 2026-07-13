@@ -63,7 +63,10 @@ export default async function handler(
 
     if (req.method === 'DELETE') {
       const expectedVersionRaw = getQueryValue(req.query.expectedVersion);
-      if (expectedVersionRaw === undefined) {
+      if (
+        expectedVersionRaw === undefined ||
+        expectedVersionRaw.trim() === ''
+      ) {
         return res.status(428).json({ message: 'Expected board version is required.' });
       }
 
