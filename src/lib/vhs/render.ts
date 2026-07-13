@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { fetchRemoteImage } from './remoteImage';
 import {
   DEFAULT_VHS_TEMPLATE_ID,
   getVhsTemplateById,
@@ -111,18 +112,7 @@ const loadSourceBuffer = async (
     throw new Error('Missing source image. Provide sourceUrl or sourcePath.');
   }
 
-  const response = await fetch(sourceUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch source image (${response.status}).`);
-  }
-
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.startsWith('image/')) {
-    throw new Error('Source URL does not point to an image.');
-  }
-
-  const sourceArrayBuffer = await response.arrayBuffer();
-  return Buffer.from(sourceArrayBuffer);
+  return fetchRemoteImage(sourceUrl);
 };
 
 const buildScanlineOverlay = (width: number, height: number): Buffer => {
@@ -360,7 +350,9 @@ export const renderVhsPoster = async (
     Math.max(0, posterRenderHeight - posterHeight)
   );
 
-  const posterBuffer = await sharp(sourceBuffer)
+  const posterBuffer = await sharp(sourceBuffer, {
+    limitInputPixels: 40_000_000,
+  })
     .resize(posterRenderWidth, posterRenderHeight, {
       fit: options.fit ?? 'cover',
       // Keep poster placement stable across titles; attention can drift off-center.
