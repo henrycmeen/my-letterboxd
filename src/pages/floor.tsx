@@ -1859,9 +1859,9 @@ export const FloorScreen = ({
         boardSaveQueueRef.current = queue;
       }
 
-      if (boardVersionRef.current !== null) {
-        queue.setVersion(boardVersionRef.current);
-      }
+      // Version 0 is a safe bootstrap precondition when the initial GET failed:
+      // an existing board returns 409 and is then replaced with server state.
+      queue.setVersion(boardVersionRef.current ?? 0);
 
       latestRequestedBoardSignatureRef.current = signature;
       return queue.enqueue({ value: boardMovies, signature });
