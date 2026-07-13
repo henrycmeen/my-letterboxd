@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { applyRateLimit } from '@/lib/rateLimit';
+import {
+  getRemoteImageHttpStatus,
+  RemoteImageError,
+} from '@/lib/vhs/remoteImage';
 import { renderVhsPoster } from '@/lib/vhs/render';
 
 const overlaySchema = z.object({
@@ -76,8 +80,12 @@ export default async function handler(
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).send(renderResult.buffer);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected render error';
-    return res.status(500).json({ message });
+    if (error instanceof RemoteImageError) {
+      return res
+        .status(getRemoteImageHttpStatus(error))
+        .json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: 'Unable to render VHS cover.' });
   }
 }

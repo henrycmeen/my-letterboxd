@@ -8,6 +8,11 @@ import { scheduleCachePrune } from '@/lib/cacheMaintenance';
 import { withBasePath } from '@/lib/basePath';
 import { VHS_RENDER_CACHE_DIRECTORY } from '@/lib/storagePaths';
 import { getVhsTemplateById } from '@/lib/vhs/templates';
+import {
+  assertAllowedRemoteImageUrl,
+  getRemoteImageHttpStatus,
+  RemoteImageError,
+} from '@/lib/vhs/remoteImage';
 import { renderVhsPoster } from '@/lib/vhs/render';
 
 const DEFAULT_RENDER_MAX_SIDE = 1800;
@@ -149,6 +154,7 @@ export default async function handler(
     await fs.mkdir(VHS_RENDER_CACHE_DIRECTORY, { recursive: true });
 
     const payload = parsedBody.data;
+    assertAllowedRemoteImageUrl(payload.sourceUrl);
     const templateSlug = slugify(payload.templateId) || 'template';
     const payloadHash = createHash('sha1')
       .update(
@@ -206,8 +212,12 @@ export default async function handler(
       ),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected custom cover error';
-    return res.status(500).json({ message });
+    if (error instanceof RemoteImageError) {
+      return res
+        .status(getRemoteImageHttpStatus(error))
+        .json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: 'Unable to create VHS cover.' });
   }
 }
