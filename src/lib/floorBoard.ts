@@ -54,7 +54,7 @@ export interface BoardStoreFile {
 export interface ReplaceBoardPayload {
   boardId?: string;
   movies: BoardMovie[];
-  expectedVersion?: number;
+  expectedVersion: number;
 }
 
 export interface ConflictErrorOptions {
@@ -372,7 +372,7 @@ export const replaceBoardMovies = async (
   const parsedPayload = z
     .object({
       movies: z.array(boardMovieInputSchema).max(MAX_MOVIES),
-      expectedVersion: z.number().int().nonnegative().optional(),
+      expectedVersion: z.number().int().nonnegative(),
     })
     .parse({ movies: payload.movies, expectedVersion: payload.expectedVersion });
 
@@ -380,10 +380,7 @@ export const replaceBoardMovies = async (
   return runInTransaction(db, () => {
     const existing = loadBoard(db, boardId) ?? createEmptyBoard(boardId);
 
-    if (
-      parsedPayload.expectedVersion !== undefined &&
-      existing.version !== parsedPayload.expectedVersion
-    ) {
+    if (existing.version !== parsedPayload.expectedVersion) {
       throw new BoardConflictError({
         expectedVersion: parsedPayload.expectedVersion,
         currentVersion: existing.version,
@@ -410,12 +407,28 @@ export const replaceBoardMovies = async (
 };
 
 export const clearBoard = async (
-  boardId = DEFAULT_BOARD_ID
+  boardId = DEFAULT_BOARD_ID,
+  expectedVersion: number
 ): Promise<BoardState> => {
   const db = await getDatabase();
   const normalizedBoardId = normalizeBoardId(boardId);
-  const emptyBoard = createEmptyBoard(normalizedBoardId);
+  const parsedExpectedVersion = z.number().int().nonnegative().parse(expectedVersion);
 
-  persistBoard(db, emptyBoard);
-  return emptyBoard;
+  return runInTransaction(db, () => {
+    const existing = loadBoard(db, normalizedBoardId) ?? createEmptyBoard(normalizedBoardId);
+    if (existing.version !== parsedExpectedVersion) {
+      throw new BoardConflictError({
+        expectedVersion: parsedExpectedVersion,
+        currentVersion: existing.version,
+      });
+    }
+
+    const emptyBoard = buildBoardState({
+      boardId: normalizedBoardId,
+      version: existing.version + 1,
+      movies: [],
+    });
+    persistBoard(db, emptyBoard);
+    return emptyBoard;
+  });
 };

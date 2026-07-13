@@ -10,7 +10,8 @@ const ClubFilmvelgerPage: NextPage = () => {
     return null;
   }
 
-  return <FloorScreen clubSlug={resolveClubSlugParam(router.query.clubSlug)} />;
+  const clubSlug = resolveClubSlugParam(router.query.clubSlug);
+  return <FloorScreen key={clubSlug} clubSlug={clubSlug} />;
 };
 
 export default ClubFilmvelgerPage;

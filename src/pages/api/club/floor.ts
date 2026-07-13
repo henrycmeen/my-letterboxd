@@ -30,7 +30,7 @@ const getQueryValue = (
 
 const boardPayloadSchema = z.object({
   boardId: z.string().trim().min(1).max(64).optional(),
-  expectedVersion: z.number().int().nonnegative().optional(),
+  expectedVersion: z.number().int().nonnegative(),
   movies: z.array(
     z.object({
       id: z.number().int().positive(),
@@ -62,8 +62,36 @@ export default async function handler(
     }
 
     if (req.method === 'DELETE') {
-      const board = await clearBoard(boardId);
+      const expectedVersionRaw = getQueryValue(req.query.expectedVersion);
+      if (
+        expectedVersionRaw === undefined ||
+        expectedVersionRaw.trim() === ''
+      ) {
+        return res.status(428).json({ message: 'Expected board version is required.' });
+      }
+
+      const expectedVersionResult = z.coerce
+        .number()
+        .int()
+        .nonnegative()
+        .safeParse(expectedVersionRaw);
+      if (!expectedVersionResult.success) {
+        return res.status(400).json({
+          message: 'Invalid expected board version.',
+          issues: expectedVersionResult.error.issues,
+        });
+      }
+
+      const board = await clearBoard(boardId, expectedVersionResult.data);
       return res.status(200).json(board);
+    }
+
+    if (
+      !req.body ||
+      typeof req.body !== 'object' ||
+      !Object.prototype.hasOwnProperty.call(req.body, 'expectedVersion')
+    ) {
+      return res.status(428).json({ message: 'Expected board version is required.' });
     }
 
     const payloadResult = boardPayloadSchema.safeParse(req.body ?? {});

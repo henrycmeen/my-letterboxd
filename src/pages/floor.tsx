@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { withBasePath } from '@/lib/basePath';
+import { LatestVersionedSaveQueue } from '@/lib/latestVersionedSaveQueue';
 import {
   DEFAULT_CLUB_SLUG,
   getBoardIdFromClubSlug,
@@ -114,12 +115,6 @@ interface FloorBoardResponse {
   updatedAt: string;
   leaderMovieId: number | null;
   movies: FloorBoardMovie[];
-}
-
-interface FloorBoardConflictResponse {
-  message: string;
-  expectedVersion?: number;
-  currentVersion?: number;
 }
 
 interface FloorMovie extends ClubMovie {
@@ -929,6 +924,8 @@ const toBoardMoviesPayload = (movies: FloorMovie[]) =>
     score: movie.score,
   }));
 
+type BoardMoviesPayload = ReturnType<typeof toBoardMoviesPayload>;
+
 const buildBoardSignature = (
   boardMovies: ReturnType<typeof toBoardMoviesPayload>
 ): string =>
@@ -942,26 +939,6 @@ const buildBoardSignature = (
       Math.round(movie.score * 10) / 10,
     ])
   );
-
-const isFloorBoardConflictResponse = (
-  value: unknown
-): value is FloorBoardConflictResponse => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const payload = value as Partial<FloorBoardConflictResponse>;
-  const expectedValid =
-    payload.expectedVersion === undefined ||
-    (typeof payload.expectedVersion === 'number' &&
-      Number.isFinite(payload.expectedVersion));
-  const currentValid =
-    payload.currentVersion === undefined ||
-    (typeof payload.currentVersion === 'number' &&
-      Number.isFinite(payload.currentVersion));
-
-  return typeof payload.message === 'string' && expectedValid && currentValid;
-};
 
 interface FilmClubPageProps {
   clubSlug?: string;
@@ -1058,7 +1035,11 @@ export const FloorScreen = ({
   const animationTimersRef = useRef<number[]>([]);
   const addSlotResetRafRef = useRef<number | null>(null);
   const boardSyncTimerRef = useRef<number | null>(null);
+  const boardSaveQueueRef = useRef<
+    LatestVersionedSaveQueue<BoardMoviesPayload, FloorBoardResponse> | null
+  >(null);
   const lastBoardSignatureRef = useRef<string>('');
+  const latestRequestedBoardSignatureRef = useRef<string>('');
   const restoredFromBoardRef = useRef(false);
   const previewCoverByMovieIdRef = useRef<Record<number, string>>({});
   const previewTierByMovieIdRef = useRef<Record<number, SearchPreviewTier>>({});
@@ -1418,7 +1399,9 @@ export const FloorScreen = ({
           if (isFloorBoardResponse(boardRaw) && !ignore) {
             boardVersionRef.current = boardRaw.version;
             if (boardRaw.movies.length === 0) {
-              lastBoardSignatureRef.current = buildBoardSignature([]);
+              const emptySignature = buildBoardSignature([]);
+              lastBoardSignatureRef.current = emptySignature;
+              latestRequestedBoardSignatureRef.current = emptySignature;
               restoredFromBoardRef.current = true;
               setFloorMovies([]);
               setSourceMovies([]);
@@ -1445,6 +1428,7 @@ export const FloorScreen = ({
 
               const signature = buildBoardSignature(toBoardMoviesPayload(restoredMovies));
               lastBoardSignatureRef.current = signature;
+              latestRequestedBoardSignatureRef.current = signature;
               restoredFromBoardRef.current = true;
               setFloorMovies(restoredMovies);
               setSourceMovies(
@@ -1763,83 +1747,126 @@ export const FloorScreen = ({
     [clearDeleteClearAllTimer]
   );
 
+  const applyAuthoritativeBoard = useCallback(
+    (board: FloorBoardResponse): void => {
+      const bounds = getFloorBounds();
+      const restoredMovies = recalculateHierarchy(
+        board.movies.map((movie) => ({
+          id: movie.id,
+          title: movie.title,
+          coverImage: normalizeCoverImage(movie.coverImage),
+          x: movie.x,
+          y: movie.y,
+          rotation: clampCardRotation(movie.rotation),
+          z: movie.z ?? 1,
+          rank: movie.rank ?? 1,
+          score: movie.score ?? 0,
+        })),
+        bounds.height
+      );
+
+      boardVersionRef.current = board.version;
+      boardSaveQueueRef.current?.setVersion(board.version);
+      const signature = buildBoardSignature(
+        toBoardMoviesPayload(restoredMovies)
+      );
+      lastBoardSignatureRef.current = signature;
+      latestRequestedBoardSignatureRef.current = signature;
+      restoredFromBoardRef.current = true;
+      setFloorMovies(restoredMovies);
+      setSourceMovies(
+        board.movies.map((movie) => ({
+          id: movie.id,
+          title: movie.title,
+          coverImage: normalizeCoverImage(movie.coverImage),
+        }))
+      );
+    },
+    [getFloorBounds]
+  );
+
   const saveBoardMovies = useCallback(
-    async (
-      boardMovies: ReturnType<typeof toBoardMoviesPayload>,
+    (
+      boardMovies: BoardMoviesPayload,
       signature: string
     ): Promise<void> => {
-      const requestBody = {
-        boardId,
-        movies: boardMovies,
-        expectedVersion: boardVersionRef.current ?? undefined,
-      };
+      let queue = boardSaveQueueRef.current;
+      if (!queue) {
+        queue = new LatestVersionedSaveQueue<
+          BoardMoviesPayload,
+          FloorBoardResponse
+        >({
+          save: async (snapshot, expectedVersion) => {
+            try {
+              const response = await fetch(
+                withBasePath(`/api/club/floor?boardId=${boardId}`),
+                {
+                  method: 'PUT',
+                  headers: {
+                    'content-type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    boardId,
+                    movies: snapshot.value,
+                    expectedVersion,
+                  }),
+                }
+              );
 
-      try {
-        const firstResponse = await fetch(withBasePath(`/api/club/floor?boardId=${boardId}`), {
-          method: 'PUT',
-          headers: {
-            'content-type': 'application/json',
+              if (response.ok) {
+                const payloadRaw: unknown = await response.json().catch(() => null);
+                if (isFloorBoardResponse(payloadRaw)) {
+                  return { status: 'saved' as const, version: payloadRaw.version };
+                }
+                return { status: 'failed' as const };
+              }
+
+              if (response.status !== 409) {
+                return { status: 'failed' as const };
+              }
+
+              const currentResponse = await fetch(
+                withBasePath(`/api/club/floor?boardId=${boardId}`)
+              );
+              if (!currentResponse.ok) {
+                return { status: 'failed' as const };
+              }
+
+              const currentRaw: unknown = await currentResponse
+                .json()
+                .catch(() => null);
+              if (!isFloorBoardResponse(currentRaw)) {
+                return { status: 'failed' as const };
+              }
+
+              return {
+                status: 'conflict' as const,
+                version: currentRaw.version,
+                remote: currentRaw,
+              };
+            } catch {
+              return { status: 'failed' as const };
+            }
           },
-          body: JSON.stringify(requestBody),
+          onSaved: (snapshot, version) => {
+            boardVersionRef.current = version;
+            lastBoardSignatureRef.current = snapshot.signature;
+          },
+          onConflict: (remote) => {
+            applyAuthoritativeBoard(remote);
+          },
         });
-
-        if (firstResponse.ok) {
-          const payloadRaw: unknown = await firstResponse.json().catch(() => null);
-          if (isFloorBoardResponse(payloadRaw)) {
-            boardVersionRef.current = payloadRaw.version;
-          } else if (boardVersionRef.current !== null) {
-            boardVersionRef.current += 1;
-          }
-
-          lastBoardSignatureRef.current = signature;
-          return;
-        }
-
-        if (firstResponse.status !== 409) {
-          return;
-        }
-
-        const conflictPayloadRaw: unknown = await firstResponse.json().catch(() => null);
-        if (!isFloorBoardConflictResponse(conflictPayloadRaw)) {
-          return;
-        }
-
-        if (typeof conflictPayloadRaw.currentVersion !== 'number') {
-          return;
-        }
-
-        boardVersionRef.current = conflictPayloadRaw.currentVersion;
-        const secondResponse = await fetch(
-          withBasePath(`/api/club/floor?boardId=${boardId}`),
-          {
-            method: 'PUT',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              ...requestBody,
-              expectedVersion: boardVersionRef.current,
-            }),
-          }
-        );
-
-        if (!secondResponse.ok) {
-          return;
-        }
-
-        const secondPayloadRaw: unknown = await secondResponse.json().catch(() => null);
-        if (isFloorBoardResponse(secondPayloadRaw)) {
-          boardVersionRef.current = secondPayloadRaw.version;
-        } else if (boardVersionRef.current !== null) {
-          boardVersionRef.current += 1;
-        }
-
-        lastBoardSignatureRef.current = signature;
-      } catch {
-        // Keep UI responsive even if board sync fails.
+        boardSaveQueueRef.current = queue;
       }
+
+      // Version 0 is a safe bootstrap precondition when the initial GET failed:
+      // an existing board returns 409 and is then replaced with server state.
+      queue.setVersion(boardVersionRef.current ?? 0);
+
+      latestRequestedBoardSignatureRef.current = signature;
+      return queue.enqueue({ value: boardMovies, signature });
     },
-    [boardId]
+    [applyAuthoritativeBoard, boardId]
   );
 
   const persistBoardMoviesNow = useCallback(
@@ -1850,7 +1877,10 @@ export const FloorScreen = ({
 
       const boardMovies = toBoardMoviesPayload(nextMovies);
       const signature = buildBoardSignature(boardMovies);
-      if (signature === lastBoardSignatureRef.current) {
+      if (
+        signature === lastBoardSignatureRef.current &&
+        signature === latestRequestedBoardSignatureRef.current
+      ) {
         return;
       }
 
@@ -2636,7 +2666,10 @@ export const FloorScreen = ({
     const boardMovies = toBoardMoviesPayload(floorMovies);
     const signature = buildBoardSignature(boardMovies);
 
-    if (signature === lastBoardSignatureRef.current) {
+    if (
+      signature === lastBoardSignatureRef.current &&
+      signature === latestRequestedBoardSignatureRef.current
+    ) {
       return;
     }
 
@@ -5751,43 +5784,24 @@ export const FloorScreen = ({
 
   const handlePowerOnClick = () => {
     setIsMobileShelfOpen(false);
+    if (boardSyncTimerRef.current !== null) {
+      window.clearTimeout(boardSyncTimerRef.current);
+      boardSyncTimerRef.current = null;
+    }
     const boardMovies = toBoardMoviesPayload(floorMovies);
-    const signature = JSON.stringify(
-      boardMovies.map((movie) => [
-        movie.id,
-        movie.coverImage,
-        Math.round(movie.x),
-        Math.round(movie.y),
-        Math.round(movie.rotation * 10) / 10,
-        Math.round(movie.score * 10) / 10,
-      ])
-    );
+    const signature = buildBoardSignature(boardMovies);
 
     const navigateToTv = () => {
       window.location.href = tvPath;
     };
 
-    if (signature === lastBoardSignatureRef.current) {
-      navigateToTv();
-      return;
-    }
+    const pendingSave =
+      signature === lastBoardSignatureRef.current &&
+      signature === latestRequestedBoardSignatureRef.current
+        ? (boardSaveQueueRef.current?.flush() ?? Promise.resolve())
+        : saveBoardMovies(boardMovies, signature);
 
-    void fetch(withBasePath(`/api/club/floor?boardId=${boardId}`), {
-      method: 'PUT',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        boardId,
-        movies: boardMovies,
-      }),
-      keepalive: true,
-    })
-      .then((response) => {
-        if (response.ok) {
-          lastBoardSignatureRef.current = signature;
-        }
-      })
+    void pendingSave
       .catch(() => {
         // Navigate anyway; board sync can retry on next interaction.
       })
