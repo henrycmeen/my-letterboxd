@@ -10,7 +10,7 @@ const testDirectory = await fs.mkdtemp(
 );
 process.env.CLUB_DB_PATH = path.join(testDirectory, 'floor.sqlite');
 
-const { default: handler } = await import('./floor');
+const { default: handler } = await import('../pages/api/club/floor');
 
 interface RecordedResponse {
   body: unknown;
