@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { withBasePath } from '@/lib/basePath';
+import { getFloorLayoutScale } from '@/lib/floorViewport';
 import { LatestVersionedSaveQueue } from '@/lib/latestVersionedSaveQueue';
 import {
   DEFAULT_CLUB_SLUG,
@@ -1115,11 +1116,7 @@ export const FloorScreen = ({
   const shelfDragCandidateRef = useRef<ShelfDragCandidate | null>(null);
   const csvImportInFlightRef = useRef(false);
 
-  const layoutScale = clamp(
-    Math.min(viewportSize.width / 580, viewportSize.height / 900),
-    0.62,
-    1
-  );
+  const layoutScale = getFloorLayoutScale(viewportSize);
   const isCompactPhoneLayout = viewportSize.width <= 680;
   const CARD_WIDTH = Math.round(BASE_CARD_WIDTH * layoutScale);
   const CARD_HEIGHT = Math.round(BASE_CARD_HEIGHT * layoutScale);
@@ -1198,6 +1195,19 @@ export const FloorScreen = ({
     return () => {
       window.removeEventListener('resize', updateViewportSize);
       viewport?.removeEventListener('resize', updateViewportSize);
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    root.classList.add('floor-viewport-locked');
+    body.classList.add('floor-viewport-locked');
+
+    return () => {
+      root.classList.remove('floor-viewport-locked');
+      body.classList.remove('floor-viewport-locked');
     };
   }, []);
 
@@ -6019,7 +6029,10 @@ export const FloorScreen = ({
   );
 
   return (
-    <main className="h-[100dvh] w-full overflow-hidden bg-white">
+    <main
+      className="fixed inset-0 w-full overflow-clip overscroll-none bg-white"
+      style={{ height: viewportSize.height }}
+    >
       <div
         ref={floorRef}
         className="relative h-full w-full bg-cover bg-center"

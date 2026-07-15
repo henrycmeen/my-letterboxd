@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+html.floor-viewport-locked,
+body.floor-viewport-locked {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.floor-viewport-locked {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
 @keyframes scanline {
   0% {
     transform: translateY(-100%);
