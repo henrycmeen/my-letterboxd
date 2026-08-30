@@ -2,7 +2,6 @@ import Head from "next/head";
 import { useState } from "react";
 import { FilmVoteWall, INITIAL_VOTE_LEADER } from "@/components/FilmVoteWall";
 import { formatFilmDate } from "@/components/filmClubProgramData";
-import { LeaderVhsPreview } from "@/components/LeaderVhsPreview";
 import { NextFilmTv } from "@/components/NextFilmTv";
 import { useClubNextMovie } from "@/components/useClubNextMovie";
 import { getBoardIdFromClubSlug } from "@/lib/clubSlug";
@@ -13,7 +12,8 @@ interface ClubProgramHomeProps {
 }
 
 export const ClubProgramHome = ({ clubSlug }: ClubProgramHomeProps) => {
-  const nextMovie = useClubNextMovie(getBoardIdFromClubSlug(clubSlug));
+  const boardId = getBoardIdFromClubSlug(clubSlug);
+  const nextMovie = useClubNextMovie(boardId);
   const [leader, setLeader] = useState(INITIAL_VOTE_LEADER);
 
   return (
@@ -34,17 +34,13 @@ export const ClubProgramHome = ({ clubSlug }: ClubProgramHomeProps) => {
           </div>
 
           <div className={styles.nextLayout}>
-            <LeaderVhsPreview key={leader.id} film={leader} />
             <div className={styles.nextCase}>
               <NextFilmTv movie={leader} />
             </div>
           </div>
         </section>
 
-        <FilmVoteWall
-          currentLeaderId={leader.id}
-          onLeaderChange={setLeader}
-        />
+        <FilmVoteWall boardId={boardId} onLeaderChange={setLeader} />
       </main>
     </>
   );

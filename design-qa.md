@@ -7,14 +7,14 @@
 - Filmklubbens eldre programuttrykk: skjermbildene fra 13.26.01, 13.26.06 og 13.26.11 på brukerens Desktop.
 - Siste eksplisitte designvalg overstyrer den lyse bokreferansen: siden skal være svart, svært tett og nesten uten tekst eller navigasjon.
 
-Målet er en oversettelse av Minchis tette bokvegg til reelle VHS-objekter, ikke en bokstavelig kopi. CRT-en og den åpne lederkassetten viderefører Filmklubbens eksisterende VHS-/TV-språk.
+Målet er en oversettelse av Minchis tette bokvegg til reelle VHS-objekter, ikke en bokstavelig kopi. CRT-en og den åpne lederplassen viderefører Filmklubbens eksisterende VHS-/TV-språk.
 
 ## Implementasjon
 
-- Lokal rute: `http://127.0.0.1:4174/default`.
-- Desktop, 1280 × 800: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-vhs-wall-desktop-verified.png`.
-- Mobil, 390 × 844: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-vhs-wall-mobile-verified-v2.png`.
-- Referansene og begge implementerte visninger i samme sammenligningsbilde: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-vhs-comparison-verified.png`.
+- Lokal rute: `http://127.0.0.1:4174/NA`.
+- Desktop, 1440 × 1000: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-voting-desktop.png`.
+- Mobil, 390 × 844: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-voting-mobile-clean.png`.
+- Bokreferansen og den ferdige desktopvisningen i samme sammenligningsbilde: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-voting-comparison-final.png`.
 - Filmbytte under TV-avslag: `/Users/henrymeen/Documents/Codex/2026-08-30/v/work/filmklubb-tv-power-off-final.png`.
 
 ## Funn
@@ -22,20 +22,20 @@ Målet er en oversettelse av Minchis tette bokvegg til reelle VHS-objekter, ikke
 Ingen gjenværende P0-, P1- eller P2-avvik.
 
 - **Hierarki:** Bare «Neste film» og dato står igjen over innholdet. Menyer, instruksjoner, filmtitler, rangeringer og synlige stemmetall er fjernet.
-- **Desktop:** Den åpne, tomme leder-VHS-en står til venstre for CRT-en. Samme film skjules i veggen, så den vises ikke dobbelt. Den tette veggen starter rett under og bruker hele bredden.
-- **Mobil:** CRT-en er kvadratisk. Lederen er første objekt rett under TV-en, står moderat åpen og er tom fordi kassetten er i TV-en.
+- **Desktop:** CRT-en står alene og sentrert. Den store, løsrevne lederkassetten ved siden av TV-en er fjernet. Den åpne lederplassen er nå første objekt i den tette veggen rett under TV-en.
+- **Mobil:** CRT-en er kvadratisk. Lederen er første objekt rett under TV-en, står moderat åpen og er tom fordi den fysiske kassetten er i TV-en.
 - **VHS-bevegelse:** Coveret hengsler fra venstre kant. Kassetten blir liggende inne i etuiet ved hover; skall og kassett er skalert inn så ingenting stikker gjennom plasten.
 - **Video:** YouTube-traileren autospiller dempet med `controls=0`, tastatur og pekerinteraksjon avskåret. Den lastes bak en svart TV og vises først når avspilling har startet og YouTubes oppstartsoverlegg har rukket å forsvinne. Videoen fyller CRT-flaten uten letterbox-felt.
 - **TV-effekt:** Oppstart bruker Filmklubbens gamle hvite bilderørblink. Ved filmbytte kollapser forrige bilde til en lys, horisontal stripe, skjermen blir svart, og den nye traileren slås deretter på med samme CRT-sekvens.
-- **Avstemning:** Et klikk oppdaterer rangeringen. Etuiet og TV-en byttes bare når en ny film faktisk overtar førsteplassen. Pulp Fiction, 2001 og In the Mood for Love er kontrollert som ledere; den tidligere døde In the Mood-traileren er byttet ut.
+- **Avstemning:** Et klikk lagres delt på serveren og oppdaterer rangeringen med FLIP-bevegelse. Samme IP kan stemme på flere filmer, men bare én gang per film. TV-en byttes bare når en ny film faktisk overtar førsteplassen. Duplikatstemme, delt oppdatering fra en annen IP og uavgjort førsteplass er kontrollert.
 - **Objekter:** Alle 100 filmene har omslag. VHS-etuiet og kassetten er rasterressurser fra prosjektets eget visuelle språk, ikke tegnede CSS-erstatninger.
 - **Tetthet:** Sammenligningsbildet viser samme raske, skannbare rytme som bokreferansen, med mindre mellomrom og uten tekstblokker mellom radene.
-- **Tilgjengelighet:** Hver VHS er en ekte knapp med filmtittel, rangering, stemmetall og valgt tilstand tilgjengelig for hjelpemidler. Synlig støy er erstattet av en skjult live-status. Redusert bevegelse støttes.
-- **Nettleser:** Responsiv flyt, 100 stemmeknapper, lederbytte og hele av/på-sekvensen er kontrollert i den valgte innebygde nettleseren. Ingen nettleserfeil eller advarsler fra løsningen ble funnet.
-- **Kodekvalitet:** 33 tester, TypeScript og produksjonsbygget passerer. ESLint har 0 feil; de 43 eksisterende advarslene ligger i eldre, urørte deler av prosjektet.
+- **Tilgjengelighet:** Hver VHS er en ekte knapp med filmtittel, rangering, stemmetall og valgt tilstand tilgjengelig for hjelpemidler. Ingen forklarende eller bekreftende tekst legges oppå det visuelle uttrykket. Redusert bevegelse støttes.
+- **Nettleser:** Responsiv flyt, 100 stemmeknapper, lederbytte, polling og hele av/på-sekvensen er kontrollert i den valgte innebygde nettleseren. En helt ny kontrollfane ga ingen feil eller advarsler.
+- **Visuell sammenligning:** Det samlede sammenligningsbildet viser samme raske, tette skannerytme som bokreferansen, men med Filmklubbens svarte VHS-/CRT-identitet. Toppfeltet har nå én tydelig hovedgjenstand i stedet for to konkurrerende objekter.
 
 ## Avgrensning
 
-YouTube bestemmer fortsatt eventuell annonsevisning og kan ikke garanteres annonsefritt fra klientkoden. Stemmene lever foreløpig i den lokale prototypens nettlesertilstand. Delt lagring mellom brukere og produksjonspublisering er ikke gjort eller antydet.
+YouTube bestemmer fortsatt eventuell annonsevisning og kan ikke garanteres annonsefritt fra klientkoden. IP-regelen betyr også at personer bak samme offentlige IP deler stemmeretten for hver enkelt film. Rå IP-adresser lagres ikke.
 
 final result: passed

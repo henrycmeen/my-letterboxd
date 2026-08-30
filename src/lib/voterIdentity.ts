@@ -57,9 +57,12 @@ export const createVoterKey = (
   return createHmac("sha256", secret).update(ipAddress).digest("hex");
 };
 
-const getSecretPath = (): string =>
-  process.env.FILM_VOTE_SECRET_PATH?.trim() ||
-  path.join(path.dirname(CLUB_SQLITE_PATH), ".film-vote-secret");
+const getSecretPath = (): string => {
+  const configuredPath = process.env.FILM_VOTE_SECRET_PATH?.trim();
+  return configuredPath && configuredPath.length > 0
+    ? configuredPath
+    : path.join(path.dirname(CLUB_SQLITE_PATH), ".film-vote-secret");
+};
 
 const readSecret = async (secretPath: string): Promise<Buffer> => {
   const secret = await fs.readFile(secretPath);

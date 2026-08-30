@@ -1,0 +1,100 @@
+import { z } from "zod";
+
+const snapshotSchema = z.object({
+  boardId: z.string().trim().min(1).max(64),
+  ranking: z
+    .array(
+      z.object({
+        filmId: z.number().int().positive(),
+        votes: z.number().int().nonnegative(),
+      }),
+    )
+    .max(200),
+  revision: z.number().int().nonnegative(),
+  votedFilmIds: z.array(z.number().int().positive()).max(200),
+});
+
+export type FilmVoteClientSnapshot = z.infer<typeof snapshotSchema>;
+
+export interface SlotPosition {
+  left: number;
+  top: number;
+}
+
+export interface FlipMotion {
+  delayMs: number;
+  durationMs: number;
+  from: { x: number; y: number };
+}
+
+export const parseFilmVoteSnapshot = (
+  rawValue: unknown,
+  expectedBoardId: string,
+  allowedFilmIds: ReadonlySet<number>,
+): FilmVoteClientSnapshot | null => {
+  const parsed = snapshotSchema.safeParse(rawValue);
+  if (!parsed.success || parsed.data.boardId !== expectedBoardId) {
+    return null;
+  }
+
+  const rankedFilmIds = parsed.data.ranking.map(({ filmId }) => filmId);
+  const uniqueRankedFilmIds = new Set(rankedFilmIds);
+  if (
+    rankedFilmIds.length !== allowedFilmIds.size ||
+    uniqueRankedFilmIds.size !== rankedFilmIds.length ||
+    rankedFilmIds.some((filmId) => !allowedFilmIds.has(filmId))
+  ) {
+    return null;
+  }
+
+  const uniqueVotedFilmIds = new Set(parsed.data.votedFilmIds);
+  if (
+    uniqueVotedFilmIds.size !== parsed.data.votedFilmIds.length ||
+    parsed.data.votedFilmIds.some((filmId) => !allowedFilmIds.has(filmId))
+  ) {
+    return null;
+  }
+
+  return parsed.data;
+};
+
+export const shouldApplyVoteSnapshot = (
+  currentRevision: number,
+  candidateRevision: number,
+): boolean => candidateRevision >= currentRevision;
+
+export const areVoteSnapshotsEqual = (
+  first: FilmVoteClientSnapshot,
+  second: FilmVoteClientSnapshot,
+): boolean =>
+  first.boardId === second.boardId &&
+  first.revision === second.revision &&
+  first.ranking.length === second.ranking.length &&
+  first.ranking.every(
+    (entry, index) =>
+      entry.filmId === second.ranking[index]?.filmId &&
+      entry.votes === second.ranking[index]?.votes,
+  ) &&
+  first.votedFilmIds.length === second.votedFilmIds.length &&
+  first.votedFilmIds.every(
+    (filmId, index) => filmId === second.votedFilmIds[index],
+  );
+
+export const getFlipMotion = (
+  previous: SlotPosition,
+  current: SlotPosition,
+  rankDelta: number,
+): FlipMotion | null => {
+  const x = previous.left - current.left;
+  const y = previous.top - current.top;
+  if (Math.abs(x) < 0.5 && Math.abs(y) < 0.5) {
+    return null;
+  }
+
+  const distance = Math.hypot(x, y);
+  return {
+    delayMs: Math.min(100, Math.abs(rankDelta) * 7),
+    durationMs: Math.round(Math.min(1_050, 560 + distance * 0.32)),
+    from: { x, y },
+  };
+};

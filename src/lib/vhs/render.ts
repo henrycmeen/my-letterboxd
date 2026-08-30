@@ -251,7 +251,7 @@ const getPreparedOverlayBuffer = async (options: {
   return overlayBuffer;
 };
 
-const resolveBackground = (background?: string): sharp.Color =>
+const resolveBackground = (background?: string) =>
   background === 'transparent'
     ? { r: 0, g: 0, b: 0, alpha: 0 }
     : (background ?? '#10232f');
@@ -375,7 +375,9 @@ export const renderVhsPoster = async (
 
   const scanlineBuffer = buildScanlineOverlay(posterWidth, posterHeight);
 
-  const compositeOperations: sharp.OverlayOptions[] = [];
+  const compositeOperations: Parameters<
+    ReturnType<typeof sharp>['composite']
+  >[0] = [];
 
   const templateUnderlays = normalizeOverlaysFromTemplate(
     template.underlays,
