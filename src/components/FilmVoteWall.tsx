@@ -11,6 +11,7 @@ import { withBasePath } from "@/lib/basePath";
 import {
   areVoteSnapshotsEqual,
   getFlipMotion,
+  getVoteCaseState,
   parseFilmVoteSnapshot,
   shouldApplyVoteSnapshot,
   type FilmVoteClientSnapshot,
@@ -246,10 +247,11 @@ export const FilmVoteWall = ({
   return (
     <section className={styles.voteWallSection} id="stem">
       <ol className={styles.voteGrid} aria-label="Filmer du kan stemme på">
-        {rankedFilms.map(({ count, film }, index) => {
+        {rankedFilms.map(({ film }, index) => {
           const hasVoted = votedFilmIds.has(film.id);
           const isLeader = index === 0;
           const rank = index + 1;
+          const caseState = getVoteCaseState({ hasVoted, isLeader });
 
           return (
             <li
@@ -265,8 +267,13 @@ export const FilmVoteWall = ({
               <button
                 className={styles.voteFilm}
                 type="button"
-                aria-label={`Stem på ${film.title}. Plass ${rank}, ${count.votes} stemmer.`}
+                aria-label={
+                  hasVoted
+                    ? `${film.title}. Du har stemt på denne filmen. Plass ${rank}.`
+                    : `Stem på ${film.title}. Plass ${rank}.`
+                }
                 aria-pressed={hasVoted}
+                data-case-open={caseState.isOpen}
                 data-leader={isLeader}
                 onClick={() => void voteForFilm(film.id)}
               >
@@ -280,7 +287,7 @@ export const FilmVoteWall = ({
                     alt=""
                     draggable={false}
                   />
-                  {!isLeader ? (
+                  {caseState.showsCassette ? (
                     <span className={styles.voteCassetteTray}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   areVoteSnapshotsEqual,
   getFlipMotion,
+  getVoteCaseState,
   parseFilmVoteSnapshot,
   shouldApplyVoteSnapshot,
 } from "./filmVoteClient";
@@ -106,4 +107,26 @@ void test("skips FLIP work when a cassette stayed in the same slot", () => {
     getFlipMotion({ left: 20, top: 40 }, { left: 20, top: 40 }, 0),
     null,
   );
+});
+
+void test("keeps unvoted cases closed and opens the films this voter supported", () => {
+  assert.deepEqual(getVoteCaseState({ hasVoted: false, isLeader: false }), {
+    isOpen: false,
+    showsCassette: true,
+  });
+  assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: false }), {
+    isOpen: true,
+    showsCassette: true,
+  });
+});
+
+void test("keeps the leader case empty without changing its voted open state", () => {
+  assert.deepEqual(getVoteCaseState({ hasVoted: false, isLeader: true }), {
+    isOpen: false,
+    showsCassette: false,
+  });
+  assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: true }), {
+    isOpen: true,
+    showsCassette: false,
+  });
 });

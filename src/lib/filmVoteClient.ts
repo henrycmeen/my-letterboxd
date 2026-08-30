@@ -27,6 +27,22 @@ export interface FlipMotion {
   from: { x: number; y: number };
 }
 
+export interface VoteCaseState {
+  isOpen: boolean;
+  showsCassette: boolean;
+}
+
+export const getVoteCaseState = ({
+  hasVoted,
+  isLeader,
+}: {
+  hasVoted: boolean;
+  isLeader: boolean;
+}): VoteCaseState => ({
+  isOpen: hasVoted,
+  showsCassette: !isLeader,
+});
+
 export const parseFilmVoteSnapshot = (
   rawValue: unknown,
   expectedBoardId: string,
