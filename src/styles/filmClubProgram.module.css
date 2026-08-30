@@ -1,0 +1,338 @@
+.programPage {
+  --ink: #f3f2ec;
+  --muted-ink: #aaa9a2;
+  --paper: #050505;
+  --rule: rgba(255, 255, 255, 0.18);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  min-height: 100vh;
+  overflow: hidden;
+  scroll-behavior: smooth;
+}
+
+.programPage a {
+  color: inherit;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2rem;
+}
+
+.programPage a:hover,
+.programPage a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.nextSection,
+.voteWallSection {
+  scroll-margin-top: 1rem;
+}
+
+.nextSection {
+  padding: 0.8rem clamp(0.8rem, 2vw, 2rem) 1.4rem;
+}
+
+.sectionLabel {
+  display: flex;
+  font-size: 0.55rem;
+  font-weight: 650;
+  justify-content: space-between;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.nextLayout {
+  margin: 0.2rem auto 0;
+  max-width: 70rem;
+}
+
+.nextCase {
+  margin: 0 auto;
+  max-width: 56rem;
+  text-align: center;
+  width: 100%;
+}
+
+.nextTv {
+  aspect-ratio: 16 / 10;
+  background: #070707;
+  border-radius: 1.35rem;
+  box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.7);
+  padding: clamp(0.45rem, 1.1vw, 0.8rem);
+  position: relative;
+  width: 100%;
+}
+
+.nextTvScreen {
+  background: #090b12;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.95rem;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.nextTvScreen::before {
+  background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.18) 50%);
+  background-size: 100% 4px;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+
+.nextTvPoster,
+.nextTvVideo {
+  border: 0;
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+
+.nextTvPicture {
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+  transform-origin: 50% 50%;
+  z-index: 1;
+}
+
+.nextTvPictureWaiting {
+  opacity: 0;
+}
+
+.nextTvPicturePlaying {
+  opacity: 1;
+}
+
+.nextTvPicturePoweringOn {
+  animation: tvPowerOn 920ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+}
+
+.nextTvPicturePoweringOff {
+  animation: tvPowerOff 640ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+}
+
+.nextTvVideo {
+  height: 160%;
+  left: -38.89%;
+  max-width: none;
+  top: -30%;
+  width: 177.78%;
+}
+
+.nextTvPowerOnFlash,
+.nextTvPowerOffFlash {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+}
+
+.nextTvPowerOnFlash {
+  animation: tvPowerFlash 700ms ease-out forwards;
+  background: #fff;
+}
+
+.nextTvPowerOffFlash {
+  animation: tvPowerOffFlash 640ms ease-in forwards;
+  background: radial-gradient(
+    82% 2px at 50% 50%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.32) 34%,
+    rgba(255, 255, 255, 0) 72%
+  );
+}
+
+.nextTvGlow {
+  background: radial-gradient(
+    circle 34rem at 50% 46%,
+    rgba(255, 255, 255, 0.09),
+    transparent 72%
+  );
+  box-shadow: inset 0 0 3.5rem rgba(0, 0, 0, 0.34);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.nextTvShield {
+  cursor: default;
+  inset: 0;
+  position: absolute;
+  z-index: 4;
+}
+
+.voteWallSection {
+  border-top: 1px solid var(--rule);
+  padding: 0 clamp(0.45rem, 1.1vw, 1.1rem) 2rem;
+}
+
+.voteGrid {
+  display: grid;
+  gap: clamp(0.3rem, 0.75vw, 0.75rem) clamp(0.18rem, 0.55vw, 0.55rem);
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.voteGrid li {
+  min-width: 0;
+  position: relative;
+}
+
+.voteGrid li:hover,
+.voteGrid li:focus-within {
+  z-index: 4;
+}
+
+.voteGrid li[data-moving="true"] {
+  z-index: 3;
+}
+
+.voteFilm {
+  appearance: none;
+  aspect-ratio: 0.59;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  perspective: 700px;
+  position: relative;
+  width: 100%;
+}
+
+.voteFilm:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 0.1rem;
+}
+
+.voteCaseInterior,
+.voteCaseCover {
+  inset: 0;
+  position: absolute;
+}
+
+.voteCaseInterior {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.voteCaseShell,
+.voteCassette {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.voteCaseShell {
+  transform: scale(0.96);
+}
+
+.voteCassette {
+  transform: scale(0.93);
+}
+
+.voteCassetteTray {
+  align-items: center;
+  display: flex;
+  inset: 3% 2.5% 3% 3%;
+  justify-content: center;
+  position: absolute;
+  transform: translateX(0);
+  transition: transform 560ms cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 1;
+}
+
+.voteCaseCover {
+  backface-visibility: hidden;
+  filter: drop-shadow(0.25rem 0.35rem 0.3rem rgba(12, 12, 10, 0.14));
+  transform: rotateY(0deg) translateX(0);
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  transition:
+    filter 560ms cubic-bezier(0.25, 1, 0.5, 1),
+    transform 560ms cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 2;
+}
+
+.voteCaseCover img {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.voteFilm:hover .voteCaseCover,
+.voteFilm:focus-visible .voteCaseCover,
+.voteFilm[data-case-open="true"] .voteCaseCover {
+  filter: drop-shadow(0.7rem 0.8rem 0.6rem rgba(12, 12, 10, 0.24));
+  transform: rotateY(-28deg);
+}
+
+@media (max-width: 46rem) {
+  .nextSection {
+    padding-bottom: 1rem;
+  }
+
+  .sectionLabel span:last-child {
+    max-width: 13rem;
+    text-align: right;
+  }
+
+  .nextCase {
+    max-width: none;
+  }
+
+  .nextTv {
+    aspect-ratio: 1;
+    border-radius: 1.15rem;
+  }
+
+  .nextTvScreen {
+    border-radius: 0.8rem;
+  }
+
+  .nextTvVideo {
+    left: -92.22%;
+    width: 284.44%;
+  }
+
+  .voteGrid {
+    gap: 0.45rem 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .programPage {
+    scroll-behavior: auto;
+  }
+
+  .voteCaseCover,
+  .voteCassetteTray,
+  .nextTvPicture,
+  .nextTvPowerOnFlash,
+  .nextTvPowerOffFlash {
+    animation: none;
+    transition: none;
+  }
+
+  .nextTvPicturePlaying,
+  .nextTvPicturePoweringOn {
+    opacity: 1;
+  }
+
+  .nextTvPictureWaiting,
+  .nextTvPicturePoweringOff,
+  .nextTvPowerOnFlash,
+  .nextTvPowerOffFlash {
+    display: none;
+  }
+}

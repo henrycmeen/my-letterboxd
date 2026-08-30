@@ -1,0 +1,191 @@
+import assert from "node:assert/strict";
+import { promises as fs } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { after, test } from "node:test";
+import type { NextApiRequest, NextApiResponse } from "next";
+import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
+
+const firstFilmId = filmVoteCatalogue[0]!.id;
+const secondFilmId = filmVoteCatalogue[1]!.id;
+const thirdFilmId = filmVoteCatalogue[2]!.id;
+const fourthFilmId = filmVoteCatalogue[3]!.id;
+
+const testDirectory = await fs.mkdtemp(
+  path.join(tmpdir(), "filmklubb-votes-api-"),
+);
+process.env.CLUB_DB_PATH = path.join(testDirectory, "votes.sqlite");
+process.env.FILM_VOTE_SECRET_PATH = path.join(testDirectory, "vote-secret");
+
+const { default: handler } = await import("../pages/api/club/votes");
+
+interface RecordedResponse {
+  body: unknown;
+  headers: Record<string, string>;
+  statusCode: number;
+}
+
+const invoke = async ({
+  body,
+  clientIp = "203.0.113.8",
+  method,
+  query = { boardId: "na" },
+  remoteAddress = "127.0.0.1",
+}: {
+  body?: unknown;
+  clientIp?: string;
+  method: string;
+  query?: Record<string, string | string[]>;
+  remoteAddress?: string;
+}): Promise<RecordedResponse> => {
+  let responseBody: unknown;
+  let statusCode = 200;
+  const headers: Record<string, string> = {};
+
+  const request = {
+    body,
+    headers: { "x-client-ip": clientIp },
+    method,
+    query,
+    socket: { remoteAddress },
+  } as unknown as NextApiRequest;
+  const response = {
+    json(payload: unknown) {
+      responseBody = payload;
+      return this;
+    },
+    setHeader(name: string, value: string | number | readonly string[]) {
+      headers[name.toLowerCase()] = Array.isArray(value)
+        ? value.join(", ")
+        : String(value);
+      return this;
+    },
+    status(nextStatusCode: number) {
+      statusCode = nextStatusCode;
+      return this;
+    },
+  } as unknown as NextApiResponse;
+
+  await handler(request, response);
+  return { body: responseBody, headers, statusCode };
+};
+
+after(async () => {
+  await fs.rm(testDirectory, { force: true, recursive: true });
+});
+
+void test("GET returns the shared ranking and this IP's voted films", async () => {
+  const response = await invoke({ method: "GET", query: { boardId: "NA" } });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.body as {
+    boardId: string;
+    ranking: Array<{ filmId: number; votes: number }>;
+    revision: number;
+    votedFilmIds: number[];
+  };
+  assert.equal(body.boardId, "na");
+  assert.equal(body.ranking.length, 100);
+  assert.equal(body.ranking[0]?.filmId, firstFilmId);
+  assert.equal(body.revision, 0);
+  assert.deepEqual(body.votedFilmIds, []);
+  assert.equal(JSON.stringify(body).includes("203.0.113.8"), false);
+});
+
+void test("POST is idempotent per IP and film", async () => {
+  const boardId = "one-vote";
+  const first = await invoke({
+    body: { filmId: secondFilmId },
+    method: "POST",
+    query: { boardId },
+  });
+  const duplicate = await invoke({
+    body: { filmId: secondFilmId },
+    method: "POST",
+    query: { boardId },
+  });
+
+  assert.equal(first.statusCode, 200);
+  assert.equal(duplicate.statusCode, 200);
+  const body = duplicate.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+    revision: number;
+    votedFilmIds: number[];
+  };
+  assert.equal(body.revision, 1);
+  assert.deepEqual(body.ranking[0], { filmId: secondFilmId, votes: 1 });
+  assert.deepEqual(body.votedFilmIds, [secondFilmId]);
+});
+
+void test("one IP can vote for several different films", async () => {
+  const boardId = "several-films";
+  await invoke({
+    body: { filmId: secondFilmId },
+    method: "POST",
+    query: { boardId },
+  });
+  const response = await invoke({
+    body: { filmId: thirdFilmId },
+    method: "POST",
+    query: { boardId },
+  });
+
+  const body = response.body as { revision: number; votedFilmIds: number[] };
+  assert.equal(body.revision, 2);
+  assert.deepEqual(body.votedFilmIds, [secondFilmId, thirdFilmId]);
+});
+
+void test("different IPs contribute separate votes", async () => {
+  const boardId = "different-voters";
+  await invoke({
+    body: { filmId: fourthFilmId },
+    clientIp: "203.0.113.8",
+    method: "POST",
+    query: { boardId },
+  });
+  const response = await invoke({
+    body: { filmId: fourthFilmId },
+    clientIp: "198.51.100.9",
+    method: "POST",
+    query: { boardId },
+  });
+
+  const body = response.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+  };
+  assert.deepEqual(body.ranking[0], { filmId: fourthFilmId, votes: 2 });
+});
+
+void test("rejects films outside the fixed catalogue", async () => {
+  const response = await invoke({
+    body: { filmId: 999 },
+    method: "POST",
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.body, {
+    error: { code: "INVALID_REQUEST", message: "Ugyldig stemme." },
+  });
+});
+
+void test("fails closed when no client IP is available", async () => {
+  const response = await invoke({ method: "GET", remoteAddress: "" });
+
+  assert.equal(response.statusCode, 503);
+  assert.deepEqual(response.body, {
+    error: {
+      code: "VOTING_UNAVAILABLE",
+      message: "Avstemningen er ikke tilgjengelig akkurat nå.",
+    },
+  });
+});
+
+void test("rejects unsupported methods with the stable error shape", async () => {
+  const response = await invoke({ method: "DELETE" });
+
+  assert.equal(response.statusCode, 405);
+  assert.equal(response.headers.allow, "GET, POST");
+  assert.deepEqual(response.body, {
+    error: { code: "METHOD_NOT_ALLOWED", message: "Metoden er ikke tillatt." },
+  });
+});
