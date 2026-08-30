@@ -78,6 +78,19 @@ const tmdbMovieImagesResponseSchema = z.object({
   posters: z.array(tmdbImageEntrySchema).default([]),
 });
 
+const tmdbVideoSchema = z.object({
+  key: z.string().min(1),
+  site: z.string(),
+  type: z.string(),
+  official: z.boolean().optional().default(false),
+});
+
+const tmdbMovieVideosResponseSchema = z.object({
+  results: z.array(tmdbVideoSchema).default([]),
+});
+
+export type TmdbVideoOption = z.infer<typeof tmdbVideoSchema>;
+
 export interface TmdbMovieImageOption {
   kind: 'poster' | 'backdrop';
   sourceUrl: string;
@@ -567,6 +580,49 @@ export const getTmdbMovieById = async (
   const rawData: unknown = await response.json();
   const parsed = tmdbMovieSchema.parse(rawData);
   return mapTmdbMovieToClubMovie(parsed);
+};
+
+export const selectTmdbYoutubeTrailer = (
+  videos: readonly TmdbVideoOption[]
+): string | null => {
+  const candidates = videos.filter(
+    (video) => video.site.toLowerCase() === 'youtube' && video.key.trim()
+  );
+
+  const selected = [...candidates].sort((first, second) => {
+    const score = (video: TmdbVideoOption): number =>
+      (video.type.toLowerCase() === 'trailer' ? 4 : 0) +
+      (video.official ? 2 : 0);
+
+    return score(second) - score(first);
+  })[0];
+
+  return selected?.key ?? null;
+};
+
+export const getTmdbMovieTrailerYoutubeId = async (
+  movieId: number
+): Promise<string | null> => {
+  if (!Number.isFinite(movieId) || movieId <= 0) {
+    return null;
+  }
+
+  const url = new URL(`${TMDB_BASE_URL}/movie/${Math.floor(movieId)}/videos`);
+  url.searchParams.set('language', 'en-US');
+
+  const { url: requestUrl, requestInit } = createTmdbRequest(url);
+  const response = await fetchWithRetry(requestUrl, requestInit);
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`TMDB trailer lookup error (${response.status})`);
+  }
+
+  const rawData: unknown = await response.json();
+  const parsed = tmdbMovieVideosResponseSchema.parse(rawData);
+  return selectTmdbYoutubeTrailer(parsed.results);
 };
 
 const toMovieImageOption = (

@@ -5,6 +5,7 @@ export interface FilmProgramMovie {
   director: string;
   scheduledAt: string;
   coverImage: string;
+  trailerYoutubeId: string | null;
 }
 
 export interface LiveProgramMovie {
@@ -32,6 +33,10 @@ const PROGRAM_COVER_BY_ID: Record<number, string> = {
   965150: "/VHS/program/covers/aftersun.webp",
 };
 
+const PROGRAM_TRAILER_BY_ID: Record<number, string> = {
+  78: "iYhJ7Mf2Oxs",
+};
+
 export const FALLBACK_NEXT_MOVIE: FilmProgramMovie = {
   id: 78,
   title: "Blade Runner",
@@ -39,89 +44,8 @@ export const FALLBACK_NEXT_MOVIE: FilmProgramMovie = {
   director: "Ridley Scott",
   scheduledAt: "2026-09-06T19:00:00+02:00",
   coverImage: PROGRAM_COVER_BY_ID[78]!,
+  trailerYoutubeId: PROGRAM_TRAILER_BY_ID[78]!,
 };
-
-export const PAST_FILMS: FilmProgramMovie[] = [
-  {
-    id: 62,
-    title: "2001: A Space Odyssey",
-    year: 1968,
-    director: "Stanley Kubrick",
-    scheduledAt: "2026-08-16T19:00:00+02:00",
-    coverImage: PROGRAM_COVER_BY_ID[62]!,
-  },
-  {
-    id: 503919,
-    title: "The Lighthouse",
-    year: 2019,
-    director: "Robert Eggers",
-    scheduledAt: "2026-08-02T19:00:00+02:00",
-    coverImage: PROGRAM_COVER_BY_ID[503919]!,
-  },
-  {
-    id: 438631,
-    title: "Dune",
-    year: 2021,
-    director: "Denis Villeneuve",
-    scheduledAt: "2026-07-19T19:00:00+02:00",
-    coverImage: PROGRAM_COVER_BY_ID[438631]!,
-  },
-  {
-    id: 843,
-    title: "In the Mood for Love",
-    year: 2000,
-    director: "Wong Kar-wai",
-    scheduledAt: "2026-07-05T19:00:00+02:00",
-    coverImage: PROGRAM_COVER_BY_ID[843]!,
-  },
-  {
-    id: 655,
-    title: "Paris, Texas",
-    year: 1984,
-    director: "Wim Wenders",
-    scheduledAt: "2026-06-21T19:00:00+02:00",
-    coverImage: PROGRAM_COVER_BY_ID[655]!,
-  },
-];
-
-export const POLL_FILMS = [
-  {
-    id: "aftersun",
-    movie: {
-      id: 965150,
-      title: "Aftersun",
-      year: 2022,
-      director: "Charlotte Wells",
-      scheduledAt: "",
-      coverImage: PROGRAM_COVER_BY_ID[965150]!,
-    },
-    votes: 11,
-  },
-  {
-    id: "parasite",
-    movie: {
-      id: 496243,
-      title: "Parasite",
-      year: 2019,
-      director: "Bong Joon Ho",
-      scheduledAt: "",
-      coverImage: PROGRAM_COVER_BY_ID[496243]!,
-    },
-    votes: 14,
-  },
-  {
-    id: "the-handmaiden",
-    movie: {
-      id: 290098,
-      title: "The Handmaiden",
-      year: 2016,
-      director: "Park Chan-wook",
-      scheduledAt: "",
-      coverImage: PROGRAM_COVER_BY_ID[290098]!,
-    },
-    votes: 8,
-  },
-] as const;
 
 export const isLiveProgramResponse = (
   value: unknown,
@@ -161,6 +85,7 @@ export const mergeLiveNextMovie = (
   scheduledAt: movie.scheduledAt,
   coverImage:
     PROGRAM_COVER_BY_ID[movie.id] ?? movie.coverImage ?? movie.posterUrl ?? "",
+  trailerYoutubeId: PROGRAM_TRAILER_BY_ID[movie.id] ?? null,
 });
 
 export const formatFilmDate = (value: string): string => {
@@ -175,18 +100,5 @@ export const formatFilmDate = (value: string): string => {
     month: "long",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date);
-};
-
-export const formatArchiveDate = (value: string): string => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("nb-NO", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
   }).format(date);
 };
