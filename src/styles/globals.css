@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#__next {
+  background: #050505;
+  color-scheme: dark;
+}
+
 @keyframes scanline {
   0% {
     transform: translateY(-100%);

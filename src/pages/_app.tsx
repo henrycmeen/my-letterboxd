@@ -1,13 +1,20 @@
 import { GeistSans } from "geist/font/sans";
 import { type AppType } from "next/app";
+import Head from "next/head";
 
 import "@/styles/globals.css";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
-    <div className={GeistSans.className}>
-      <Component {...pageProps} />
-    </div>
+    <>
+      <Head>
+        <meta name="theme-color" content="#050505" />
+        <meta name="color-scheme" content="dark" />
+      </Head>
+      <div className={GeistSans.className}>
+        <Component {...pageProps} />
+      </div>
+    </>
   );
 };
 
