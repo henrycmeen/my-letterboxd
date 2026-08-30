@@ -6,7 +6,7 @@ export interface FilmPollCount {
 export const applyFilmVote = (
   counts: FilmPollCount[],
   previousVote: string | null,
-  nextVote: string
+  nextVote: string,
 ): FilmPollCount[] => {
   if (previousVote === nextVote) {
     return counts;
