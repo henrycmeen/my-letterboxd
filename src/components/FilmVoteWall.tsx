@@ -1,7 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 import { withBasePath } from "@/lib/basePath";
-import { applyRankedFilmVote, type RankedFilmPollCount } from "@/lib/filmPoll";
+import {
+  applyRankedFilmVote,
+  type RankedFilmPollCount,
+} from "@/lib/filmPoll";
 import styles from "@/styles/filmClubProgram.module.css";
 
 const FILM_BY_ID = new Map(
@@ -12,6 +15,7 @@ export type FilmVoteMovie = (typeof filmVoteCatalogue)[number];
 export const INITIAL_VOTE_LEADER = filmVoteCatalogue[0]!;
 
 interface FilmVoteWallProps {
+  currentLeaderId: number;
   onLeaderChange?: (film: FilmVoteMovie) => void;
 }
 
@@ -23,7 +27,10 @@ const createInitialCounts = (): RankedFilmPollCount[] =>
     lastVoteOrder: 0,
   }));
 
-export const FilmVoteWall = ({ onLeaderChange }: FilmVoteWallProps) => {
+export const FilmVoteWall = ({
+  currentLeaderId,
+  onLeaderChange,
+}: FilmVoteWallProps) => {
   const [counts, setCounts] =
     useState<RankedFilmPollCount[]>(createInitialCounts);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -67,6 +74,7 @@ export const FilmVoteWall = ({ onLeaderChange }: FilmVoteWallProps) => {
       <ol className={styles.voteGrid} aria-label="Filmer du kan stemme på">
         {rankedFilms.map(({ count, film }, index) => {
           const isSelected = selectedId === count.id;
+          const isLeader = film.id === currentLeaderId;
           const rank = index + 1;
 
           return (
@@ -74,10 +82,9 @@ export const FilmVoteWall = ({ onLeaderChange }: FilmVoteWallProps) => {
               <button
                 className={styles.voteFilm}
                 type="button"
-                title={film.title}
                 aria-label={`Stem på ${film.title}. Plass ${rank}, ${count.votes} stemmer.`}
                 aria-pressed={isSelected}
-                data-leader={rank === 1}
+                data-leader={isLeader}
                 onClick={() => voteForFilm(count.id, film.title)}
               >
                 <span className={styles.voteCaseInterior} aria-hidden="true">
@@ -90,15 +97,19 @@ export const FilmVoteWall = ({ onLeaderChange }: FilmVoteWallProps) => {
                     alt=""
                     draggable={false}
                   />
-                  <span className={styles.voteCassetteTray}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      className={styles.voteCassette}
-                      src={withBasePath("/VHS/program/cassette-trimmed.avif")}
-                      alt=""
-                      draggable={false}
-                    />
-                  </span>
+                  {!isLeader ? (
+                    <span className={styles.voteCassetteTray}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className={styles.voteCassette}
+                        src={withBasePath(
+                          "/VHS/program/cassette-trimmed.avif",
+                        )}
+                        alt=""
+                        draggable={false}
+                      />
+                    </span>
+                  ) : null}
                 </span>
                 <span className={styles.voteCaseCover} aria-hidden="true">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

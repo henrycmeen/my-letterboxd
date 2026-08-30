@@ -20,19 +20,15 @@ export const LeaderVhsPreview = ({ film }: LeaderVhsPreviewProps) => (
         alt=""
         draggable={false}
       />
-      <span className={styles.voteCassetteTray}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className={styles.voteCassette}
-          src={withBasePath("/VHS/program/cassette-trimmed.avif")}
-          alt=""
-          draggable={false}
-        />
-      </span>
     </span>
     <span className={styles.voteCaseCover} aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={withBasePath(film.coverImage)} alt="" draggable={false} />
+      <img
+        src={withBasePath(film.coverImage)}
+        alt=""
+        draggable={false}
+        loading="eager"
+      />
     </span>
   </div>
 );

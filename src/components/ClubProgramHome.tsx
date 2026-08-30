@@ -34,14 +34,17 @@ export const ClubProgramHome = ({ clubSlug }: ClubProgramHomeProps) => {
           </div>
 
           <div className={styles.nextLayout}>
+            <LeaderVhsPreview key={leader.id} film={leader} />
             <div className={styles.nextCase}>
               <NextFilmTv movie={leader} />
             </div>
-            <LeaderVhsPreview film={leader} />
           </div>
         </section>
 
-        <FilmVoteWall onLeaderChange={setLeader} />
+        <FilmVoteWall
+          currentLeaderId={leader.id}
+          onLeaderChange={setLeader}
+        />
       </main>
     </>
   );
