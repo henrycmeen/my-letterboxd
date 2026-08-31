@@ -8,6 +8,7 @@ import {
 import {
   advanceTvPhase,
   buildTvPlayerKey,
+  getTvRevealDelay,
   TV_TRANSITION_TIMING,
   type TvPhase,
 } from "@/lib/tvTransition";
@@ -197,7 +198,10 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
 
   useEffect(() => {
     if (phase === "tuning" && !displayed.youtubeId) {
-      revealPicture(TV_TRANSITION_TIMING.posterSignalHoldMs);
+      const delay = getTvRevealDelay(displayed.youtubeId, "posterReady");
+      if (delay !== null) {
+        revealPicture(delay);
+      }
     }
   }, [displayed.youtubeId, phase, revealPicture]);
 
@@ -222,10 +226,10 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       );
     }
 
-    // A bounded fallback still powers the TV on if a browser suppresses
-    // YouTube's playback-state message.
-    revealPicture(TV_TRANSITION_TIMING.playerFallbackMs);
-  }, [displayed.youtubeId, revealPicture]);
+    // Keep the no-signal layer visible until YouTube confirms playback.
+    // Safari can reject autoplay even for muted embeds; revealing the iframe
+    // on a timer would expose YouTube's large red play button.
+  }, [displayed.youtubeId]);
 
   useEffect(() => {
     const handleYoutubeMessage = (event: MessageEvent<unknown>) => {
@@ -246,13 +250,16 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       }
 
       if (isYoutubePlayingMessage(payload)) {
-        revealPicture(TV_TRANSITION_TIMING.youtubeSignalHoldMs);
+        const delay = getTvRevealDelay(displayed.youtubeId, "youtubePlaying");
+        if (delay !== null) {
+          revealPicture(delay);
+        }
       }
     };
 
     window.addEventListener("message", handleYoutubeMessage);
     return () => window.removeEventListener("message", handleYoutubeMessage);
-  }, [revealPicture]);
+  }, [displayed.youtubeId, revealPicture]);
 
   const pictureClassName = `${styles.nextTvPicture} ${
     phase === "poweringOff"

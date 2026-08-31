@@ -6,13 +6,32 @@ export type TvTransitionEvent =
   | "signalReady"
   | "powerOnFinished";
 
+export type TvRevealSource =
+  | "playerFallback"
+  | "posterReady"
+  | "youtubePlaying";
+
 export const TV_TRANSITION_TIMING = {
   powerOffMs: 520,
   youtubeSignalHoldMs: 3_000,
   posterSignalHoldMs: 900,
   powerOnMs: 760,
-  playerFallbackMs: 9_000,
 } as const;
+
+export const getTvRevealDelay = (
+  youtubeId: string | null,
+  source: TvRevealSource,
+): number | null => {
+  if (youtubeId) {
+    return source === "youtubePlaying"
+      ? TV_TRANSITION_TIMING.youtubeSignalHoldMs
+      : null;
+  }
+
+  return source === "posterReady"
+    ? TV_TRANSITION_TIMING.posterSignalHoldMs
+    : null;
+};
 
 export const buildTvPlayerKey = (
   youtubeId: string,
