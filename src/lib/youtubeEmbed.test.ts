@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildYoutubeTrailerEmbedUrl,
   isYoutubeEndedMessage,
+  isYoutubePausedMessage,
   isYoutubePlayingMessage,
   shouldRestartYoutubeTrailer,
 } from "./youtubeEmbed";
@@ -64,6 +65,25 @@ void test("recognizes YouTube's ended state so the trailer can restart", () => {
     false,
   );
   assert.equal(isYoutubeEndedMessage("ended"), false);
+});
+
+void test("recognizes a trailer that pauses before the TV picture is revealed", () => {
+  assert.equal(
+    isYoutubePausedMessage({ event: "onStateChange", info: 2 }),
+    true,
+  );
+  assert.equal(
+    isYoutubePausedMessage({
+      event: "infoDelivery",
+      info: { playerState: 2 },
+    }),
+    true,
+  );
+  assert.equal(
+    isYoutubePausedMessage({ event: "onStateChange", info: 1 }),
+    false,
+  );
+  assert.equal(isYoutubePausedMessage("paused"), false);
 });
 
 void test("restarts a trailer after 90 percent so end cards never appear", () => {
