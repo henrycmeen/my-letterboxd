@@ -12,14 +12,23 @@ export type TvRevealSource =
   | "posterReady"
   | "youtubePlaying";
 
+export type YoutubeTvPlaybackSignal = "paused" | "playing";
+
 export const TV_TRANSITION_TIMING = {
   blockedTrailerFallbackMs: 4_000,
-  emptySignalHoldMs: 4_000,
-  powerOffMs: 520,
-  youtubeSignalHoldMs: 4_000,
-  posterSignalHoldMs: 650,
-  powerOnMs: 760,
+  emptySignalHoldMs: 1_000,
+  powerOffMs: 180,
+  youtubeSignalHoldMs: 1_000,
+  posterSignalHoldMs: 120,
+  powerOnMs: 180,
 } as const;
+
+export const shouldRevealYoutubeTrailer = (
+  phase: TvPhase,
+  usePosterFallback: boolean,
+  signal: YoutubeTvPlaybackSignal,
+): boolean =>
+  signal === "playing" && phase === "tuning" && !usePosterFallback;
 
 export const getTvRevealDelay = (
   youtubeId: string | null,
