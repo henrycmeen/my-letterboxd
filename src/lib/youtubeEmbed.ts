@@ -80,10 +80,17 @@ export const getYoutubePlaybackProgress = (
     return null;
   }
 
-  const { currentTime, duration } = message.info as {
+  const info = message.info as {
     currentTime?: unknown;
     duration?: unknown;
+    progressState?: unknown;
   };
+  const progressState =
+    info.progressState && typeof info.progressState === "object"
+      ? (info.progressState as { current?: unknown; duration?: unknown })
+      : null;
+  const currentTime = info.currentTime ?? progressState?.current;
+  const duration = info.duration ?? progressState?.duration;
   if (
     typeof currentTime !== "number" ||
     !Number.isFinite(currentTime) ||

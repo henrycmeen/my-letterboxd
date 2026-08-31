@@ -88,6 +88,16 @@ void test("restarts a trailer after 90 percent so end cards never appear", () =>
     }),
     true,
   );
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: {
+        currentTime: 80.2,
+        progressState: { current: 80.2, duration: 89 },
+      },
+    }),
+    true,
+  );
 });
 
 void test("ignores incomplete YouTube progress messages", () => {
