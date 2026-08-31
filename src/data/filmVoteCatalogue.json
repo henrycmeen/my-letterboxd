@@ -3,6 +3,7 @@
     "id": 680,
     "title": "Pulp Fiction",
     "year": 1994,
+    "tmdbVoteAverage": 8.48,
     "coverImage": "/VHS/program/vote-covers/001-pulp-fiction.webp",
     "trailerYoutubeId": "tGpTpVyI_OQ"
   },
@@ -10,6 +11,7 @@
     "id": 62,
     "title": "2001: A Space Odyssey",
     "year": 1968,
+    "tmdbVoteAverage": 8.046,
     "coverImage": "/VHS/program/vote-covers/002-2001-a-space-odyssey.webp",
     "trailerYoutubeId": "kR2r-A9H3Kg"
   },
@@ -17,6 +19,7 @@
     "id": 503919,
     "title": "The Lighthouse",
     "year": 2019,
+    "tmdbVoteAverage": 7.465,
     "coverImage": "/VHS/program/vote-covers/003-the-lighthouse.webp",
     "trailerYoutubeId": "42_UHhpq530"
   },
@@ -24,6 +27,7 @@
     "id": 438631,
     "title": "Dune",
     "year": 2021,
+    "tmdbVoteAverage": 7.784,
     "coverImage": "/VHS/program/vote-covers/004-dune.webp",
     "trailerYoutubeId": "w0HgHet0sxg"
   },
@@ -31,6 +35,7 @@
     "id": 843,
     "title": "In the Mood for Love",
     "year": 2000,
+    "tmdbVoteAverage": 8.087,
     "coverImage": "/VHS/program/vote-covers/005-in-the-mood-for-love.webp",
     "trailerYoutubeId": "WJj9-t2A-_o"
   },
@@ -38,6 +43,7 @@
     "id": 655,
     "title": "Paris, Texas",
     "year": 1984,
+    "tmdbVoteAverage": 8.1,
     "coverImage": "/VHS/program/vote-covers/006-paris-texas.webp",
     "trailerYoutubeId": "Nmvte2r7Z8c"
   },
@@ -45,6 +51,7 @@
     "id": 965150,
     "title": "Aftersun",
     "year": 2022,
+    "tmdbVoteAverage": 7.6,
     "coverImage": "/VHS/program/vote-covers/007-aftersun.webp",
     "trailerYoutubeId": "4A34B1DIGl8"
   },
@@ -52,6 +59,7 @@
     "id": 496243,
     "title": "Parasite",
     "year": 2019,
+    "tmdbVoteAverage": 8.491,
     "coverImage": "/VHS/program/vote-covers/008-parasite.webp",
     "trailerYoutubeId": "bM9QabAojCg"
   },
@@ -59,6 +67,7 @@
     "id": 290098,
     "title": "The Handmaiden",
     "year": 2016,
+    "tmdbVoteAverage": 8.2,
     "coverImage": "/VHS/program/vote-covers/009-the-handmaiden.webp",
     "trailerYoutubeId": "wYsdzNIcJNc"
   },
@@ -66,6 +75,7 @@
     "id": 348,
     "title": "Alien",
     "year": 1979,
+    "tmdbVoteAverage": 8.172,
     "coverImage": "/VHS/program/vote-covers/010-alien.webp",
     "trailerYoutubeId": "sVwH0hIvV5k"
   },
@@ -73,6 +83,7 @@
     "id": 679,
     "title": "Aliens",
     "year": 1986,
+    "tmdbVoteAverage": 7.966,
     "coverImage": "/VHS/program/vote-covers/011-aliens.webp",
     "trailerYoutubeId": "8OxirbuHsBA"
   },
@@ -80,6 +91,7 @@
     "id": 1091,
     "title": "The Thing",
     "year": 1982,
+    "tmdbVoteAverage": 8.073,
     "coverImage": "/VHS/program/vote-covers/012-the-thing.webp",
     "trailerYoutubeId": "ySvzHdtCiWE"
   },
@@ -87,6 +99,7 @@
     "id": 949,
     "title": "Heat",
     "year": 1995,
+    "tmdbVoteAverage": 7.944,
     "coverImage": "/VHS/program/vote-covers/013-heat.webp",
     "trailerYoutubeId": "14oNcFxiVaQ"
   },
@@ -94,6 +107,7 @@
     "id": 1018,
     "title": "Mulholland Drive",
     "year": 2001,
+    "tmdbVoteAverage": 7.8,
     "coverImage": "/VHS/program/vote-covers/014-mulholland-drive.webp",
     "trailerYoutubeId": "3oa64ktrwKY"
   },
@@ -101,6 +115,7 @@
     "id": 129,
     "title": "Spirited Away",
     "year": 2001,
+    "tmdbVoteAverage": 8.534,
     "coverImage": "/VHS/program/vote-covers/015-spirited-away.webp",
     "trailerYoutubeId": "GAp2_0JJskk"
   },
@@ -108,6 +123,7 @@
     "id": 694,
     "title": "The Shining",
     "year": 1980,
+    "tmdbVoteAverage": 8.2,
     "coverImage": "/VHS/program/vote-covers/016-the-shining.webp",
     "trailerYoutubeId": "jAE7dNurHR4"
   },
@@ -115,6 +131,7 @@
     "id": 769,
     "title": "GoodFellas",
     "year": 1990,
+    "tmdbVoteAverage": 8.45,
     "coverImage": "/VHS/program/vote-covers/017-goodfellas.webp",
     "trailerYoutubeId": "PTBRNXGQR9Q"
   },
@@ -122,6 +139,7 @@
     "id": 28,
     "title": "Apocalypse Now",
     "year": 1979,
+    "tmdbVoteAverage": 8.261,
     "coverImage": "/VHS/program/vote-covers/018-apocalypse-now.webp",
     "trailerYoutubeId": "9l-ViOOFH-s"
   },
@@ -129,6 +147,7 @@
     "id": 103,
     "title": "Taxi Driver",
     "year": 1976,
+    "tmdbVoteAverage": 8.122,
     "coverImage": "/VHS/program/vote-covers/019-taxi-driver.webp",
     "trailerYoutubeId": "zdqCqDSTVNI"
   },
@@ -136,6 +155,7 @@
     "id": 1398,
     "title": "Stalker",
     "year": 1979,
+    "tmdbVoteAverage": 8.087,
     "coverImage": "/VHS/program/vote-covers/020-stalker.webp",
     "trailerYoutubeId": "JCuwthnCRpg"
   },
@@ -143,6 +163,7 @@
     "id": 593,
     "title": "Solaris",
     "year": 1972,
+    "tmdbVoteAverage": 7.761,
     "coverImage": "/VHS/program/vote-covers/021-solaris.webp",
     "trailerYoutubeId": "BBYJH6UAAfw"
   },
@@ -150,6 +171,7 @@
     "id": 797,
     "title": "Persona",
     "year": 1966,
+    "tmdbVoteAverage": 8.1,
     "coverImage": "/VHS/program/vote-covers/022-persona.webp",
     "trailerYoutubeId": "8ZO01M8k1mg"
   },
@@ -157,6 +179,7 @@
     "id": 346,
     "title": "Seven Samurai",
     "year": 1954,
+    "tmdbVoteAverage": 8.453,
     "coverImage": "/VHS/program/vote-covers/023-seven-samurai.webp",
     "trailerYoutubeId": "RsRN65PlaIM"
   },
@@ -164,6 +187,7 @@
     "id": 14537,
     "title": "Harakiri",
     "year": 1962,
+    "tmdbVoteAverage": 8.459,
     "coverImage": "/VHS/program/vote-covers/024-harakiri.webp",
     "trailerYoutubeId": "gfABwM-Ppng"
   },
@@ -171,6 +195,7 @@
     "id": 238,
     "title": "The Godfather",
     "year": 1972,
+    "tmdbVoteAverage": 8.686,
     "coverImage": "/VHS/program/vote-covers/025-the-godfather.webp",
     "trailerYoutubeId": "Ew9ngL1GZvs"
   },
@@ -178,6 +203,7 @@
     "id": 240,
     "title": "The Godfather Part II",
     "year": 1974,
+    "tmdbVoteAverage": 8.6,
     "coverImage": "/VHS/program/vote-covers/026-the-godfather-part-ii.webp",
     "trailerYoutubeId": "9O1Iy9od7-A"
   },
@@ -185,6 +211,7 @@
     "id": 6977,
     "title": "No Country for Old Men",
     "year": 2007,
+    "tmdbVoteAverage": 7.95,
     "coverImage": "/VHS/program/vote-covers/027-no-country-for-old-men.webp",
     "trailerYoutubeId": "A0oNrgumrlE"
   },
@@ -192,6 +219,7 @@
     "id": 7345,
     "title": "There Will Be Blood",
     "year": 2007,
+    "tmdbVoteAverage": 8.063,
     "coverImage": "/VHS/program/vote-covers/028-there-will-be-blood.webp",
     "trailerYoutubeId": "-bEwlq_7f4s"
   },
@@ -199,6 +227,7 @@
     "id": 68722,
     "title": "The Master",
     "year": 2012,
+    "tmdbVoteAverage": 7.094,
     "coverImage": "/VHS/program/vote-covers/029-the-master.webp",
     "trailerYoutubeId": "RApl06pYIuU"
   },
@@ -206,6 +235,7 @@
     "id": 400617,
     "title": "Phantom Thread",
     "year": 2017,
+    "tmdbVoteAverage": 7.314,
     "coverImage": "/VHS/program/vote-covers/030-phantom-thread.webp",
     "trailerYoutubeId": "xNsiQMeSvMk"
   },
@@ -213,6 +243,7 @@
     "id": 531428,
     "title": "Portrait of a Lady on Fire",
     "year": 2019,
+    "tmdbVoteAverage": 8.088,
     "coverImage": "/VHS/program/vote-covers/031-portrait-of-a-lady-on-fire.webp",
     "trailerYoutubeId": "R-fQPTwma9o"
   },
@@ -220,6 +251,7 @@
     "id": 660120,
     "title": "The Worst Person in the World",
     "year": 2021,
+    "tmdbVoteAverage": 7.428,
     "coverImage": "/VHS/program/vote-covers/032-the-worst-person-in-the-world.webp",
     "trailerYoutubeId": "gpkQgk1Fi1Q"
   },
@@ -227,6 +259,7 @@
     "id": 674324,
     "title": "The Banshees of Inisherin",
     "year": 2022,
+    "tmdbVoteAverage": 7.464,
     "coverImage": "/VHS/program/vote-covers/033-the-banshees-of-inisherin.webp",
     "trailerYoutubeId": "9-R9u2UD3FU"
   },
@@ -234,6 +267,7 @@
     "id": 559907,
     "title": "The Green Knight",
     "year": 2021,
+    "tmdbVoteAverage": 6.589,
     "coverImage": "/VHS/program/vote-covers/034-the-green-knight.webp",
     "trailerYoutubeId": "sS6ksY8xWCY"
   },
@@ -241,6 +275,7 @@
     "id": 376867,
     "title": "Moonlight",
     "year": 2016,
+    "tmdbVoteAverage": 7.355,
     "coverImage": "/VHS/program/vote-covers/035-moonlight.webp",
     "trailerYoutubeId": "9NJj12tJzqc"
   },
@@ -248,6 +283,7 @@
     "id": 258480,
     "title": "Carol",
     "year": 2015,
+    "tmdbVoteAverage": 7.484,
     "coverImage": "/VHS/program/vote-covers/036-carol.webp",
     "trailerYoutubeId": "Y6ekAV16RIs"
   },
@@ -255,6 +291,7 @@
     "id": 666277,
     "title": "Past Lives",
     "year": 2023,
+    "tmdbVoteAverage": 7.698,
     "coverImage": "/VHS/program/vote-covers/037-past-lives.webp",
     "trailerYoutubeId": "kA244xewjcI"
   },
@@ -262,6 +299,7 @@
     "id": 915935,
     "title": "Anatomy of a Fall",
     "year": 2023,
+    "tmdbVoteAverage": 7.512,
     "coverImage": "/VHS/program/vote-covers/038-anatomy-of-a-fall.webp",
     "trailerYoutubeId": "_MdTMA0PetA"
   },
@@ -269,6 +307,7 @@
     "id": 705996,
     "title": "Decision to Leave",
     "year": 2022,
+    "tmdbVoteAverage": 7.32,
     "coverImage": "/VHS/program/vote-covers/039-decision-to-leave.webp",
     "trailerYoutubeId": "xL5bU-M_qEg"
   },
@@ -276,6 +315,7 @@
     "id": 491584,
     "title": "Burning",
     "year": 2018,
+    "tmdbVoteAverage": 7.4,
     "coverImage": "/VHS/program/vote-covers/040-burning.webp",
     "trailerYoutubeId": "irBLY-Ev9vo"
   },
@@ -283,6 +323,7 @@
     "id": 11423,
     "title": "Memories of Murder",
     "year": 2003,
+    "tmdbVoteAverage": 8.061,
     "coverImage": "/VHS/program/vote-covers/041-memories-of-murder.webp",
     "trailerYoutubeId": "0n_HQwQU8ls"
   },
@@ -290,6 +331,7 @@
     "id": 670,
     "title": "Oldboy",
     "year": 2003,
+    "tmdbVoteAverage": 8.236,
     "coverImage": "/VHS/program/vote-covers/042-oldboy.webp",
     "trailerYoutubeId": "tAaBkFChaRg"
   },
@@ -297,6 +339,7 @@
     "id": 11104,
     "title": "Chungking Express",
     "year": 1994,
+    "tmdbVoteAverage": 7.976,
     "coverImage": "/VHS/program/vote-covers/043-chungking-express.webp",
     "trailerYoutubeId": "P9Mxf_6pVA0"
   },
@@ -304,6 +347,7 @@
     "id": 11220,
     "title": "Fallen Angels",
     "year": 1995,
+    "tmdbVoteAverage": 7.7,
     "coverImage": "/VHS/program/vote-covers/044-fallen-angels.webp",
     "trailerYoutubeId": "uxaT19BlH0M"
   },
@@ -311,6 +355,7 @@
     "id": 18329,
     "title": "Happy Together",
     "year": 1997,
+    "tmdbVoteAverage": 7.6,
     "coverImage": "/VHS/program/vote-covers/045-happy-together.webp",
     "trailerYoutubeId": "cU_u8xQspQg"
   },
@@ -318,6 +363,7 @@
     "id": 25538,
     "title": "Yi Yi",
     "year": 2000,
+    "tmdbVoteAverage": 7.9,
     "coverImage": "/VHS/program/vote-covers/046-yi-yi.webp",
     "trailerYoutubeId": "PxgrzNFwyqY"
   },
@@ -325,6 +371,7 @@
     "id": 15804,
     "title": "A Brighter Summer Day",
     "year": 1991,
+    "tmdbVoteAverage": 8.234,
     "coverImage": "/VHS/program/vote-covers/047-a-brighter-summer-day.webp",
     "trailerYoutubeId": "nsiqbT5adO0"
   },
@@ -332,6 +379,7 @@
     "id": 18148,
     "title": "Tokyo Story",
     "year": 1953,
+    "tmdbVoteAverage": 8.147,
     "coverImage": "/VHS/program/vote-covers/048-tokyo-story.webp",
     "trailerYoutubeId": "xqO0d3328Do"
   },
@@ -339,6 +387,7 @@
     "id": 20530,
     "title": "Late Spring",
     "year": 1949,
+    "tmdbVoteAverage": 8.031,
     "coverImage": "/VHS/program/vote-covers/049-late-spring.webp",
     "trailerYoutubeId": "_4Ul10BSzRw"
   },
@@ -346,6 +395,7 @@
     "id": 976893,
     "title": "Perfect Days",
     "year": 2023,
+    "tmdbVoteAverage": 7.819,
     "coverImage": "/VHS/program/vote-covers/050-perfect-days.webp",
     "trailerYoutubeId": "Iv8YO5BXCAQ"
   },
@@ -353,6 +403,7 @@
     "id": 758866,
     "title": "Drive My Car",
     "year": 2021,
+    "tmdbVoteAverage": 7.437,
     "coverImage": "/VHS/program/vote-covers/051-drive-my-car.webp",
     "trailerYoutubeId": "YyDSxD51WRE"
   },
@@ -360,6 +411,7 @@
     "id": 505192,
     "title": "Shoplifters",
     "year": 2018,
+    "tmdbVoteAverage": 7.828,
     "coverImage": "/VHS/program/vote-covers/052-shoplifters.webp",
     "trailerYoutubeId": "wuaoRzuVqI0"
   },
@@ -367,6 +419,7 @@
     "id": 467244,
     "title": "The Zone of Interest",
     "year": 2023,
+    "tmdbVoteAverage": 7,
     "coverImage": "/VHS/program/vote-covers/053-the-zone-of-interest.webp",
     "trailerYoutubeId": "GFNtVaAuVYY"
   },
@@ -374,6 +427,7 @@
     "id": 97370,
     "title": "Under the Skin",
     "year": 2014,
+    "tmdbVoteAverage": 6.134,
     "coverImage": "/VHS/program/vote-covers/054-under-the-skin.webp",
     "trailerYoutubeId": "J7bAZCOk0Sc"
   },
@@ -381,6 +435,7 @@
     "id": 264660,
     "title": "Ex Machina",
     "year": 2015,
+    "tmdbVoteAverage": 7.571,
     "coverImage": "/VHS/program/vote-covers/055-ex-machina.webp",
     "trailerYoutubeId": "sDkEF7Db7Gw"
   },
@@ -388,6 +443,7 @@
     "id": 329865,
     "title": "Arrival",
     "year": 2016,
+    "tmdbVoteAverage": 7.633,
     "coverImage": "/VHS/program/vote-covers/056-arrival.webp",
     "trailerYoutubeId": "7W1m5ER3I1Y"
   },
@@ -395,6 +451,7 @@
     "id": 157336,
     "title": "Interstellar",
     "year": 2014,
+    "tmdbVoteAverage": 8.486,
     "coverImage": "/VHS/program/vote-covers/057-interstellar.webp",
     "trailerYoutubeId": "LY19rHKAaAg"
   },
@@ -402,6 +459,7 @@
     "id": 9693,
     "title": "Children of Men",
     "year": 2006,
+    "tmdbVoteAverage": 7.613,
     "coverImage": "/VHS/program/vote-covers/058-children-of-men.webp",
     "trailerYoutubeId": "2VT2apoX90o"
   },
@@ -409,6 +467,7 @@
     "id": 68,
     "title": "Brazil",
     "year": 1985,
+    "tmdbVoteAverage": 7.658,
     "coverImage": "/VHS/program/vote-covers/059-brazil.webp",
     "trailerYoutubeId": "A_7ATU9dslE"
   },
@@ -416,6 +475,7 @@
     "id": 5548,
     "title": "RoboCop",
     "year": 1987,
+    "tmdbVoteAverage": 7.365,
     "coverImage": "/VHS/program/vote-covers/060-robocop.webp",
     "trailerYoutubeId": "IqvRDhW-XVA"
   },
@@ -423,6 +483,7 @@
     "id": 861,
     "title": "Total Recall",
     "year": 1990,
+    "tmdbVoteAverage": 7.328,
     "coverImage": "/VHS/program/vote-covers/061-total-recall.webp",
     "trailerYoutubeId": "IRaRhZE-1b4"
   },
@@ -430,6 +491,7 @@
     "id": 218,
     "title": "The Terminator",
     "year": 1984,
+    "tmdbVoteAverage": 7.689,
     "coverImage": "/VHS/program/vote-covers/062-the-terminator.webp",
     "trailerYoutubeId": "nGrW-OR2uDk"
   },
@@ -437,6 +499,7 @@
     "id": 280,
     "title": "Terminator 2: Judgment Day",
     "year": 1991,
+    "tmdbVoteAverage": 8.167,
     "coverImage": "/VHS/program/vote-covers/063-terminator-2-judgment-day.webp",
     "trailerYoutubeId": "BuBD2s2NmEM"
   },
@@ -444,6 +507,7 @@
     "id": 76341,
     "title": "Mad Max: Fury Road",
     "year": 2015,
+    "tmdbVoteAverage": 7.637,
     "coverImage": "/VHS/program/vote-covers/064-mad-max-fury-road.webp",
     "trailerYoutubeId": "MonFNCgK4WE"
   },
@@ -451,6 +515,7 @@
     "id": 603,
     "title": "The Matrix",
     "year": 1999,
+    "tmdbVoteAverage": 8.256,
     "coverImage": "/VHS/program/vote-covers/065-the-matrix.webp",
     "trailerYoutubeId": "FVI84Dfx2-I"
   },
@@ -458,6 +523,7 @@
     "id": 149,
     "title": "Akira",
     "year": 1988,
+    "tmdbVoteAverage": 7.939,
     "coverImage": "/VHS/program/vote-covers/066-akira.webp",
     "trailerYoutubeId": "Jq4ER-P6NCQ"
   },
@@ -465,6 +531,7 @@
     "id": 9323,
     "title": "Ghost in the Shell",
     "year": 1995,
+    "tmdbVoteAverage": 7.926,
     "coverImage": "/VHS/program/vote-covers/067-ghost-in-the-shell.webp",
     "trailerYoutubeId": "R1K__7QhLaA"
   },
@@ -472,6 +539,7 @@
     "id": 4977,
     "title": "Paprika",
     "year": 2006,
+    "tmdbVoteAverage": 7.8,
     "coverImage": "/VHS/program/vote-covers/068-paprika.webp",
     "trailerYoutubeId": "a6avI9oPgnw"
   },
@@ -479,6 +547,7 @@
     "id": 128,
     "title": "Princess Mononoke",
     "year": 1997,
+    "tmdbVoteAverage": 8.32,
     "coverImage": "/VHS/program/vote-covers/069-princess-mononoke.webp",
     "trailerYoutubeId": "I1dHzoRl0sQ"
   },
@@ -486,6 +555,7 @@
     "id": 81,
     "title": "Nausicaä of the Valley of the Wind",
     "year": 1984,
+    "tmdbVoteAverage": 7.944,
     "coverImage": "/VHS/program/vote-covers/070-warriors-of-the-wind.webp",
     "trailerYoutubeId": "zaskbIZtfxQ"
   },
@@ -493,6 +563,7 @@
     "id": 16859,
     "title": "Kiki's Delivery Service",
     "year": 1989,
+    "tmdbVoteAverage": 7.84,
     "coverImage": "/VHS/program/vote-covers/071-kiki-s-delivery-service.webp",
     "trailerYoutubeId": "nu4OX6RKeLY"
   },
@@ -500,6 +571,7 @@
     "id": 8392,
     "title": "My Neighbor Totoro",
     "year": 1988,
+    "tmdbVoteAverage": 8.067,
     "coverImage": "/VHS/program/vote-covers/072-my-neighbor-totoro.webp",
     "trailerYoutubeId": "_nv94fL_IA8"
   },
@@ -507,6 +579,7 @@
     "id": 149871,
     "title": "The Tale of The Princess Kaguya",
     "year": 2013,
+    "tmdbVoteAverage": 8.1,
     "coverImage": "/VHS/program/vote-covers/073-the-tale-of-the-princess-kaguya.webp",
     "trailerYoutubeId": "iPm7HfO3mis"
   },
@@ -514,6 +587,7 @@
     "id": 10315,
     "title": "Fantastic Mr. Fox",
     "year": 2009,
+    "tmdbVoteAverage": 7.823,
     "coverImage": "/VHS/program/vote-covers/074-fantastic-mr-fox.webp",
     "trailerYoutubeId": "VuIaCvIFWIA"
   },
@@ -521,6 +595,7 @@
     "id": 120467,
     "title": "The Grand Budapest Hotel",
     "year": 2014,
+    "tmdbVoteAverage": 8.025,
     "coverImage": "/VHS/program/vote-covers/075-the-grand-budapest-hotel.webp",
     "trailerYoutubeId": "G1jG8HUY4zI"
   },
@@ -528,6 +603,7 @@
     "id": 9428,
     "title": "The Royal Tenenbaums",
     "year": 2001,
+    "tmdbVoteAverage": 7.454,
     "coverImage": "/VHS/program/vote-covers/076-the-royal-tenenbaums.webp",
     "trailerYoutubeId": "-DNAI9bhBFU"
   },
@@ -535,6 +611,7 @@
     "id": 11545,
     "title": "Rushmore",
     "year": 1998,
+    "tmdbVoteAverage": 7.392,
     "coverImage": "/VHS/program/vote-covers/077-rushmore.webp",
     "trailerYoutubeId": "846UzdeHI1g"
   },
@@ -542,6 +619,7 @@
     "id": 421,
     "title": "The Life Aquatic with Steve Zissou",
     "year": 2004,
+    "tmdbVoteAverage": 7.07,
     "coverImage": "/VHS/program/vote-covers/078-the-life-aquatic-with-steve-zissou.webp",
     "trailerYoutubeId": "XVRXYnGz-Mo"
   },
@@ -549,6 +627,7 @@
     "id": 275,
     "title": "Fargo",
     "year": 1996,
+    "tmdbVoteAverage": 7.85,
     "coverImage": "/VHS/program/vote-covers/079-fargo.webp",
     "trailerYoutubeId": "aoOZDiswNaw"
   },
@@ -556,6 +635,7 @@
     "id": 115,
     "title": "The Big Lebowski",
     "year": 1998,
+    "tmdbVoteAverage": 7.8,
     "coverImage": "/VHS/program/vote-covers/080-the-big-lebowski.webp",
     "trailerYoutubeId": "GiwMMziJdqg"
   },
@@ -563,6 +643,7 @@
     "id": 378,
     "title": "Raising Arizona",
     "year": 1987,
+    "tmdbVoteAverage": 7.051,
     "coverImage": "/VHS/program/vote-covers/081-raising-arizona.webp",
     "trailerYoutubeId": "OjWu8i6eMZo"
   },
@@ -570,6 +651,7 @@
     "id": 12573,
     "title": "A Serious Man",
     "year": 2009,
+    "tmdbVoteAverage": 6.686,
     "coverImage": "/VHS/program/vote-covers/082-a-serious-man.webp",
     "trailerYoutubeId": "mDKHWRbK2_Q"
   },
@@ -577,6 +659,7 @@
     "id": 86829,
     "title": "Inside Llewyn Davis",
     "year": 2013,
+    "tmdbVoteAverage": 7.184,
     "coverImage": "/VHS/program/vote-covers/083-inside-llewyn-davis.webp",
     "trailerYoutubeId": "9JvHEDJEguY"
   },
@@ -584,6 +667,7 @@
     "id": 4512,
     "title": "The Assassination of Jesse James by the Coward Robert Ford",
     "year": 2007,
+    "tmdbVoteAverage": 7.064,
     "coverImage": "/VHS/program/vote-covers/084-the-assassination-of-jesse-james-by-the-coward-robert-ford.webp",
     "trailerYoutubeId": "SrGmmitc62Q"
   },
@@ -591,6 +675,7 @@
     "id": 16642,
     "title": "Days of Heaven",
     "year": 1978,
+    "tmdbVoteAverage": 7.48,
     "coverImage": "/VHS/program/vote-covers/085-days-of-heaven.webp",
     "trailerYoutubeId": "7LAqRFoT97o"
   },
@@ -598,6 +683,7 @@
     "id": 8967,
     "title": "The Tree of Life",
     "year": 2011,
+    "tmdbVoteAverage": 6.723,
     "coverImage": "/VHS/program/vote-covers/086-the-tree-of-life.webp",
     "trailerYoutubeId": "RrAz1YLh8nY"
   },
@@ -605,6 +691,7 @@
     "id": 144,
     "title": "Wings of Desire",
     "year": 1987,
+    "tmdbVoteAverage": 7.762,
     "coverImage": "/VHS/program/vote-covers/087-wings-of-desire.webp",
     "trailerYoutubeId": "0iAzYofuItM"
   },
@@ -612,6 +699,7 @@
     "id": 25237,
     "title": "Come and See",
     "year": 1985,
+    "tmdbVoteAverage": 8.2,
     "coverImage": "/VHS/program/vote-covers/088-come-and-see.webp",
     "trailerYoutubeId": "UHaSQU-4wss"
   },
@@ -619,6 +707,7 @@
     "id": 17295,
     "title": "The Battle of Algiers",
     "year": 1966,
+    "tmdbVoteAverage": 7.898,
     "coverImage": "/VHS/program/vote-covers/089-the-battle-of-algiers.webp",
     "trailerYoutubeId": "vhhoS3zOskE"
   },
@@ -626,6 +715,7 @@
     "id": 406,
     "title": "La Haine",
     "year": 1995,
+    "tmdbVoteAverage": 8.082,
     "coverImage": "/VHS/program/vote-covers/090-la-haine.webp",
     "trailerYoutubeId": "FKwcXt3JIaU"
   },
@@ -633,6 +723,7 @@
     "id": 14626,
     "title": "Beau Travail",
     "year": 2000,
+    "tmdbVoteAverage": 7.15,
     "coverImage": "/VHS/program/vote-covers/091-beau-travail.webp",
     "trailerYoutubeId": "Hh4HzACZOOQ"
   },
@@ -640,6 +731,7 @@
     "id": 499,
     "title": "Cléo from 5 to 7",
     "year": 1962,
+    "tmdbVoteAverage": 7.7,
     "coverImage": "/VHS/program/vote-covers/092-cleo-from-5-to-7.webp",
     "trailerYoutubeId": "sRR0_VJFqwg"
   },
@@ -647,6 +739,7 @@
     "id": 147,
     "title": "The 400 Blows",
     "year": 1959,
+    "tmdbVoteAverage": 7.997,
     "coverImage": "/VHS/program/vote-covers/093-the-400-blows.webp",
     "trailerYoutubeId": "ICGZfU-9Yl0"
   },
@@ -654,6 +747,7 @@
     "id": 269,
     "title": "Breathless",
     "year": 1960,
+    "tmdbVoteAverage": 7.482,
     "coverImage": "/VHS/program/vote-covers/094-breathless.webp",
     "trailerYoutubeId": "UoICuMPOWrk"
   },
@@ -661,6 +755,7 @@
     "id": 5511,
     "title": "Le Samouraï",
     "year": 1967,
+    "tmdbVoteAverage": 7.784,
     "coverImage": "/VHS/program/vote-covers/095-le-samourai.webp",
     "trailerYoutubeId": "PTFV07ah4fY"
   },
@@ -668,6 +763,7 @@
     "id": 10227,
     "title": "PlayTime",
     "year": 1967,
+    "tmdbVoteAverage": 7.663,
     "coverImage": "/VHS/program/vote-covers/096-playtime.webp",
     "trailerYoutubeId": "zrYB8hgyq4s"
   },
@@ -675,6 +771,7 @@
     "id": 5967,
     "title": "The Umbrellas of Cherbourg",
     "year": 1964,
+    "tmdbVoteAverage": 7.387,
     "coverImage": "/VHS/program/vote-covers/097-the-umbrellas-of-cherbourg.webp",
     "trailerYoutubeId": "7H-fl3njp5s"
   },
@@ -682,6 +779,7 @@
     "id": 2433,
     "title": "The Young Girls of Rochefort",
     "year": 1967,
+    "tmdbVoteAverage": 7.671,
     "coverImage": "/VHS/program/vote-covers/098-the-young-girls-of-rochefort.webp",
     "trailerYoutubeId": "vZFK8svwtxA"
   },
@@ -689,6 +787,7 @@
     "id": 16858,
     "title": "All That Jazz",
     "year": 1979,
+    "tmdbVoteAverage": 7.516,
     "coverImage": "/VHS/program/vote-covers/099-all-that-jazz.webp",
     "trailerYoutubeId": "8_aIhkKlrwk"
   },
@@ -696,6 +795,7 @@
     "id": 27064,
     "title": "Mishima: A Life in Four Chapters",
     "year": 1985,
+    "tmdbVoteAverage": 7.8,
     "coverImage": "/VHS/program/vote-covers/100-mishima-a-life-in-four-chapters.webp",
     "trailerYoutubeId": "5nVKJDSrxNg"
   }

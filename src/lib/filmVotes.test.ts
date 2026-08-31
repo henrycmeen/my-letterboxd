@@ -110,6 +110,50 @@ void test("keeps the earlier leader ahead when another film only draws level", a
   ]);
 });
 
+void test("uses the higher TMDB score when vote totals are tied", async () => {
+  const store = await createStore();
+  const tmdbScores = new Map([
+    [42, 7.4],
+    [7, 8.6],
+    [3, 8.1],
+  ]);
+
+  store.recordVote("na", 42, "voter-a");
+  store.recordVote("na", 7, "voter-a");
+
+  const snapshot = store.getSnapshot(
+    "na",
+    "voter-a",
+    [42, 7, 3],
+    tmdbScores,
+  );
+  assert.deepEqual(snapshot.ranking, [
+    { filmId: 7, votes: 1 },
+    { filmId: 42, votes: 1 },
+    { filmId: 3, votes: 0 },
+  ]);
+});
+
+void test("always ranks more votes ahead of a higher TMDB score", async () => {
+  const store = await createStore();
+
+  store.recordVote("na", 42, "voter-a");
+
+  const snapshot = store.getSnapshot(
+    "na",
+    "voter-a",
+    [42, 7],
+    new Map([
+      [42, 5.5],
+      [7, 9.9],
+    ]),
+  );
+  assert.deepEqual(snapshot.ranking, [
+    { filmId: 42, votes: 1 },
+    { filmId: 7, votes: 0 },
+  ]);
+});
+
 void test("isolates votes between club boards", async () => {
   const store = await createStore();
 
