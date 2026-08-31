@@ -35,6 +35,12 @@ export interface FilmVoteStore {
     catalogueFilmIds: number[],
   ): FilmVoteSnapshot;
   recordVote(boardId: string, filmId: number, voterKey: string): boolean;
+  setVote(
+    boardId: string,
+    filmId: number,
+    voterKey: string,
+    hasVoted: boolean,
+  ): boolean;
 }
 
 const initializeDatabase = (database: DatabaseSync): void => {
@@ -81,6 +87,49 @@ const runInTransaction = <T>(database: DatabaseSync, operation: () => T): T => {
 export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
   const database = new DatabaseSync(databasePath);
   initializeDatabase(database);
+
+  const setVote = (
+    boardId: string,
+    filmId: number,
+    voterKey: string,
+    hasVoted: boolean,
+  ): boolean =>
+    runInTransaction(database, () => {
+      const updatedAt = new Date().toISOString();
+      const result = hasVoted
+        ? database
+            .prepare(
+              `INSERT OR IGNORE INTO film_votes (
+                 board_id,
+                 film_id,
+                 voter_key,
+                 created_at
+               ) VALUES (?, ?, ?, ?)`,
+            )
+            .run(boardId, filmId, voterKey, updatedAt)
+        : database
+            .prepare(
+              `DELETE FROM film_votes
+               WHERE board_id = ? AND film_id = ? AND voter_key = ?`,
+            )
+            .run(boardId, filmId, voterKey);
+
+      if (result.changes === 0) {
+        return false;
+      }
+
+      database
+        .prepare(
+          `INSERT INTO film_vote_boards (board_id, revision, updated_at)
+           VALUES (?, 1, ?)
+           ON CONFLICT(board_id) DO UPDATE SET
+             revision = film_vote_boards.revision + 1,
+             updated_at = excluded.updated_at`,
+        )
+        .run(boardId, updatedAt);
+
+      return true;
+    });
 
   return {
     close() {
@@ -152,35 +201,10 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
     },
 
     recordVote(boardId, filmId, voterKey) {
-      return runInTransaction(database, () => {
-        const result = database
-          .prepare(
-            `INSERT OR IGNORE INTO film_votes (
-               board_id,
-               film_id,
-               voter_key,
-               created_at
-             ) VALUES (?, ?, ?, ?)`,
-          )
-          .run(boardId, filmId, voterKey, new Date().toISOString());
-
-        if (result.changes === 0) {
-          return false;
-        }
-
-        database
-          .prepare(
-            `INSERT INTO film_vote_boards (board_id, revision, updated_at)
-             VALUES (?, 1, ?)
-             ON CONFLICT(board_id) DO UPDATE SET
-               revision = film_vote_boards.revision + 1,
-               updated_at = excluded.updated_at`,
-          )
-          .run(boardId, new Date().toISOString());
-
-        return true;
-      });
+      return setVote(boardId, filmId, voterKey, true);
     },
+
+    setVote,
   };
 };
 
