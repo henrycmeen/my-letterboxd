@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { formatFilmDate } from "@/components/filmClubProgramData";
+import {
+  FALLBACK_NEXT_MOVIE,
+  formatFilmDate,
+} from "@/components/filmClubProgramData";
 
 const originalTimeZone = process.env.TZ;
 
@@ -16,7 +19,11 @@ void test("always renders the screening time in Oslo", () => {
   process.env.TZ = "UTC";
 
   assert.equal(
-    formatFilmDate("2026-09-06T19:00:00+02:00"),
-    "søndag 6. september kl. 19:00",
+    formatFilmDate("2026-09-22T16:00:00+02:00"),
+    "tirsdag 22. september kl. 16:00",
   );
+});
+
+void test("uses the new screening time for the offline fallback movie", () => {
+  assert.equal(FALLBACK_NEXT_MOVIE.scheduledAt, "2026-09-22T16:00:00+02:00");
 });

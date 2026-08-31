@@ -61,9 +61,10 @@ void test("returns the active screening, exact ranking, and aggregate use", asyn
   const secondFilmId = filmVoteCatalogue[1]!.id;
   const store = getFilmVoteStore();
   store.setVote("na", firstFilmId, "legacy-ip-key", true);
-  store.setVote("na-2026-09-06", secondFilmId, "device-v1:a", true);
-  store.setVote("na-2026-09-06", secondFilmId, "device-v1:b", true);
-  store.setVote("na-2026-09-06", firstFilmId, "device-v1:a", true);
+  store.setVote("na-2026-09-06", secondFilmId, "previous-round-device", true);
+  store.setVote("na-2026-09-22", secondFilmId, "device-v1:a", true);
+  store.setVote("na-2026-09-22", secondFilmId, "device-v1:b", true);
+  store.setVote("na-2026-09-22", firstFilmId, "device-v1:a", true);
 
   const response = await invoke();
   assert.equal(response.statusCode, 200);
@@ -82,8 +83,8 @@ void test("returns the active screening, exact ranking, and aggregate use", asyn
   };
   assert.deepEqual(body.club, { id: "na", name: "Nasjonalarkivet" });
   assert.deepEqual(body.activeScreening, {
-    id: "2026-09-06",
-    scheduledAt: "2026-09-06T19:00:00+02:00",
+    id: "2026-09-22",
+    scheduledAt: "2026-09-22T16:00:00+02:00",
   });
   assert.deepEqual(body.ranking[0], {
     filmId: secondFilmId,

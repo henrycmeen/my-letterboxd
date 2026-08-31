@@ -142,7 +142,7 @@ void test("publishes no leader until the first authoritative snapshot", () => {
 
 void test("publishes no leader before the active screening has any votes", () => {
   const snapshot = {
-    boardId: "na-2026-09-06",
+    boardId: "na-2026-09-22",
     ranking: [
       { filmId: 20, votes: 0 },
       { filmId: 10, votes: 0 },
@@ -158,7 +158,7 @@ void test("publishes no leader before the active screening has any votes", () =>
 
 void test("marks only the actual positive-vote leader cassette in the DOM", () => {
   const snapshot = {
-    boardId: "na-2026-09-06",
+    boardId: "na-2026-09-22",
     ranking: [
       { filmId: 20, votes: 2 },
       { filmId: 10, votes: 1 },

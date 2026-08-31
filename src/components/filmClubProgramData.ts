@@ -44,7 +44,7 @@ export const FALLBACK_NEXT_MOVIE: FilmProgramMovie = {
   title: "Blade Runner",
   year: 1982,
   director: "Ridley Scott",
-  scheduledAt: "2026-09-06T19:00:00+02:00",
+  scheduledAt: "2026-09-22T16:00:00+02:00",
   coverImage: PROGRAM_COVER_BY_ID[78]!,
   trailerYoutubeId: PROGRAM_TRAILER_BY_ID[78]!,
 };

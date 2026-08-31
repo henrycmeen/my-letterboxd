@@ -8,8 +8,8 @@ import {
 const completeResults = {
   club: { id: "na", name: "Nasjonalarkivet" },
   activeScreening: {
-    id: "screening-2026-09-06",
-    scheduledAt: "2026-09-06T19:00:00+02:00",
+    id: "2026-09-22",
+    scheduledAt: "2026-09-22T16:00:00+02:00",
   },
   ranking: [
     {
