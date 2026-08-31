@@ -19,6 +19,18 @@ const testDirectory = await fs.mkdtemp(
 process.env.CLUB_DB_PATH = path.join(testDirectory, "votes.sqlite");
 process.env.FILM_VOTE_SECRET_PATH = path.join(testDirectory, "vote-secret");
 
+const testIdentitySecret = Buffer.alloc(32, 7);
+await fs.writeFile(process.env.FILM_VOTE_SECRET_PATH, testIdentitySecret);
+const { createDeviceIdentity, DEVICE_COOKIE_NAME } = await import(
+  "./voterIdentity"
+);
+const deviceCookie = (seed: number): Record<string, string> => ({
+  [DEVICE_COOKIE_NAME]: createDeviceIdentity(
+    testIdentitySecret,
+    Buffer.alloc(32, seed),
+  ).cookieValue,
+});
+
 const { default: handler } = await import("../pages/api/club/votes");
 
 interface RecordedResponse {
@@ -30,12 +42,14 @@ interface RecordedResponse {
 const invoke = async ({
   body,
   clientIp = "203.0.113.8",
+  cookies = deviceCookie(1),
   method,
   query = { boardId: "na" },
   remoteAddress = "127.0.0.1",
 }: {
   body?: unknown;
   clientIp?: string;
+  cookies?: Record<string, string>;
   method: string;
   query?: Record<string, string | string[]>;
   remoteAddress?: string;
@@ -46,7 +60,8 @@ const invoke = async ({
 
   const request = {
     body,
-    headers: { "x-client-ip": clientIp },
+    cookies,
+    headers: clientIp ? { "x-client-ip": clientIp } : {},
     method,
     query,
     socket: { remoteAddress },
@@ -76,7 +91,7 @@ after(async () => {
   await fs.rm(testDirectory, { force: true, recursive: true });
 });
 
-void test("GET returns the shared ranking and this IP's voted films", async () => {
+void test("GET returns the shared ranking and this device's voted films", async () => {
   const response = await invoke({ method: "GET", query: { boardId: "NA" } });
 
   assert.equal(response.statusCode, 200);
@@ -110,7 +125,7 @@ void test("GET uses TMDB score to order films with equal vote totals", async () 
   });
 });
 
-void test("POST is idempotent per IP and film", async () => {
+void test("POST is idempotent per device and film", async () => {
   const boardId = "one-vote";
   const first = await invoke({
     body: { filmId: secondFilmId },
@@ -135,23 +150,23 @@ void test("POST is idempotent per IP and film", async () => {
   assert.deepEqual(body.votedFilmIds, [secondFilmId]);
 });
 
-void test("POST can remove this IP's vote without removing another IP's vote", async () => {
+void test("POST removes one device's vote without removing another device's vote", async () => {
   const boardId = "remove-vote";
   await invoke({
     body: { filmId: secondFilmId, hasVoted: true },
-    clientIp: "203.0.113.8",
+    cookies: deviceCookie(1),
     method: "POST",
     query: { boardId },
   });
   await invoke({
     body: { filmId: secondFilmId, hasVoted: true },
-    clientIp: "198.51.100.9",
+    cookies: deviceCookie(2),
     method: "POST",
     query: { boardId },
   });
   const response = await invoke({
     body: { filmId: secondFilmId, hasVoted: false },
-    clientIp: "203.0.113.8",
+    cookies: deviceCookie(1),
     method: "POST",
     query: { boardId },
   });
@@ -191,7 +206,7 @@ void test("POST treats repeated removal as an idempotent no-op", async () => {
   assert.deepEqual(body.votedFilmIds, []);
 });
 
-void test("one IP can vote for several different films", async () => {
+void test("one device can vote for several different films", async () => {
   const boardId = "several-films";
   await invoke({
     body: { filmId: secondFilmId },
@@ -209,17 +224,19 @@ void test("one IP can vote for several different films", async () => {
   assert.deepEqual(body.votedFilmIds, [secondFilmId, thirdFilmId]);
 });
 
-void test("different IPs contribute separate votes", async () => {
-  const boardId = "different-voters";
+void test("different devices on the same IP contribute separate votes", async () => {
+  const boardId = "different-devices";
   await invoke({
     body: { filmId: fourthFilmId },
     clientIp: "203.0.113.8",
+    cookies: deviceCookie(1),
     method: "POST",
     query: { boardId },
   });
   const response = await invoke({
     body: { filmId: fourthFilmId },
-    clientIp: "198.51.100.9",
+    clientIp: "203.0.113.8",
+    cookies: deviceCookie(2),
     method: "POST",
     query: { boardId },
   });
@@ -228,6 +245,74 @@ void test("different IPs contribute separate votes", async () => {
     ranking: Array<{ filmId: number; votes: number }>;
   };
   assert.deepEqual(body.ranking[0], { filmId: fourthFilmId, votes: 2 });
+});
+
+void test("the shared leader changes when independent devices move another film ahead", async () => {
+  const boardId = "leader-change";
+  for (const seed of [1, 2]) {
+    await invoke({
+      body: { filmId: fourthFilmId },
+      clientIp: "203.0.113.8",
+      cookies: deviceCookie(seed),
+      method: "POST",
+      query: { boardId },
+    });
+  }
+
+  let response: RecordedResponse | null = null;
+  for (const seed of [3, 4, 5]) {
+    response = await invoke({
+      body: { filmId: thirdFilmId },
+      clientIp: "203.0.113.8",
+      cookies: deviceCookie(seed),
+      method: "POST",
+      query: { boardId },
+    });
+  }
+
+  const body = response?.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+  };
+  assert.deepEqual(body.ranking[0], { filmId: thirdFilmId, votes: 3 });
+  assert.deepEqual(body.ranking[1], { filmId: fourthFilmId, votes: 2 });
+});
+
+void test("the same device keeps its votes after changing IP", async () => {
+  const boardId = "moving-device";
+  await invoke({
+    body: { filmId: secondFilmId },
+    clientIp: "203.0.113.8",
+    cookies: deviceCookie(6),
+    method: "POST",
+    query: { boardId },
+  });
+  const response = await invoke({
+    clientIp: "198.51.100.9",
+    cookies: deviceCookie(6),
+    method: "GET",
+    query: { boardId },
+  });
+
+  const body = response.body as { votedFilmIds: number[] };
+  assert.deepEqual(body.votedFilmIds, [secondFilmId]);
+});
+
+void test("a first visit works without an IP and issues a secure device cookie", async () => {
+  const response = await invoke({
+    clientIp: "",
+    cookies: {},
+    method: "GET",
+    query: { boardId: "fresh-device" },
+    remoteAddress: "",
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.match(
+    response.headers["set-cookie"] ?? "",
+    new RegExp(`^${DEVICE_COOKIE_NAME}=v1\\.`),
+  );
+  assert.match(response.headers["set-cookie"] ?? "", /HttpOnly/);
+  assert.match(response.headers["set-cookie"] ?? "", /SameSite=Lax/);
 });
 
 void test("rejects films outside the fixed catalogue", async () => {
@@ -251,18 +336,6 @@ void test("rejects a non-boolean requested vote state", async () => {
   assert.equal(response.statusCode, 400);
   assert.deepEqual(response.body, {
     error: { code: "INVALID_REQUEST", message: "Ugyldig stemme." },
-  });
-});
-
-void test("fails closed when no client IP is available", async () => {
-  const response = await invoke({ method: "GET", remoteAddress: "" });
-
-  assert.equal(response.statusCode, 503);
-  assert.deepEqual(response.body, {
-    error: {
-      code: "VOTING_UNAVAILABLE",
-      message: "Avstemningen er ikke tilgjengelig akkurat nå.",
-    },
   });
 });
 

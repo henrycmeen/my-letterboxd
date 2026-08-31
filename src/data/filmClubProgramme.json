@@ -1,0 +1,23 @@
+{
+  "clubs": {
+    "na": {
+      "name": "Nasjonalarkivet",
+      "activeScreening": {
+        "id": "2026-09-06",
+        "scheduledAt": "2026-09-06T19:00:00+02:00"
+      },
+      "history": []
+    },
+    "default": {
+      "name": "Filmklubben",
+      "activeScreening": {
+        "id": "2026-09-06",
+        "scheduledAt": "2026-09-06T19:00:00+02:00"
+      },
+      "history": []
+    }
+  },
+  "aliases": {
+    "nasjonalarkivet": "na"
+  }
+}

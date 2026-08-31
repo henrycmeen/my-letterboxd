@@ -30,6 +30,30 @@ A film club app built with Next.js that fetches movie data from TMDB and renders
 - Uses `sharp` as the primary renderer with a fixed VHS template pipeline
 - Supports Photoshop smart-object rendering as an optional local fallback
 
+## Filmklubb programme and voting
+
+The public programme uses one anonymous, signed first-party cookie per browser
+profile. IP addresses are not voter identities, so two phones on the same
+network can vote independently and the same browser keeps its votes when it
+changes network.
+
+Dates and voting rounds live in
+`src/data/filmClubProgramme.json`. Each active screening gets its own stable
+vote board id (`<club>-<screening>`), which keeps a new film night from
+inheriting the previous round's votes. The former IP-based `na` board remains
+untouched in SQLite, but the active programme never reads or writes it. To roll
+the programme forward with Codex:
+
+1. Read the final aggregate at `/<club>/resultater`.
+2. Add that winner and its aggregate counts to the club's `history` array.
+3. Change `activeScreening.id` and `activeScreening.scheduledAt` together.
+4. Run `pnpm test && pnpm check && pnpm build` before release.
+
+The results route is intentionally unlinked and read-only. It exposes film
+ranking, total active votes and participating browser profiles, never voter
+keys. A hidden URL is convenience rather than access control; any future write
+admin must use real authentication.
+
 ## Setup
 
 1. Install dependencies
@@ -78,6 +102,13 @@ pnpm predeploy
 ```
 
 ## API Endpoints
+
+- `GET|POST /api/club/votes?boardId=...`
+  Reads or changes the current browser profile's votes and returns the shared
+  ranking.
+
+- `GET /api/club/results?clubSlug=...`
+  Returns read-only aggregate ranking, participation and winner history.
 
 - `GET /api/club/movies?listType=popular&limit=12`
   Returns TMDB movie list data for the film club.

@@ -14,6 +14,7 @@ import {
   getPublishedVoteLeaderId,
   getVoteCaseState,
   getVoteToggleInteraction,
+  isPublishedVoteLeader,
   parseFilmVoteSnapshot,
   shouldApplyVoteSnapshot,
   type FilmVoteClientSnapshot,
@@ -139,10 +140,11 @@ export const FilmVoteWall = ({
       const response = await fetch(
         withBasePath(`/api/club/votes?${query.toString()}`),
         voteMutation === undefined
-          ? { cache: "no-store", signal }
+          ? { cache: "no-store", credentials: "same-origin", signal }
           : {
               body: JSON.stringify(voteMutation),
               cache: "no-store",
+              credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
               method: "POST",
               signal,
@@ -345,7 +347,11 @@ export const FilmVoteWall = ({
           const displayedHasVoted = pendingVoteStates.get(film.id) ?? hasVoted;
           const isPending = pendingVoteStates.has(film.id);
           const suppressPreview = suppressedPreviewFilmIds.has(film.id);
-          const isLeader = index === 0;
+          const isLeader = isPublishedVoteLeader(
+            snapshot,
+            isAuthoritativeSnapshot,
+            film.id,
+          );
           const rank = index + 1;
           const caseState = getVoteCaseState({
             hasVoted: displayedHasVoted,

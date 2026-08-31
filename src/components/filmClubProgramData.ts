@@ -21,6 +21,8 @@ export interface LiveProgramResponse {
   now: LiveProgramMovie | null;
 }
 
+export const FILM_CLUB_TIME_ZONE = "Europe/Oslo";
+
 const PROGRAM_COVER_BY_ID: Record<number, string> = {
   62: "/VHS/program/covers/2001-a-space-odyssey.webp",
   78: "/VHS/program/covers/blade-runner.webp",
@@ -95,6 +97,7 @@ export const formatFilmDate = (value: string): string => {
   }
 
   return new Intl.DateTimeFormat("nb-NO", {
+    timeZone: FILM_CLUB_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
