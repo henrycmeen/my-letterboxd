@@ -4,6 +4,7 @@ import {
   areVoteSnapshotsEqual,
   getFlipMotion,
   getVoteCaseState,
+  getVoteToggleInteraction,
   parseFilmVoteSnapshot,
   shouldApplyVoteSnapshot,
 } from "./filmVoteClient";
@@ -128,5 +129,16 @@ void test("keeps the leader case empty without changing its voted open state", (
   assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: true }), {
     isOpen: true,
     showsCassette: false,
+  });
+});
+
+void test("closes a removed vote immediately without a sticky hover preview", () => {
+  assert.deepEqual(getVoteToggleInteraction(true), {
+    nextHasVoted: false,
+    suppressPreview: true,
+  });
+  assert.deepEqual(getVoteToggleInteraction(false), {
+    nextHasVoted: true,
+    suppressPreview: false,
   });
 });

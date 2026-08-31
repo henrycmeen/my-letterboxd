@@ -12,6 +12,7 @@ import {
   areVoteSnapshotsEqual,
   getFlipMotion,
   getVoteCaseState,
+  getVoteToggleInteraction,
   parseFilmVoteSnapshot,
   shouldApplyVoteSnapshot,
   type FilmVoteClientSnapshot,
@@ -21,9 +22,12 @@ import styles from "@/styles/filmClubProgram.module.css";
 
 const FILM_BY_ID = new Map(filmVoteCatalogue.map((film) => [film.id, film]));
 const FILM_ID_SET = new Set(filmVoteCatalogue.map((film) => film.id));
+const INITIAL_RANKED_FILMS = [...filmVoteCatalogue].sort(
+  (first, second) => second.tmdbVoteAverage - first.tmdbVoteAverage,
+);
 
 export type FilmVoteMovie = (typeof filmVoteCatalogue)[number];
-export const INITIAL_VOTE_LEADER = filmVoteCatalogue[0]!;
+export const INITIAL_VOTE_LEADER = INITIAL_RANKED_FILMS[0]!;
 
 interface FilmVoteWallProps {
   boardId: string;
@@ -37,7 +41,7 @@ interface VoteMutation {
 
 const createInitialSnapshot = (boardId: string): FilmVoteClientSnapshot => ({
   boardId,
-  ranking: filmVoteCatalogue.map((film) => ({ filmId: film.id, votes: 0 })),
+  ranking: INITIAL_RANKED_FILMS.map((film) => ({ filmId: film.id, votes: 0 })),
   revision: 0,
   votedFilmIds: [],
 });
@@ -58,6 +62,9 @@ export const FilmVoteWall = ({
   const [pendingVoteStates, setPendingVoteStates] = useState<
     ReadonlyMap<number, boolean>
   >(() => new Map());
+  const [suppressedPreviewFilmIds, setSuppressedPreviewFilmIds] = useState<
+    ReadonlySet<number>
+  >(() => new Set());
 
   const rankedFilms = useMemo(
     () =>
@@ -71,6 +78,18 @@ export const FilmVoteWall = ({
     () => new Set(snapshot.votedFilmIds),
     [snapshot.votedFilmIds],
   );
+
+  const clearSuppressedPreview = useCallback((filmId: number) => {
+    setSuppressedPreviewFilmIds((current) => {
+      if (!current.has(filmId)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.delete(filmId);
+      return next;
+    });
+  }, []);
 
   const captureCurrentLayout = useCallback(() => {
     previousSlots.current = new Map(
@@ -142,6 +161,7 @@ export const FilmVoteWall = ({
     setSnapshot(initialSnapshot);
     pendingFilmIds.current.clear();
     setPendingVoteStates(new Map());
+    setSuppressedPreviewFilmIds(new Set());
     let isCancelled = false;
     let pollTimer: number | undefined;
 
@@ -244,8 +264,16 @@ export const FilmVoteWall = ({
       return;
     }
 
-    const nextHasVoted = !hasVoted;
+    const { nextHasVoted, suppressPreview } =
+      getVoteToggleInteraction(hasVoted);
     pendingFilmIds.current.add(filmId);
+    if (suppressPreview) {
+      setSuppressedPreviewFilmIds((current) => {
+        const next = new Set(current);
+        next.add(filmId);
+        return next;
+      });
+    }
     setPendingVoteStates((current) => {
       const next = new Map(current);
       next.set(filmId, nextHasVoted);
@@ -273,6 +301,7 @@ export const FilmVoteWall = ({
           const displayedHasVoted =
             pendingVoteStates.get(film.id) ?? hasVoted;
           const isPending = pendingVoteStates.has(film.id);
+          const suppressPreview = suppressedPreviewFilmIds.has(film.id);
           const isLeader = index === 0;
           const rank = index + 1;
           const caseState = getVoteCaseState({
@@ -303,7 +332,10 @@ export const FilmVoteWall = ({
                 aria-pressed={displayedHasVoted}
                 data-case-open={caseState.isOpen}
                 data-leader={isLeader}
+                data-suppress-preview={suppressPreview || undefined}
+                onBlur={() => clearSuppressedPreview(film.id)}
                 onClick={() => void toggleVoteForFilm(film.id, hasVoted)}
+                onPointerLeave={() => clearSuppressedPreview(film.id)}
               >
                 <span className={styles.voteCaseInterior} aria-hidden="true">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
