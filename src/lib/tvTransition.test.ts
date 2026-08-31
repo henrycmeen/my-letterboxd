@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   advanceTvPhase,
   buildTvPlayerKey,
+  getTvRevealDelay,
   TV_TRANSITION_TIMING,
   type TvPhase,
 } from "./tvTransition";
@@ -41,5 +42,20 @@ void test("the same trailer can be remounted after a rapid A to B to A switch", 
   assert.notEqual(
     buildTvPlayerKey("trailer-a", 1),
     buildTvPlayerKey("trailer-a", 2),
+  );
+});
+
+void test("a blocked YouTube player is never revealed by a fallback timeout", () => {
+  assert.equal(getTvRevealDelay("trailer-a", "playerFallback"), null);
+  assert.equal(
+    getTvRevealDelay("trailer-a", "youtubePlaying"),
+    TV_TRANSITION_TIMING.youtubeSignalHoldMs,
+  );
+});
+
+void test("a film without a trailer can still reveal its poster", () => {
+  assert.equal(
+    getTvRevealDelay(null, "posterReady"),
+    TV_TRANSITION_TIMING.posterSignalHoldMs,
   );
 });
