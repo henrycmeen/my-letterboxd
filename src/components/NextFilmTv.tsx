@@ -13,6 +13,7 @@ import {
   advanceTvPhase,
   buildTvPlayerKey,
   getTvRevealDelay,
+  shouldRevealYoutubeTrailer,
   TV_TRANSITION_TIMING,
   type TvPhase,
 } from "@/lib/tvTransition";
@@ -268,6 +269,10 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   );
 
   const revealPosterFallback = useCallback(() => {
+    if (phaseRef.current !== "tuning") {
+      return;
+    }
+
     setUsePosterFallback(true);
     iframeRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
@@ -364,36 +369,31 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         }
       }
 
-      if (isYoutubePlayingMessage(payload)) {
+      const playbackSignal = isYoutubePlayingMessage(payload)
+        ? "playing"
+        : isYoutubePausedMessage(payload)
+          ? "paused"
+          : null;
+
+      if (playbackSignal === "playing") {
         if (blockedTrailerTimer.current !== null) {
           window.clearTimeout(blockedTrailerTimer.current);
           blockedTrailerTimer.current = null;
-        }
-        if (!usePosterFallback) {
-          const delay = getTvRevealDelay(displayed.youtubeId, "youtubePlaying");
-          if (delay !== null) {
-            revealPicture(delay);
-          }
         }
       }
 
       if (
-        isYoutubePausedMessage(payload) &&
-        phaseRef.current !== "poweringOff" &&
-        !usePosterFallback
+        playbackSignal !== null &&
+        shouldRevealYoutubeTrailer(
+          phaseRef.current,
+          usePosterFallback,
+          playbackSignal,
+        )
       ) {
-        if (blockedTrailerTimer.current !== null) {
-          window.clearTimeout(blockedTrailerTimer.current);
-          blockedTrailerTimer.current = null;
+        const delay = getTvRevealDelay(displayed.youtubeId, "youtubePlaying");
+        if (delay !== null) {
+          revealPicture(delay);
         }
-        if (
-          phaseRef.current === "tuning" &&
-          revealTimer.current !== null
-        ) {
-          window.clearTimeout(revealTimer.current);
-          revealTimer.current = null;
-        }
-        revealPosterFallback();
       }
 
       const progress = getYoutubePlaybackProgress(payload);

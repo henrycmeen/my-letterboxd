@@ -110,19 +110,19 @@
 }
 
 .nextTvPicturePoweringOn {
-  animation: nextTvPowerOn 760ms cubic-bezier(0.18, 0.84, 0.26, 1) both;
+  animation: nextTvPowerOn 180ms ease-out both;
 }
 
 .nextTvPicturePoweringOff {
-  animation: nextTvPowerOff 520ms cubic-bezier(0.3, 0.02, 0.7, 1) both;
+  animation: nextTvPowerOff 180ms ease-in both;
 }
 
 .nextTvVideo {
-  height: 160%;
-  left: -38.89%;
+  height: 100%;
+  left: -5.56%;
   max-width: none;
-  top: -30%;
-  width: 177.78%;
+  top: 0;
+  width: 111.11%;
 }
 
 .nextTvStatic {
@@ -206,7 +206,7 @@
 }
 
 .nextTvSignalLock {
-  animation: tvSignalLock 760ms steps(5, end) forwards;
+  animation: tvSignalLock 180ms ease-out forwards;
   background: linear-gradient(
     180deg,
     transparent 0 42%,
@@ -229,7 +229,7 @@
 }
 
 .nextTvPowerOnFlash {
-  animation: nextTvPowerFlash 620ms ease-out forwards;
+  animation: nextTvPowerFlash 180ms ease-out forwards;
   background: radial-gradient(
     84% 0.28rem at 50% 50%,
     rgba(255, 255, 255, 0.98),
@@ -239,7 +239,7 @@
 }
 
 .nextTvPowerOffFlash {
-  animation: nextTvPowerOffFlash 520ms ease-in forwards;
+  animation: nextTvPowerOffFlash 180ms ease-in forwards;
   background: radial-gradient(
     82% 2px at 50% 50%,
     rgba(255, 255, 255, 0.95) 0%,
@@ -270,31 +270,14 @@
 
 @keyframes nextTvPowerOn {
   0% {
-    filter: brightness(4) contrast(1.8) saturate(0);
+    filter: brightness(1.18) contrast(1.08) saturate(0.82);
     opacity: 0;
-    transform: scale(0.02, 0.002);
-  }
-  16% {
-    filter: brightness(3.4) contrast(1.65) saturate(0);
-    opacity: 1;
-    transform: translateX(-1.4%) scale(0.24, 0.008);
-  }
-  34% {
-    filter: brightness(2.8) contrast(1.45) saturate(0.1);
-    transform: translateX(0.9%) scale(1.03, 0.018);
-  }
-  54% {
-    filter: brightness(1.8) contrast(1.28) saturate(0.34);
-    transform: translateX(-0.35%) scale(0.985, 0.34);
-  }
-  76% {
-    filter: brightness(1.18) contrast(1.1) saturate(0.78);
-    transform: translateX(0.18%) scale(1.012, 1.045);
+    transform: none;
   }
   100% {
     filter: brightness(1) contrast(1) saturate(1);
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: none;
   }
 }
 
@@ -302,63 +285,38 @@
   0% {
     filter: brightness(1) contrast(1) saturate(1);
     opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-  30% {
-    filter: brightness(1.35) contrast(1.18) saturate(0.72);
-    transform: translateX(0.5%) scale(1.02, 0.74);
-  }
-  58% {
-    filter: brightness(3.2) contrast(1.62) saturate(0.08);
-    transform: translateX(-0.8%) scale(0.98, 0.026);
-  }
-  78% {
-    filter: brightness(4.4) contrast(1.9) saturate(0);
-    opacity: 0.94;
-    transform: translateX(0.4%) scale(0.36, 0.008);
+    transform: none;
   }
   100% {
-    filter: brightness(5) contrast(2) saturate(0);
+    filter: brightness(0.72) contrast(1.08) saturate(0.78);
     opacity: 0;
-    transform: translateX(0) scale(0.015, 0.002);
+    transform: none;
   }
 }
 
 @keyframes nextTvPowerFlash {
   0% {
-    opacity: 1;
-    transform: scaleX(0.08);
-  }
-  36% {
-    opacity: 0.88;
-    transform: scaleX(1.05);
-  }
-  70% {
-    opacity: 0.18;
-    transform: scale(1.02, 8);
+    opacity: 0.38;
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: scale(1);
+    transform: none;
   }
 }
 
 @keyframes nextTvPowerOffFlash {
   0% {
     opacity: 0;
-    transform: scaleX(1);
+    transform: none;
   }
-  42% {
-    opacity: 0.94;
-    transform: scaleX(1.03);
-  }
-  76% {
-    opacity: 0.6;
-    transform: scaleX(0.3);
+  50% {
+    opacity: 0.28;
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: scaleX(0.02);
+    transform: none;
   }
 }
 
@@ -432,24 +390,12 @@
 
 @keyframes tvSignalLock {
   0% {
-    opacity: 0.92;
-    transform: translateY(-38%) scaleY(1.8);
-  }
-  24% {
-    opacity: 0.68;
-    transform: translate(2%, 26%) scaleY(0.9);
-  }
-  48% {
-    opacity: 0.42;
-    transform: translate(-1%, -7%) scaleY(0.48);
-  }
-  72% {
-    opacity: 0.18;
-    transform: translateY(4%) scaleY(0.22);
+    opacity: 0.24;
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: translateY(0) scaleY(0.04);
+    transform: none;
   }
 }
 
@@ -608,8 +554,8 @@
   }
 
   .nextTvVideo {
-    left: -92.22%;
-    width: 284.44%;
+    left: -38.89%;
+    width: 177.78%;
   }
 
   .voteGrid {
