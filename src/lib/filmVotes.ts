@@ -33,6 +33,7 @@ export interface FilmVoteStore {
     boardId: string,
     voterKey: string,
     catalogueFilmIds: number[],
+    tmdbScores?: ReadonlyMap<number, number>,
   ): FilmVoteSnapshot;
   recordVote(boardId: string, filmId: number, voterKey: string): boolean;
   setVote(
@@ -136,7 +137,7 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
       database.close();
     },
 
-    getSnapshot(boardId, voterKey, catalogueFilmIds) {
+    getSnapshot(boardId, voterKey, catalogueFilmIds, tmdbScores) {
       const revisionRow = database
         .prepare(
           `SELECT revision
@@ -172,12 +173,14 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
             filmId,
             firstVoteOrder: count?.firstVoteOrder ?? Number.MAX_SAFE_INTEGER,
             initialRank,
+            tmdbScore: tmdbScores?.get(filmId) ?? 0,
             votes: count?.votes ?? 0,
           };
         })
         .sort(
           (first, second) =>
             second.votes - first.votes ||
+            second.tmdbScore - first.tmdbScore ||
             first.firstVoteOrder - second.firstVoteOrder ||
             first.initialRank - second.initialRank,
         )

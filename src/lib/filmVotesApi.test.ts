@@ -6,10 +6,12 @@ import { after, test } from "node:test";
 import type { NextApiRequest, NextApiResponse } from "next";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 
-const firstFilmId = filmVoteCatalogue[0]!.id;
 const secondFilmId = filmVoteCatalogue[1]!.id;
 const thirdFilmId = filmVoteCatalogue[2]!.id;
 const fourthFilmId = filmVoteCatalogue[3]!.id;
+const highestRatedFilmId = [...filmVoteCatalogue].sort(
+  (first, second) => second.tmdbVoteAverage - first.tmdbVoteAverage,
+)[0]!.id;
 
 const testDirectory = await fs.mkdtemp(
   path.join(tmpdir(), "filmklubb-votes-api-"),
@@ -86,10 +88,26 @@ void test("GET returns the shared ranking and this IP's voted films", async () =
   };
   assert.equal(body.boardId, "na");
   assert.equal(body.ranking.length, 100);
-  assert.equal(body.ranking[0]?.filmId, firstFilmId);
+  assert.equal(body.ranking[0]?.filmId, highestRatedFilmId);
   assert.equal(body.revision, 0);
   assert.deepEqual(body.votedFilmIds, []);
   assert.equal(JSON.stringify(body).includes("203.0.113.8"), false);
+});
+
+void test("GET uses TMDB score to order films with equal vote totals", async () => {
+  const response = await invoke({
+    method: "GET",
+    query: { boardId: "tmdb-tie-break" },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+  };
+  assert.deepEqual(body.ranking[0], {
+    filmId: highestRatedFilmId,
+    votes: 0,
+  });
 });
 
 void test("POST is idempotent per IP and film", async () => {
