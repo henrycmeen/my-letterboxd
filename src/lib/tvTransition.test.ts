@@ -32,6 +32,14 @@ void test("the tuning window masks YouTube controls before revealing the leader"
   );
 });
 
+void test("an empty vote board leaves tuning after the same bounded intro", () => {
+  assert.equal(TV_TRANSITION_TIMING.emptySignalHoldMs, 4_000);
+  assert.equal(
+    getTvRevealDelay(null, "emptyReady"),
+    TV_TRANSITION_TIMING.emptySignalHoldMs,
+  );
+});
+
 void test("irrelevant phase events do not skip the signal transition", () => {
   assert.equal(advanceTvPhase("poweringOff", "signalReady"), "poweringOff");
   assert.equal(advanceTvPhase("tuning", "powerOnFinished"), "tuning");
@@ -44,7 +52,8 @@ void test("the same trailer can be remounted after a rapid A to B to A switch", 
   );
 });
 
-void test("a blocked YouTube player is never revealed by a fallback timeout", () => {
+void test("a blocked YouTube player falls back to the poster instead of tuning forever", () => {
+  assert.equal(TV_TRANSITION_TIMING.blockedTrailerFallbackMs, 4_000);
   assert.equal(getTvRevealDelay("trailer-a", "playerFallback"), null);
   assert.equal(
     getTvRevealDelay("trailer-a", "youtubePlaying"),

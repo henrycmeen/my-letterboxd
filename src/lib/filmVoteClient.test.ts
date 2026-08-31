@@ -213,10 +213,12 @@ void test("skips FLIP work when a cassette stayed in the same slot", () => {
 
 void test("keeps unvoted cases closed and opens the films this voter supported", () => {
   assert.deepEqual(getVoteCaseState({ hasVoted: false, isLeader: false }), {
+    cassettePosition: "seated",
     isOpen: false,
     showsCassette: true,
   });
   assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: false }), {
+    cassettePosition: "seated",
     isOpen: true,
     showsCassette: true,
   });
@@ -224,10 +226,12 @@ void test("keeps unvoted cases closed and opens the films this voter supported",
 
 void test("keeps a cassette in the leader case without changing its voted open state", () => {
   assert.deepEqual(getVoteCaseState({ hasVoted: false, isLeader: true }), {
+    cassettePosition: "ejected",
     isOpen: false,
     showsCassette: true,
   });
   assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: true }), {
+    cassettePosition: "ejected",
     isOpen: true,
     showsCassette: true,
   });

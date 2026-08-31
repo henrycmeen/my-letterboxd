@@ -7,11 +7,14 @@ export type TvTransitionEvent =
   | "powerOnFinished";
 
 export type TvRevealSource =
+  | "emptyReady"
   | "playerFallback"
   | "posterReady"
   | "youtubePlaying";
 
 export const TV_TRANSITION_TIMING = {
+  blockedTrailerFallbackMs: 4_000,
+  emptySignalHoldMs: 4_000,
   powerOffMs: 520,
   youtubeSignalHoldMs: 4_000,
   posterSignalHoldMs: 650,
@@ -26,6 +29,10 @@ export const getTvRevealDelay = (
     return source === "youtubePlaying"
       ? TV_TRANSITION_TIMING.youtubeSignalHoldMs
       : null;
+  }
+
+  if (source === "emptyReady") {
+    return TV_TRANSITION_TIMING.emptySignalHoldMs;
   }
 
   return source === "posterReady"
