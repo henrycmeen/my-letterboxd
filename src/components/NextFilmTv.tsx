@@ -5,6 +5,7 @@ import {
   buildYoutubeTrailerEmbedUrl,
   getYoutubePlaybackProgress,
   isYoutubeEndedMessage,
+  isYoutubePausedMessage,
   isYoutubePlayingMessage,
   shouldRestartYoutubeTrailer,
 } from "@/lib/youtubeEmbed";
@@ -266,6 +267,15 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     [setTvPhase],
   );
 
+  const revealPosterFallback = useCallback(() => {
+    setUsePosterFallback(true);
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
+      "https://www.youtube-nocookie.com",
+    );
+    revealPicture(TV_TRANSITION_TIMING.posterSignalHoldMs);
+  }, [revealPicture]);
+
   useEffect(() => {
     if (phase === "tuning" && !displayed.youtubeId) {
       const delay = getTvRevealDelay(displayed.youtubeId, "posterReady");
@@ -296,27 +306,28 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       );
     }
 
-    if (blockedTrailerTimer.current !== null) {
-      window.clearTimeout(blockedTrailerTimer.current);
-    }
-    blockedTrailerTimer.current = window.setTimeout(() => {
-      blockedTrailerTimer.current = null;
-      if (phaseRef.current !== "tuning") {
-        return;
-      }
-
-      setUsePosterFallback(true);
-      iframeRef.current?.contentWindow?.postMessage(
-        JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
-        "https://www.youtube-nocookie.com",
-      );
-      revealPicture(TV_TRANSITION_TIMING.posterSignalHoldMs);
-    }, TV_TRANSITION_TIMING.blockedTrailerFallbackMs);
-
     // Keep the no-signal layer visible until YouTube confirms playback.
     // Safari can reject autoplay even for muted embeds. In that case the
     // poster replaces the iframe before the signal layer is removed.
-  }, [displayed.youtubeId, revealPicture]);
+  }, [displayed.youtubeId]);
+
+  useEffect(() => {
+    if (phase !== "tuning" || !displayed.youtubeId || usePosterFallback) {
+      return;
+    }
+
+    blockedTrailerTimer.current = window.setTimeout(() => {
+      blockedTrailerTimer.current = null;
+      revealPosterFallback();
+    }, TV_TRANSITION_TIMING.blockedTrailerFallbackMs);
+
+    return () => {
+      if (blockedTrailerTimer.current !== null) {
+        window.clearTimeout(blockedTrailerTimer.current);
+        blockedTrailerTimer.current = null;
+      }
+    };
+  }, [displayed.youtubeId, phase, revealPosterFallback, usePosterFallback]);
 
   useEffect(() => {
     const restartTrailer = () => {
@@ -366,6 +377,25 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         }
       }
 
+      if (
+        isYoutubePausedMessage(payload) &&
+        phaseRef.current !== "poweringOff" &&
+        !usePosterFallback
+      ) {
+        if (blockedTrailerTimer.current !== null) {
+          window.clearTimeout(blockedTrailerTimer.current);
+          blockedTrailerTimer.current = null;
+        }
+        if (
+          phaseRef.current === "tuning" &&
+          revealTimer.current !== null
+        ) {
+          window.clearTimeout(revealTimer.current);
+          revealTimer.current = null;
+        }
+        revealPosterFallback();
+      }
+
       const progress = getYoutubePlaybackProgress(payload);
       if (progress && progress.currentTime < progress.duration * 0.1) {
         restartPending.current = false;
@@ -381,7 +411,12 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
 
     window.addEventListener("message", handleYoutubeMessage);
     return () => window.removeEventListener("message", handleYoutubeMessage);
-  }, [displayed.youtubeId, revealPicture, usePosterFallback]);
+  }, [
+    displayed.youtubeId,
+    revealPicture,
+    revealPosterFallback,
+    usePosterFallback,
+  ]);
 
   const pictureClassName = `${styles.nextTvPicture} ${
     phase === "poweringOff"
