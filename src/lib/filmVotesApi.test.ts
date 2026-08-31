@@ -117,6 +117,62 @@ void test("POST is idempotent per IP and film", async () => {
   assert.deepEqual(body.votedFilmIds, [secondFilmId]);
 });
 
+void test("POST can remove this IP's vote without removing another IP's vote", async () => {
+  const boardId = "remove-vote";
+  await invoke({
+    body: { filmId: secondFilmId, hasVoted: true },
+    clientIp: "203.0.113.8",
+    method: "POST",
+    query: { boardId },
+  });
+  await invoke({
+    body: { filmId: secondFilmId, hasVoted: true },
+    clientIp: "198.51.100.9",
+    method: "POST",
+    query: { boardId },
+  });
+  const response = await invoke({
+    body: { filmId: secondFilmId, hasVoted: false },
+    clientIp: "203.0.113.8",
+    method: "POST",
+    query: { boardId },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+    revision: number;
+    votedFilmIds: number[];
+  };
+  assert.equal(body.revision, 3);
+  assert.deepEqual(body.ranking[0], { filmId: secondFilmId, votes: 1 });
+  assert.deepEqual(body.votedFilmIds, []);
+});
+
+void test("POST treats repeated removal as an idempotent no-op", async () => {
+  const boardId = "repeat-removal";
+  await invoke({
+    body: { filmId: thirdFilmId, hasVoted: true },
+    method: "POST",
+    query: { boardId },
+  });
+  await invoke({
+    body: { filmId: thirdFilmId, hasVoted: false },
+    method: "POST",
+    query: { boardId },
+  });
+  const response = await invoke({
+    body: { filmId: thirdFilmId, hasVoted: false },
+    method: "POST",
+    query: { boardId },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.body as { revision: number; votedFilmIds: number[] };
+  assert.equal(body.revision, 2);
+  assert.deepEqual(body.votedFilmIds, []);
+});
+
 void test("one IP can vote for several different films", async () => {
   const boardId = "several-films";
   await invoke({
@@ -159,6 +215,18 @@ void test("different IPs contribute separate votes", async () => {
 void test("rejects films outside the fixed catalogue", async () => {
   const response = await invoke({
     body: { filmId: 999 },
+    method: "POST",
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.body, {
+    error: { code: "INVALID_REQUEST", message: "Ugyldig stemme." },
+  });
+});
+
+void test("rejects a non-boolean requested vote state", async () => {
+  const response = await invoke({
+    body: { filmId: secondFilmId, hasVoted: "false" },
     method: "POST",
   });
 

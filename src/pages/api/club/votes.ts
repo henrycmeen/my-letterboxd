@@ -28,7 +28,10 @@ const catalogueFilmIds = filmVoteCatalogue.map((film) => film.id);
 const catalogueFilmIdSet = new Set(catalogueFilmIds);
 
 const voteInputSchema = z
-  .object({ filmId: z.number().int().positive() })
+  .object({
+    filmId: z.number().int().positive(),
+    hasVoted: z.boolean().optional(),
+  })
   .strict()
   .refine(({ filmId }) => catalogueFilmIdSet.has(filmId));
 
@@ -92,7 +95,12 @@ export default async function handler(
         });
       }
 
-      store.recordVote(boardId, parsedVote.data.filmId, voterKey);
+      store.setVote(
+        boardId,
+        parsedVote.data.filmId,
+        voterKey,
+        parsedVote.data.hasVoted ?? true,
+      );
     }
 
     return res

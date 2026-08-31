@@ -30,6 +30,11 @@ interface FilmVoteWallProps {
   onLeaderChange?: (film: FilmVoteMovie) => void;
 }
 
+interface VoteMutation {
+  filmId: number;
+  hasVoted: boolean;
+}
+
 const createInitialSnapshot = (boardId: string): FilmVoteClientSnapshot => ({
   boardId,
   ranking: filmVoteCatalogue.map((film) => ({ filmId: film.id, votes: 0 })),
@@ -50,6 +55,9 @@ export const FilmVoteWall = ({
   const previousRanks = useRef(new Map<number, number>());
   const runningAnimations = useRef(new Map<number, Animation>());
   const pendingFilmIds = useRef(new Set<number>());
+  const [pendingVoteStates, setPendingVoteStates] = useState<
+    ReadonlyMap<number, boolean>
+  >(() => new Map());
 
   const rankedFilms = useMemo(
     () =>
@@ -99,14 +107,14 @@ export const FilmVoteWall = ({
   );
 
   const loadSnapshot = useCallback(
-    async (filmId?: number): Promise<void> => {
+    async (voteMutation?: VoteMutation): Promise<void> => {
       const query = new URLSearchParams({ boardId });
       const response = await fetch(
         withBasePath(`/api/club/votes?${query.toString()}`),
-        filmId === undefined
+        voteMutation === undefined
           ? { cache: "no-store" }
           : {
-              body: JSON.stringify({ filmId }),
+              body: JSON.stringify(voteMutation),
               cache: "no-store",
               headers: { "Content-Type": "application/json" },
               method: "POST",
@@ -132,6 +140,8 @@ export const FilmVoteWall = ({
     const initialSnapshot = createInitialSnapshot(boardId);
     snapshotRef.current = initialSnapshot;
     setSnapshot(initialSnapshot);
+    pendingFilmIds.current.clear();
+    setPendingVoteStates(new Map());
     let isCancelled = false;
     let pollTimer: number | undefined;
 
@@ -229,18 +239,29 @@ export const FilmVoteWall = ({
     previousRanks.current.clear();
   }, [snapshot.ranking]);
 
-  const voteForFilm = async (filmId: number) => {
-    if (votedFilmIds.has(filmId) || pendingFilmIds.current.has(filmId)) {
+  const toggleVoteForFilm = async (filmId: number, hasVoted: boolean) => {
+    if (pendingFilmIds.current.has(filmId)) {
       return;
     }
 
+    const nextHasVoted = !hasVoted;
     pendingFilmIds.current.add(filmId);
+    setPendingVoteStates((current) => {
+      const next = new Map(current);
+      next.set(filmId, nextHasVoted);
+      return next;
+    });
     try {
-      await loadSnapshot(filmId);
+      await loadSnapshot({ filmId, hasVoted: nextHasVoted });
     } catch {
-      // A failed vote leaves the current shared ordering untouched.
+      // A failed change returns the case to its last confirmed vote state.
     } finally {
       pendingFilmIds.current.delete(filmId);
+      setPendingVoteStates((current) => {
+        const next = new Map(current);
+        next.delete(filmId);
+        return next;
+      });
     }
   };
 
@@ -249,9 +270,15 @@ export const FilmVoteWall = ({
       <ol className={styles.voteGrid} aria-label="Filmer du kan stemme på">
         {rankedFilms.map(({ film }, index) => {
           const hasVoted = votedFilmIds.has(film.id);
+          const displayedHasVoted =
+            pendingVoteStates.get(film.id) ?? hasVoted;
+          const isPending = pendingVoteStates.has(film.id);
           const isLeader = index === 0;
           const rank = index + 1;
-          const caseState = getVoteCaseState({ hasVoted, isLeader });
+          const caseState = getVoteCaseState({
+            hasVoted: displayedHasVoted,
+            isLeader,
+          });
 
           return (
             <li
@@ -268,14 +295,15 @@ export const FilmVoteWall = ({
                 className={styles.voteFilm}
                 type="button"
                 aria-label={
-                  hasVoted
-                    ? `${film.title}. Du har stemt på denne filmen. Plass ${rank}.`
+                  displayedHasVoted
+                    ? `Fjern stemmen fra ${film.title}. Plass ${rank}.`
                     : `Stem på ${film.title}. Plass ${rank}.`
                 }
-                aria-pressed={hasVoted}
+                aria-busy={isPending || undefined}
+                aria-pressed={displayedHasVoted}
                 data-case-open={caseState.isOpen}
                 data-leader={isLeader}
-                onClick={() => void voteForFilm(film.id)}
+                onClick={() => void toggleVoteForFilm(film.id, hasVoted)}
               >
                 <span className={styles.voteCaseInterior} aria-hidden="true">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
