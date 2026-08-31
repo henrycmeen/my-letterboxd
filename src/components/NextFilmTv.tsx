@@ -3,8 +3,10 @@ import type { FilmProgramMovie } from "@/components/filmClubProgramData";
 import { withBasePath } from "@/lib/basePath";
 import {
   buildYoutubeTrailerEmbedUrl,
+  getYoutubePlaybackProgress,
   isYoutubeEndedMessage,
   isYoutubePlayingMessage,
+  shouldRestartYoutubeTrailer,
 } from "@/lib/youtubeEmbed";
 import {
   advanceTvPhase,
@@ -51,6 +53,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
   const revealTimer = useRef<number | null>(null);
   const phaseTimer = useRef<number | null>(null);
   const previousMovieId = useRef(movie.id);
+  const restartPending = useRef(false);
 
   const setTvPhase = useCallback((nextPhase: TvPhase) => {
     phaseRef.current = nextPhase;
@@ -104,6 +107,10 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       ? trailer.youtubeId
       : (movie.trailerYoutubeId ?? null);
 
+  useEffect(() => {
+    restartPending.current = false;
+  }, [youtubeId]);
+
   const pendingDisplay = useRef<DisplayedTrailer>({
     coverImage: movie.coverImage,
     movieId: movie.id,
@@ -134,9 +141,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       phaseTimer.current = window.setTimeout(() => {
         setDisplayed(pendingDisplay.current);
         setPlayerGeneration((generation) => generation + 1);
-        setTvPhase(
-          advanceTvPhase(phaseRef.current, "powerOffFinished"),
-        );
+        setTvPhase(advanceTvPhase(phaseRef.current, "powerOffFinished"));
         phaseTimer.current = null;
       }, TV_TRANSITION_TIMING.powerOffMs);
       return;
@@ -187,9 +192,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         setTvPhase(advanceTvPhase(phaseRef.current, "signalReady"));
 
         phaseTimer.current = window.setTimeout(() => {
-          setTvPhase(
-            advanceTvPhase(phaseRef.current, "powerOnFinished"),
-          );
+          setTvPhase(advanceTvPhase(phaseRef.current, "powerOnFinished"));
           phaseTimer.current = null;
         }, TV_TRANSITION_TIMING.powerOnMs);
       }, delay);
@@ -233,6 +236,23 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
   }, [displayed.youtubeId]);
 
   useEffect(() => {
+    const restartTrailer = () => {
+      if (restartPending.current) {
+        return;
+      }
+
+      restartPending.current = true;
+      const playerWindow = iframeRef.current?.contentWindow;
+      playerWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "seekTo", args: [0, true] }),
+        "https://www.youtube-nocookie.com",
+      );
+      playerWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "playVideo", args: [] }),
+        "https://www.youtube-nocookie.com",
+      );
+    };
+
     const handleYoutubeMessage = (event: MessageEvent<unknown>) => {
       if (
         event.origin !== "https://www.youtube-nocookie.com" ||
@@ -255,19 +275,18 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         if (delay !== null) {
           revealPicture(delay);
         }
-        return;
       }
 
-      if (isYoutubeEndedMessage(payload)) {
-        const playerWindow = iframeRef.current?.contentWindow;
-        playerWindow?.postMessage(
-          JSON.stringify({ event: "command", func: "seekTo", args: [0, true] }),
-          "https://www.youtube-nocookie.com",
-        );
-        playerWindow?.postMessage(
-          JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-          "https://www.youtube-nocookie.com",
-        );
+      const progress = getYoutubePlaybackProgress(payload);
+      if (progress && progress.currentTime < progress.duration * 0.1) {
+        restartPending.current = false;
+      }
+
+      if (
+        shouldRestartYoutubeTrailer(payload) ||
+        isYoutubeEndedMessage(payload)
+      ) {
+        restartTrailer();
       }
     };
 
@@ -299,10 +318,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
             />
           ) : (
             <iframe
-              key={buildTvPlayerKey(
-                displayed.youtubeId,
-                playerGeneration,
-              )}
+              key={buildTvPlayerKey(displayed.youtubeId, playerGeneration)}
               ref={iframeRef}
               className={styles.nextTvVideo}
               src={buildYoutubeTrailerEmbedUrl(displayed.youtubeId)}

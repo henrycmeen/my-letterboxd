@@ -58,3 +58,51 @@ export const isYoutubeEndedMessage = (value: unknown): boolean => {
     (message.info as { playerState?: unknown }).playerState === 0
   );
 };
+
+export interface YoutubePlaybackProgress {
+  currentTime: number;
+  duration: number;
+}
+
+export const getYoutubePlaybackProgress = (
+  value: unknown,
+): YoutubePlaybackProgress | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const message = value as { event?: unknown; info?: unknown };
+  if (
+    message.event !== "infoDelivery" ||
+    !message.info ||
+    typeof message.info !== "object"
+  ) {
+    return null;
+  }
+
+  const { currentTime, duration } = message.info as {
+    currentTime?: unknown;
+    duration?: unknown;
+  };
+  if (
+    typeof currentTime !== "number" ||
+    !Number.isFinite(currentTime) ||
+    typeof duration !== "number" ||
+    !Number.isFinite(duration) ||
+    duration <= 0
+  ) {
+    return null;
+  }
+
+  return { currentTime, duration };
+};
+
+export const shouldRestartYoutubeTrailer = (
+  value: unknown,
+  cutoffRatio = 0.9,
+): boolean => {
+  const progress = getYoutubePlaybackProgress(value);
+  return (
+    progress !== null && progress.currentTime >= progress.duration * cutoffRatio
+  );
+};

@@ -4,6 +4,7 @@ import {
   buildYoutubeTrailerEmbedUrl,
   isYoutubeEndedMessage,
   isYoutubePlayingMessage,
+  shouldRestartYoutubeTrailer,
 } from "./youtubeEmbed";
 
 void test("builds a muted looping trailer URL without controls or a start offset", () => {
@@ -63,4 +64,46 @@ void test("recognizes YouTube's ended state so the trailer can restart", () => {
     false,
   );
   assert.equal(isYoutubeEndedMessage("ended"), false);
+});
+
+void test("restarts a trailer after 90 percent so end cards never appear", () => {
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: { currentTime: 89.9, duration: 100 },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: { currentTime: 90, duration: 100 },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: { currentTime: 180, duration: 200 },
+    }),
+    true,
+  );
+});
+
+void test("ignores incomplete YouTube progress messages", () => {
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: { currentTime: 90 },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: { currentTime: 0, duration: 0 },
+    }),
+    false,
+  );
+  assert.equal(shouldRestartYoutubeTrailer("90 percent"), false);
 });
