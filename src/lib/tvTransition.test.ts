@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   advanceTvPhase,
+  buildTvPlayerKey,
   TV_TRANSITION_TIMING,
   type TvPhase,
 } from "./tvTransition";
@@ -34,4 +35,11 @@ void test("the tuning window is visible long enough to mask trailer startup chro
 void test("irrelevant phase events do not skip the signal transition", () => {
   assert.equal(advanceTvPhase("poweringOff", "signalReady"), "poweringOff");
   assert.equal(advanceTvPhase("tuning", "powerOnFinished"), "tuning");
+});
+
+void test("the same trailer can be remounted after a rapid A to B to A switch", () => {
+  assert.notEqual(
+    buildTvPlayerKey("trailer-a", 1),
+    buildTvPlayerKey("trailer-a", 2),
+  );
 });

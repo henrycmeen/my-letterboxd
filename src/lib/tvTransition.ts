@@ -14,6 +14,11 @@ export const TV_TRANSITION_TIMING = {
   playerFallbackMs: 9_000,
 } as const;
 
+export const buildTvPlayerKey = (
+  youtubeId: string,
+  generation: number,
+): string => `${youtubeId}:${generation}`;
+
 export const advanceTvPhase = (
   phase: TvPhase,
   event: TvTransitionEvent,

@@ -7,6 +7,7 @@ import {
 } from "@/lib/youtubeEmbed";
 import {
   advanceTvPhase,
+  buildTvPlayerKey,
   TV_TRANSITION_TIMING,
   type TvPhase,
 } from "@/lib/tvTransition";
@@ -42,6 +43,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
     youtubeId: movie.trailerYoutubeId ?? null,
   });
   const [phase, setPhase] = useState<TvPhase>("tuning");
+  const [playerGeneration, setPlayerGeneration] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const phaseRef = useRef<TvPhase>("tuning");
   const revealTimer = useRef<number | null>(null);
@@ -123,12 +125,16 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       }
       if (phaseTimer.current !== null) {
         window.clearTimeout(phaseTimer.current);
+        phaseTimer.current = null;
       }
 
       setTvPhase(advanceTvPhase(phaseRef.current, "movieChanged"));
       phaseTimer.current = window.setTimeout(() => {
         setDisplayed(pendingDisplay.current);
-        setTvPhase(advanceTvPhase("poweringOff", "powerOffFinished"));
+        setPlayerGeneration((generation) => generation + 1);
+        setTvPhase(
+          advanceTvPhase(phaseRef.current, "powerOffFinished"),
+        );
         phaseTimer.current = null;
       }, TV_TRANSITION_TIMING.powerOffMs);
       return;
@@ -139,7 +145,12 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         window.clearTimeout(revealTimer.current);
         revealTimer.current = null;
       }
+      if (phaseTimer.current !== null) {
+        window.clearTimeout(phaseTimer.current);
+        phaseTimer.current = null;
+      }
       setDisplayed(pendingDisplay.current);
+      setPlayerGeneration((generation) => generation + 1);
       setTvPhase("tuning");
     }
   }, [displayed.movieId, displayed.youtubeId, movie.id, setTvPhase, youtubeId]);
@@ -174,7 +185,9 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         setTvPhase(advanceTvPhase(phaseRef.current, "signalReady"));
 
         phaseTimer.current = window.setTimeout(() => {
-          setTvPhase(advanceTvPhase("poweringOn", "powerOnFinished"));
+          setTvPhase(
+            advanceTvPhase(phaseRef.current, "powerOnFinished"),
+          );
           phaseTimer.current = null;
         }, TV_TRANSITION_TIMING.powerOnMs);
       }, delay);
@@ -265,7 +278,10 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
             />
           ) : (
             <iframe
-              key={displayed.youtubeId}
+              key={buildTvPlayerKey(
+                displayed.youtubeId,
+                playerGeneration,
+              )}
               ref={iframeRef}
               className={styles.nextTvVideo}
               src={buildYoutubeTrailerEmbedUrl(displayed.youtubeId)}
