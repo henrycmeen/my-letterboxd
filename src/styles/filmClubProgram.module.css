@@ -101,7 +101,7 @@
   z-index: 1;
 }
 
-.nextTvPictureWaiting {
+.nextTvPictureTuning {
   opacity: 0;
 }
 
@@ -110,11 +110,11 @@
 }
 
 .nextTvPicturePoweringOn {
-  animation: tvPowerOn 920ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+  animation: nextTvPowerOn 760ms cubic-bezier(0.18, 0.84, 0.26, 1) both;
 }
 
 .nextTvPicturePoweringOff {
-  animation: tvPowerOff 640ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+  animation: nextTvPowerOff 520ms cubic-bezier(0.3, 0.02, 0.7, 1) both;
 }
 
 .nextTvVideo {
@@ -123,6 +123,99 @@
   max-width: none;
   top: -30%;
   width: 177.78%;
+}
+
+.nextTvStatic {
+  animation: tvStaticArrival 130ms steps(2, end) both;
+  background: #090a09;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.nextTvStatic::before {
+  animation: tvStaticJitter 180ms steps(2, end) infinite;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.1) 0,
+      rgba(255, 255, 255, 0.1) 1px,
+      rgba(0, 0, 0, 0.2) 2px,
+      transparent 4px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08),
+      transparent 24%,
+      rgba(0, 0, 0, 0.22) 68%,
+      rgba(255, 255, 255, 0.06)
+    );
+  content: "";
+  inset: -8%;
+  mix-blend-mode: screen;
+  opacity: 0.66;
+  position: absolute;
+  z-index: 2;
+}
+
+.nextTvStatic::after {
+  animation: tvSyncRoll 780ms linear infinite;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.68) 38%,
+    rgba(255, 255, 255, 0.24) 49%,
+    rgba(0, 0, 0, 0.56) 58%,
+    transparent 100%
+  );
+  content: "";
+  height: 42%;
+  left: -4%;
+  position: absolute;
+  top: -48%;
+  width: 108%;
+  z-index: 3;
+}
+
+.nextTvStaticVideo {
+  filter: brightness(0.64) contrast(1.62) saturate(0);
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  position: absolute;
+  transform: scale(1.08);
+  width: 100%;
+}
+
+.nextTvSyncTear {
+  animation: tvSyncTear 560ms steps(4, end) infinite;
+  background: rgba(248, 248, 244, 0.18);
+  box-shadow:
+    0 -0.2rem 0 rgba(0, 0, 0, 0.54),
+    0 0.25rem 0 rgba(255, 255, 255, 0.08);
+  height: 0.35rem;
+  left: -12%;
+  position: absolute;
+  top: 58%;
+  width: 124%;
+  z-index: 4;
+}
+
+.nextTvSignalLock {
+  animation: tvSignalLock 760ms steps(5, end) forwards;
+  background: linear-gradient(
+    180deg,
+    transparent 0 42%,
+    rgba(255, 255, 255, 0.22) 44%,
+    rgba(0, 0, 0, 0.55) 47%,
+    transparent 52% 100%
+  );
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
 }
 
 .nextTvPowerOnFlash,
@@ -134,12 +227,17 @@
 }
 
 .nextTvPowerOnFlash {
-  animation: tvPowerFlash 700ms ease-out forwards;
-  background: #fff;
+  animation: nextTvPowerFlash 620ms ease-out forwards;
+  background: radial-gradient(
+    84% 0.28rem at 50% 50%,
+    rgba(255, 255, 255, 0.98),
+    rgba(219, 231, 239, 0.42) 28%,
+    rgba(255, 255, 255, 0) 76%
+  );
 }
 
 .nextTvPowerOffFlash {
-  animation: tvPowerOffFlash 640ms ease-in forwards;
+  animation: nextTvPowerOffFlash 520ms ease-in forwards;
   background: radial-gradient(
     82% 2px at 50% 50%,
     rgba(255, 255, 255, 0.95) 0%,
@@ -166,6 +264,178 @@
   inset: 0;
   position: absolute;
   z-index: 4;
+}
+
+@keyframes nextTvPowerOn {
+  0% {
+    filter: brightness(4) contrast(1.8) saturate(0);
+    opacity: 0;
+    transform: scale(0.02, 0.002);
+  }
+  16% {
+    filter: brightness(3.4) contrast(1.65) saturate(0);
+    opacity: 1;
+    transform: translateX(-1.4%) scale(0.24, 0.008);
+  }
+  34% {
+    filter: brightness(2.8) contrast(1.45) saturate(0.1);
+    transform: translateX(0.9%) scale(1.03, 0.018);
+  }
+  54% {
+    filter: brightness(1.8) contrast(1.28) saturate(0.34);
+    transform: translateX(-0.35%) scale(0.985, 0.34);
+  }
+  76% {
+    filter: brightness(1.18) contrast(1.1) saturate(0.78);
+    transform: translateX(0.18%) scale(1.012, 1.045);
+  }
+  100% {
+    filter: brightness(1) contrast(1) saturate(1);
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes nextTvPowerOff {
+  0% {
+    filter: brightness(1) contrast(1) saturate(1);
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  30% {
+    filter: brightness(1.35) contrast(1.18) saturate(0.72);
+    transform: translateX(0.5%) scale(1.02, 0.74);
+  }
+  58% {
+    filter: brightness(3.2) contrast(1.62) saturate(0.08);
+    transform: translateX(-0.8%) scale(0.98, 0.026);
+  }
+  78% {
+    filter: brightness(4.4) contrast(1.9) saturate(0);
+    opacity: 0.94;
+    transform: translateX(0.4%) scale(0.36, 0.008);
+  }
+  100% {
+    filter: brightness(5) contrast(2) saturate(0);
+    opacity: 0;
+    transform: translateX(0) scale(0.015, 0.002);
+  }
+}
+
+@keyframes nextTvPowerFlash {
+  0% {
+    opacity: 1;
+    transform: scaleX(0.08);
+  }
+  36% {
+    opacity: 0.88;
+    transform: scaleX(1.05);
+  }
+  70% {
+    opacity: 0.18;
+    transform: scale(1.02, 8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@keyframes nextTvPowerOffFlash {
+  0% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+  42% {
+    opacity: 0.94;
+    transform: scaleX(1.03);
+  }
+  76% {
+    opacity: 0.6;
+    transform: scaleX(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0.02);
+  }
+}
+
+@keyframes tvStaticArrival {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.025);
+  }
+  58% {
+    opacity: 1;
+    transform: scaleY(0.025);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes tvStaticJitter {
+  0% {
+    transform: translate(-1.5%, -1%);
+  }
+  50% {
+    transform: translate(1%, 1.5%);
+  }
+  100% {
+    transform: translate(-0.5%, 0.5%);
+  }
+}
+
+@keyframes tvSyncRoll {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(360%);
+  }
+}
+
+@keyframes tvSyncTear {
+  0% {
+    opacity: 0.72;
+    transform: translate(8%, -9rem) skewX(-12deg);
+  }
+  28% {
+    opacity: 0.28;
+    transform: translate(-5%, -2rem) skewX(7deg);
+  }
+  62% {
+    opacity: 0.8;
+    transform: translate(3%, 5rem) skewX(-4deg);
+  }
+  100% {
+    opacity: 0.35;
+    transform: translate(-9%, 11rem) skewX(9deg);
+  }
+}
+
+@keyframes tvSignalLock {
+  0% {
+    opacity: 0.92;
+    transform: translateY(-38%) scaleY(1.8);
+  }
+  24% {
+    opacity: 0.68;
+    transform: translate(2%, 26%) scaleY(0.9);
+  }
+  48% {
+    opacity: 0.42;
+    transform: translate(-1%, -7%) scaleY(0.48);
+  }
+  72% {
+    opacity: 0.18;
+    transform: translateY(4%) scaleY(0.22);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0) scaleY(0.04);
+  }
 }
 
 .voteWallSection {
@@ -332,6 +602,11 @@
   .voteCaseCover,
   .voteCassetteTray,
   .nextTvPicture,
+  .nextTvStatic,
+  .nextTvStatic::before,
+  .nextTvStatic::after,
+  .nextTvSyncTear,
+  .nextTvSignalLock,
   .nextTvPowerOnFlash,
   .nextTvPowerOffFlash {
     animation: none;
@@ -343,8 +618,9 @@
     opacity: 1;
   }
 
-  .nextTvPictureWaiting,
+  .nextTvPictureTuning,
   .nextTvPicturePoweringOff,
+  .nextTvStatic,
   .nextTvPowerOnFlash,
   .nextTvPowerOffFlash {
     display: none;
