@@ -32,6 +32,11 @@ export interface VoteCaseState {
   showsCassette: boolean;
 }
 
+export interface VoteToggleInteraction {
+  nextHasVoted: boolean;
+  suppressPreview: boolean;
+}
+
 export const getVoteCaseState = ({
   hasVoted,
   isLeader,
@@ -41,6 +46,13 @@ export const getVoteCaseState = ({
 }): VoteCaseState => ({
   isOpen: hasVoted,
   showsCassette: !isLeader,
+});
+
+export const getVoteToggleInteraction = (
+  hasVoted: boolean,
+): VoteToggleInteraction => ({
+  nextHasVoted: !hasVoted,
+  suppressPreview: hasVoted,
 });
 
 export const parseFilmVoteSnapshot = (

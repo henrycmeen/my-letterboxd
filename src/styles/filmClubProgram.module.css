@@ -270,11 +270,25 @@
   width: 100%;
 }
 
-.voteFilm:hover .voteCaseCover,
-.voteFilm:focus-visible .voteCaseCover,
 .voteFilm[data-case-open="true"] .voteCaseCover {
   filter: drop-shadow(0.7rem 0.8rem 0.6rem rgba(12, 12, 10, 0.24));
   transform: rotateY(-28deg);
+}
+
+.voteFilm[data-case-open="false"] .voteCaseCover {
+  transition-duration: 220ms;
+}
+
+.voteFilm:not([data-suppress-preview="true"]):focus-visible .voteCaseCover {
+  filter: drop-shadow(0.7rem 0.8rem 0.6rem rgba(12, 12, 10, 0.24));
+  transform: rotateY(-28deg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .voteFilm:not([data-suppress-preview="true"]):hover .voteCaseCover {
+    filter: drop-shadow(0.7rem 0.8rem 0.6rem rgba(12, 12, 10, 0.24));
+    transform: rotateY(-28deg);
+  }
 }
 
 @media (max-width: 46rem) {
