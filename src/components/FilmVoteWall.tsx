@@ -11,6 +11,7 @@ import { withBasePath } from "@/lib/basePath";
 import {
   areVoteSnapshotsEqual,
   getFlipMotion,
+  getPublishedVoteLeaderId,
   getVoteCaseState,
   getVoteToggleInteraction,
   parseFilmVoteSnapshot,
@@ -27,11 +28,10 @@ const INITIAL_RANKED_FILMS = [...filmVoteCatalogue].sort(
 );
 
 export type FilmVoteMovie = (typeof filmVoteCatalogue)[number];
-export const INITIAL_VOTE_LEADER = INITIAL_RANKED_FILMS[0]!;
 
 interface FilmVoteWallProps {
   boardId: string;
-  onLeaderChange?: (film: FilmVoteMovie) => void;
+  onLeaderChange?: (film: FilmVoteMovie | null) => void;
 }
 
 interface VoteMutation {
@@ -53,7 +53,9 @@ export const FilmVoteWall = ({
   const [snapshot, setSnapshot] = useState<FilmVoteClientSnapshot>(() =>
     createInitialSnapshot(boardId),
   );
+  const [isAuthoritativeSnapshot, setIsAuthoritativeSnapshot] = useState(false);
   const snapshotRef = useRef(snapshot);
+  const activeBoardIdRef = useRef(boardId);
   const itemNodes = useRef(new Map<number, HTMLLIElement>());
   const previousSlots = useRef(new Map<number, SlotPosition>());
   const previousRanks = useRef(new Map<number, number>());
@@ -107,36 +109,43 @@ export const FilmVoteWall = ({
     (candidate: FilmVoteClientSnapshot) => {
       if (
         !shouldApplyVoteSnapshot(
-          snapshotRef.current.revision,
-          candidate.revision,
+          activeBoardIdRef.current,
+          snapshotRef.current,
+          candidate,
         )
       ) {
         return;
       }
 
       if (areVoteSnapshotsEqual(snapshotRef.current, candidate)) {
+        setIsAuthoritativeSnapshot(true);
         return;
       }
 
       captureCurrentLayout();
       snapshotRef.current = candidate;
       setSnapshot(candidate);
+      setIsAuthoritativeSnapshot(true);
     },
     [captureCurrentLayout],
   );
 
   const loadSnapshot = useCallback(
-    async (voteMutation?: VoteMutation): Promise<void> => {
+    async (
+      voteMutation?: VoteMutation,
+      signal?: AbortSignal,
+    ): Promise<void> => {
       const query = new URLSearchParams({ boardId });
       const response = await fetch(
         withBasePath(`/api/club/votes?${query.toString()}`),
         voteMutation === undefined
-          ? { cache: "no-store" }
+          ? { cache: "no-store", signal }
           : {
               body: JSON.stringify(voteMutation),
               cache: "no-store",
               headers: { "Content-Type": "application/json" },
               method: "POST",
+              signal,
             },
       );
       if (!response.ok) {
@@ -157,41 +166,72 @@ export const FilmVoteWall = ({
 
   useEffect(() => {
     const initialSnapshot = createInitialSnapshot(boardId);
+    activeBoardIdRef.current = boardId;
     snapshotRef.current = initialSnapshot;
     setSnapshot(initialSnapshot);
+    setIsAuthoritativeSnapshot(false);
     pendingFilmIds.current.clear();
     setPendingVoteStates(new Map());
     setSuppressedPreviewFilmIds(new Set());
     let isCancelled = false;
     let pollTimer: number | undefined;
+    let pollInFlight = false;
+    const controller = new AbortController();
 
-    const poll = async () => {
-      try {
-        await loadSnapshot();
-      } catch {
-        // Keep the wall usable with its last confirmed ordering.
+    const refresh = async () => {
+      if (pollInFlight) {
+        return;
       }
 
-      if (!isCancelled) {
-        pollTimer = window.setTimeout(() => void poll(), 5_000);
+      pollInFlight = true;
+      try {
+        await loadSnapshot(undefined, controller.signal);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          // Keep the wall usable with its last confirmed ordering.
+        }
+      } finally {
+        pollInFlight = false;
       }
     };
 
+    const poll = async () => {
+      await refresh();
+
+      if (!isCancelled) {
+        pollTimer = window.setTimeout(() => void poll(), 1_500);
+      }
+    };
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refresh();
+      }
+    };
+
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     void poll();
     return () => {
       isCancelled = true;
+      controller.abort();
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
       if (pollTimer !== undefined) {
         window.clearTimeout(pollTimer);
       }
     };
   }, [boardId, loadSnapshot]);
 
-  useEffect(() => {
-    const leader = rankedFilms[0]?.film;
-    if (leader) {
-      onLeaderChange?.(leader);
-    }
-  }, [onLeaderChange, rankedFilms]);
+  useLayoutEffect(() => {
+    const leaderId = getPublishedVoteLeaderId(
+      snapshot,
+      isAuthoritativeSnapshot,
+    );
+    onLeaderChange?.(
+      leaderId === null ? null : (FILM_BY_ID.get(leaderId) ?? null),
+    );
+  }, [isAuthoritativeSnapshot, onLeaderChange, snapshot]);
 
   useLayoutEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -295,11 +335,14 @@ export const FilmVoteWall = ({
 
   return (
     <section className={styles.voteWallSection} id="stem">
-      <ol className={styles.voteGrid} aria-label="Filmer du kan stemme på">
-        {rankedFilms.map(({ film }, index) => {
+      <ol
+        className={styles.voteGrid}
+        aria-busy={!isAuthoritativeSnapshot}
+        aria-label="Filmer du kan stemme på"
+      >
+        {(isAuthoritativeSnapshot ? rankedFilms : []).map(({ film }, index) => {
           const hasVoted = votedFilmIds.has(film.id);
-          const displayedHasVoted =
-            pendingVoteStates.get(film.id) ?? hasVoted;
+          const displayedHasVoted = pendingVoteStates.get(film.id) ?? hasVoted;
           const isPending = pendingVoteStates.has(film.id);
           const suppressPreview = suppressedPreviewFilmIds.has(film.id);
           const isLeader = index === 0;

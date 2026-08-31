@@ -86,11 +86,6 @@ export const parseFilmVoteSnapshot = (
   return parsed.data;
 };
 
-export const shouldApplyVoteSnapshot = (
-  currentRevision: number,
-  candidateRevision: number,
-): boolean => candidateRevision >= currentRevision;
-
 export const areVoteSnapshotsEqual = (
   first: FilmVoteClientSnapshot,
   second: FilmVoteClientSnapshot,
@@ -107,6 +102,31 @@ export const areVoteSnapshotsEqual = (
   first.votedFilmIds.every(
     (filmId, index) => filmId === second.votedFilmIds[index],
   );
+
+export const shouldApplyVoteSnapshot = (
+  activeBoardId: string,
+  current: FilmVoteClientSnapshot,
+  candidate: FilmVoteClientSnapshot,
+): boolean => {
+  if (
+    current.boardId !== activeBoardId ||
+    candidate.boardId !== activeBoardId ||
+    candidate.revision < current.revision
+  ) {
+    return false;
+  }
+
+  return (
+    candidate.revision > current.revision ||
+    areVoteSnapshotsEqual(current, candidate)
+  );
+};
+
+export const getPublishedVoteLeaderId = (
+  snapshot: FilmVoteClientSnapshot,
+  isAuthoritative: boolean,
+): number | null =>
+  isAuthoritative ? (snapshot.ranking[0]?.filmId ?? null) : null;
 
 export const getFlipMotion = (
   previous: SlotPosition,

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   areVoteSnapshotsEqual,
   getFlipMotion,
+  getPublishedVoteLeaderId,
   getVoteCaseState,
   getVoteToggleInteraction,
   parseFilmVoteSnapshot,
@@ -67,9 +68,75 @@ void test("rejects snapshots with missing, duplicate, or unknown films", () => {
 });
 
 void test("rejects stale snapshots so late requests cannot undo a newer rank", () => {
-  assert.equal(shouldApplyVoteSnapshot(7, 6), false);
-  assert.equal(shouldApplyVoteSnapshot(7, 7), true);
-  assert.equal(shouldApplyVoteSnapshot(7, 8), true);
+  const current = {
+    boardId: "na",
+    ranking: [
+      { filmId: 20, votes: 4 },
+      { filmId: 10, votes: 2 },
+      { filmId: 30, votes: 0 },
+    ],
+    revision: 7,
+    votedFilmIds: [20],
+  };
+
+  assert.equal(
+    shouldApplyVoteSnapshot("na", current, { ...current, revision: 6 }),
+    false,
+  );
+  assert.equal(shouldApplyVoteSnapshot("na", current, current), true);
+  assert.equal(
+    shouldApplyVoteSnapshot("na", current, { ...current, revision: 8 }),
+    true,
+  );
+});
+
+void test("rejects wrong-board and conflicting same-revision snapshots", () => {
+  const current = {
+    boardId: "na",
+    ranking: [
+      { filmId: 20, votes: 4 },
+      { filmId: 10, votes: 2 },
+      { filmId: 30, votes: 0 },
+    ],
+    revision: 7,
+    votedFilmIds: [20],
+  };
+
+  assert.equal(
+    shouldApplyVoteSnapshot("na", current, {
+      ...current,
+      boardId: "another-club",
+      revision: 99,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldApplyVoteSnapshot("na", current, {
+      ...current,
+      ranking: [
+        { filmId: 10, votes: 4 },
+        { filmId: 20, votes: 2 },
+        { filmId: 30, votes: 0 },
+      ],
+    }),
+    false,
+  );
+});
+
+void test("publishes no leader until the first authoritative snapshot", () => {
+  const snapshot = {
+    boardId: "na",
+    ranking: [
+      { filmId: 20, votes: 4 },
+      { filmId: 10, votes: 2 },
+      { filmId: 30, votes: 0 },
+    ],
+    revision: 7,
+    votedFilmIds: [20],
+  };
+
+  assert.equal(getPublishedVoteLeaderId(snapshot, false), null);
+  assert.equal(getPublishedVoteLeaderId(snapshot, true), 20);
 });
 
 void test("recognizes an unchanged poll response without restarting motion", () => {

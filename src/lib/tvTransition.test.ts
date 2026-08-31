@@ -24,9 +24,9 @@ void test("a movie change passes through analog tuning before the new picture ap
   assert.equal(phase, "playing");
 });
 
-void test("the tuning window is visible long enough to mask trailer startup chrome", () => {
+void test("the tuning window masks YouTube controls before revealing the leader", () => {
   assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs >= 2_500);
-  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs < 5_000);
+  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs <= 3_200);
   assert.ok(
     TV_TRANSITION_TIMING.posterSignalHoldMs <
       TV_TRANSITION_TIMING.youtubeSignalHoldMs,
