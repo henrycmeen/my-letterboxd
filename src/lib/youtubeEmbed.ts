@@ -37,3 +37,24 @@ export const isYoutubePlayingMessage = (value: unknown): boolean => {
     (message.info as { playerState?: unknown }).playerState === 1
   );
 };
+
+export const isYoutubeEndedMessage = (value: unknown): boolean => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const message = value as { event?: unknown; info?: unknown };
+  if (message.event === "onStateChange") {
+    return message.info === 0;
+  }
+
+  if (message.event !== "infoDelivery") {
+    return false;
+  }
+
+  return (
+    !!message.info &&
+    typeof message.info === "object" &&
+    (message.info as { playerState?: unknown }).playerState === 0
+  );
+};

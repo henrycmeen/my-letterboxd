@@ -3,6 +3,7 @@ import type { FilmProgramMovie } from "@/components/filmClubProgramData";
 import { withBasePath } from "@/lib/basePath";
 import {
   buildYoutubeTrailerEmbedUrl,
+  isYoutubeEndedMessage,
   isYoutubePlayingMessage,
 } from "@/lib/youtubeEmbed";
 import {
@@ -254,6 +255,19 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         if (delay !== null) {
           revealPicture(delay);
         }
+        return;
+      }
+
+      if (isYoutubeEndedMessage(payload)) {
+        const playerWindow = iframeRef.current?.contentWindow;
+        playerWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "seekTo", args: [0, true] }),
+          "https://www.youtube-nocookie.com",
+        );
+        playerWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "playVideo", args: [] }),
+          "https://www.youtube-nocookie.com",
+        );
       }
     };
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildYoutubeTrailerEmbedUrl,
+  isYoutubeEndedMessage,
   isYoutubePlayingMessage,
 } from "./youtubeEmbed";
 
@@ -43,4 +44,23 @@ void test("recognizes YouTube playback messages before revealing the TV", () => 
     false,
   );
   assert.equal(isYoutubePlayingMessage("playing"), false);
+});
+
+void test("recognizes YouTube's ended state so the trailer can restart", () => {
+  assert.equal(
+    isYoutubeEndedMessage({ event: "onStateChange", info: 0 }),
+    true,
+  );
+  assert.equal(
+    isYoutubeEndedMessage({
+      event: "infoDelivery",
+      info: { playerState: 0 },
+    }),
+    true,
+  );
+  assert.equal(
+    isYoutubeEndedMessage({ event: "onStateChange", info: 1 }),
+    false,
+  );
+  assert.equal(isYoutubeEndedMessage("ended"), false);
 });
