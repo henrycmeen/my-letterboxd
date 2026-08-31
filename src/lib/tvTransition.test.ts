@@ -4,6 +4,7 @@ import {
   advanceTvPhase,
   buildTvPlayerKey,
   getTvRevealDelay,
+  getYoutubePlaybackAction,
   shouldRevealYoutubeTrailer,
   TV_TRANSITION_TIMING,
   type TvPhase,
@@ -29,9 +30,7 @@ void test("a movie change passes through analog tuning before the new picture ap
 
 void test("the tuning window masks YouTube controls before revealing the leader", () => {
   assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs >= 700);
-  assert.ok(
-    TV_TRANSITION_TIMING.youtubeSignalHoldMs <= SHORT_TV_INTRO_MAX_MS,
-  );
+  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs <= SHORT_TV_INTRO_MAX_MS);
   assert.ok(
     TV_TRANSITION_TIMING.posterSignalHoldMs <
       TV_TRANSITION_TIMING.youtubeSignalHoldMs,
@@ -39,9 +38,7 @@ void test("the tuning window masks YouTube controls before revealing the leader"
 });
 
 void test("an empty vote board leaves tuning after the same bounded intro", () => {
-  assert.ok(
-    TV_TRANSITION_TIMING.emptySignalHoldMs <= SHORT_TV_INTRO_MAX_MS,
-  );
+  assert.ok(TV_TRANSITION_TIMING.emptySignalHoldMs <= SHORT_TV_INTRO_MAX_MS);
   assert.equal(
     getTvRevealDelay(null, "emptyReady"),
     TV_TRANSITION_TIMING.emptySignalHoldMs,
@@ -55,13 +52,60 @@ void test("YouTube playback does not add a separate long post-play hold", () => 
   assert.ok(revealDelay <= SHORT_TV_INTRO_MAX_MS);
 });
 
-void test("a transient YouTube pause cannot replace a picture or cancel its reveal", () => {
+void test("only an active YouTube playing signal may begin the reveal", () => {
   assert.equal(shouldRevealYoutubeTrailer("tuning", false, "paused"), false);
-  assert.equal(shouldRevealYoutubeTrailer("poweringOn", false, "paused"), false);
+  assert.equal(
+    shouldRevealYoutubeTrailer("poweringOn", false, "paused"),
+    false,
+  );
   assert.equal(shouldRevealYoutubeTrailer("playing", false, "paused"), false);
-  assert.equal(shouldRevealYoutubeTrailer("poweringOff", false, "paused"), false);
+  assert.equal(
+    shouldRevealYoutubeTrailer("poweringOff", false, "paused"),
+    false,
+  );
   assert.equal(shouldRevealYoutubeTrailer("tuning", true, "playing"), false);
   assert.equal(shouldRevealYoutubeTrailer("tuning", false, "playing"), true);
+});
+
+void test("YouTube playback actions keep the trailer reveal stable on mobile", () => {
+  assert.equal(
+    getYoutubePlaybackAction("tuning", false, "playing"),
+    "startStabilityCheck",
+  );
+
+  assert.equal(
+    getYoutubePlaybackAction("tuning", false, "paused"),
+    "cancelPendingReveal",
+  );
+  assert.equal(
+    getYoutubePlaybackAction("tuning", false, "buffering"),
+    "cancelPendingReveal",
+  );
+  assert.equal(
+    getYoutubePlaybackAction("poweringOn", false, "paused"),
+    "returnToTuning",
+  );
+  assert.equal(
+    getYoutubePlaybackAction("poweringOn", false, "buffering"),
+    "returnToTuning",
+  );
+  assert.equal(
+    getYoutubePlaybackAction("playing", false, "paused"),
+    "showPosterFallback",
+  );
+  assert.equal(
+    getYoutubePlaybackAction("playing", false, "buffering"),
+    "returnToTuning",
+  );
+
+  for (const signal of ["playing", "paused", "buffering"] as const) {
+    assert.equal(getYoutubePlaybackAction("tuning", true, signal), "ignore");
+  }
+
+  assert.equal(
+    getYoutubePlaybackAction("poweringOff", false, "playing"),
+    "ignore",
+  );
 });
 
 void test("irrelevant phase events do not skip the signal transition", () => {
@@ -91,8 +135,7 @@ void test("a blocked YouTube player falls back to the poster instead of tuning f
 
 void test("successful and blocked players both leave tuning within bounded totals", () => {
   const successfulTotal =
-    TV_TRANSITION_TIMING.youtubeSignalHoldMs +
-    TV_TRANSITION_TIMING.powerOnMs;
+    TV_TRANSITION_TIMING.youtubeSignalHoldMs + TV_TRANSITION_TIMING.powerOnMs;
   const blockedTotal =
     TV_TRANSITION_TIMING.blockedTrailerFallbackMs +
     TV_TRANSITION_TIMING.posterSignalHoldMs +

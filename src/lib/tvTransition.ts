@@ -12,7 +12,14 @@ export type TvRevealSource =
   | "posterReady"
   | "youtubePlaying";
 
-export type YoutubeTvPlaybackSignal = "paused" | "playing";
+export type YoutubeTvPlaybackSignal = "buffering" | "paused" | "playing";
+
+export type YoutubeTvPlaybackAction =
+  | "cancelPendingReveal"
+  | "ignore"
+  | "returnToTuning"
+  | "showPosterFallback"
+  | "startStabilityCheck";
 
 export const TV_TRANSITION_TIMING = {
   blockedTrailerFallbackMs: 4_000,
@@ -27,8 +34,31 @@ export const shouldRevealYoutubeTrailer = (
   phase: TvPhase,
   usePosterFallback: boolean,
   signal: YoutubeTvPlaybackSignal,
-): boolean =>
-  signal === "playing" && phase === "tuning" && !usePosterFallback;
+): boolean => signal === "playing" && phase === "tuning" && !usePosterFallback;
+
+export const getYoutubePlaybackAction = (
+  phase: TvPhase,
+  usePosterFallback: boolean,
+  signal: YoutubeTvPlaybackSignal,
+): YoutubeTvPlaybackAction => {
+  if (usePosterFallback || phase === "poweringOff") {
+    return "ignore";
+  }
+
+  if (signal === "playing") {
+    return phase === "tuning" ? "startStabilityCheck" : "ignore";
+  }
+
+  if (phase === "tuning") {
+    return "cancelPendingReveal";
+  }
+
+  if (phase === "poweringOn" || signal === "buffering") {
+    return "returnToTuning";
+  }
+
+  return "showPosterFallback";
+};
 
 export const getTvRevealDelay = (
   youtubeId: string | null,

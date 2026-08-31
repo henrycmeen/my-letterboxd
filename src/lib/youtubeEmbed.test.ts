@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildYoutubeTrailerEmbedUrl,
+  isYoutubeAutoplayBlockedMessage,
+  isYoutubeBufferingMessage,
   isYoutubeEndedMessage,
+  isYoutubeErrorMessage,
   isYoutubePausedMessage,
   isYoutubePlayingMessage,
+  isYoutubeReadyMessage,
   shouldRestartYoutubeTrailer,
 } from "./youtubeEmbed";
 
@@ -84,6 +88,50 @@ void test("recognizes a trailer that pauses before the TV picture is revealed", 
     false,
   );
   assert.equal(isYoutubePausedMessage("paused"), false);
+});
+
+void test("recognizes buffering so a half-started trailer stays hidden", () => {
+  assert.equal(
+    isYoutubeBufferingMessage({ event: "onStateChange", info: 3 }),
+    true,
+  );
+  assert.equal(
+    isYoutubeBufferingMessage({
+      event: "infoDelivery",
+      info: { playerState: 3 },
+    }),
+    true,
+  );
+  assert.equal(
+    isYoutubeBufferingMessage({ event: "onStateChange", info: 1 }),
+    false,
+  );
+  assert.equal(isYoutubeBufferingMessage("buffering"), false);
+});
+
+void test("recognizes explicit autoplay blocks and player errors", () => {
+  assert.equal(
+    isYoutubeAutoplayBlockedMessage({ event: "onAutoplayBlocked" }),
+    true,
+  );
+  assert.equal(
+    isYoutubeAutoplayBlockedMessage({ event: "onStateChange", info: 2 }),
+    false,
+  );
+  assert.equal(isYoutubeErrorMessage({ event: "onError", info: 150 }), true);
+  assert.equal(
+    isYoutubeErrorMessage({ event: "onStateChange", info: 3 }),
+    false,
+  );
+});
+
+void test("recognizes when YouTube is ready for mute and play commands", () => {
+  assert.equal(isYoutubeReadyMessage({ event: "onReady" }), true);
+  assert.equal(
+    isYoutubeReadyMessage({ event: "onStateChange", info: 1 }),
+    false,
+  );
+  assert.equal(isYoutubeReadyMessage("ready"), false);
 });
 
 void test("restarts a trailer after 90 percent so end cards never appear", () => {

@@ -4,18 +4,23 @@ import { withBasePath } from "@/lib/basePath";
 import {
   buildYoutubeTrailerEmbedUrl,
   getYoutubePlaybackProgress,
+  isYoutubeAutoplayBlockedMessage,
+  isYoutubeBufferingMessage,
   isYoutubeEndedMessage,
+  isYoutubeErrorMessage,
   isYoutubePausedMessage,
   isYoutubePlayingMessage,
+  isYoutubeReadyMessage,
   shouldRestartYoutubeTrailer,
 } from "@/lib/youtubeEmbed";
 import {
   advanceTvPhase,
   buildTvPlayerKey,
   getTvRevealDelay,
-  shouldRevealYoutubeTrailer,
+  getYoutubePlaybackAction,
   TV_TRANSITION_TIMING,
   type TvPhase,
+  type YoutubeTvPlaybackSignal,
 } from "@/lib/tvTransition";
 import styles from "@/styles/filmClubProgram.module.css";
 
@@ -43,6 +48,9 @@ interface DisplayedTrailer {
   youtubeId: string | null;
 }
 
+const MAX_STABLE_PROGRESS_AGE_MS = 1_500;
+const PLAYBACK_WATCHDOG_GRACE_MS = 4_000;
+
 const TvStaticNoise = () => (
   <span className={styles.nextTvStatic} aria-hidden="true">
     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -65,7 +73,10 @@ const EmptyNextFilmTv = () => {
       return;
     }
 
-    const revealTimer = window.setTimeout(() => setIsTuning(false), revealDelay);
+    const revealTimer = window.setTimeout(
+      () => setIsTuning(false),
+      revealDelay,
+    );
     return () => window.clearTimeout(revealTimer);
   }, []);
 
@@ -109,10 +120,66 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   const phaseTimer = useRef<number | null>(null);
   const previousMovieId = useRef(movie.id);
   const restartPending = useRef(false);
+  const posterFallbackRef = useRef(false);
+  const playbackSignalRef = useRef<YoutubeTvPlaybackSignal | null>(null);
+  const playbackCandidateStartedAt = useRef<number | null>(null);
+  const lastPlaybackTime = useRef<number | null>(null);
+  const lastPlaybackProgressAt = useRef<number | null>(null);
+  const hasPlaybackAdvanced = useRef(false);
 
   const setTvPhase = useCallback((nextPhase: TvPhase) => {
     phaseRef.current = nextPhase;
     setPhase(nextPhase);
+  }, []);
+
+  const resetPlaybackCandidate = useCallback(() => {
+    playbackSignalRef.current = null;
+    playbackCandidateStartedAt.current = null;
+    lastPlaybackTime.current = null;
+    lastPlaybackProgressAt.current = null;
+    hasPlaybackAdvanced.current = false;
+  }, []);
+
+  const clearRevealTimer = useCallback(() => {
+    if (revealTimer.current !== null) {
+      window.clearTimeout(revealTimer.current);
+      revealTimer.current = null;
+    }
+  }, []);
+
+  const clearPhaseTimer = useCallback(() => {
+    if (phaseTimer.current !== null) {
+      window.clearTimeout(phaseTimer.current);
+      phaseTimer.current = null;
+    }
+  }, []);
+
+  const clearBlockedTrailerTimer = useCallback(() => {
+    if (blockedTrailerTimer.current !== null) {
+      window.clearTimeout(blockedTrailerTimer.current);
+      blockedTrailerTimer.current = null;
+    }
+  }, []);
+
+  const returnTrailerToTuning = useCallback(() => {
+    if (phaseRef.current === "poweringOff" || posterFallbackRef.current) {
+      return;
+    }
+
+    clearRevealTimer();
+    clearPhaseTimer();
+    resetPlaybackCandidate();
+    setTvPhase("tuning");
+  }, [clearPhaseTimer, clearRevealTimer, resetPlaybackCandidate, setTvPhase]);
+
+  const isPlaybackStable = useCallback(() => {
+    const progressAt = lastPlaybackProgressAt.current;
+    return (
+      playbackSignalRef.current === "playing" &&
+      hasPlaybackAdvanced.current &&
+      progressAt !== null &&
+      Date.now() - progressAt <= MAX_STABLE_PROGRESS_AGE_MS
+    );
   }, []);
 
   useEffect(() => {
@@ -183,19 +250,12 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     if (previousMovieId.current !== movie.id) {
       previousMovieId.current = movie.id;
 
-      if (revealTimer.current !== null) {
-        window.clearTimeout(revealTimer.current);
-        revealTimer.current = null;
-      }
-      if (phaseTimer.current !== null) {
-        window.clearTimeout(phaseTimer.current);
-        phaseTimer.current = null;
-      }
-      if (blockedTrailerTimer.current !== null) {
-        window.clearTimeout(blockedTrailerTimer.current);
-        blockedTrailerTimer.current = null;
-      }
+      clearRevealTimer();
+      clearPhaseTimer();
+      clearBlockedTrailerTimer();
+      resetPlaybackCandidate();
 
+      posterFallbackRef.current = false;
       setUsePosterFallback(false);
       setTvPhase(advanceTvPhase(phaseRef.current, "movieChanged"));
       phaseTimer.current = window.setTimeout(() => {
@@ -208,41 +268,38 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     }
 
     if (displayed.movieId === movie.id && displayed.youtubeId !== youtubeId) {
-      if (revealTimer.current !== null) {
-        window.clearTimeout(revealTimer.current);
-        revealTimer.current = null;
-      }
-      if (phaseTimer.current !== null) {
-        window.clearTimeout(phaseTimer.current);
-        phaseTimer.current = null;
-      }
-      if (blockedTrailerTimer.current !== null) {
-        window.clearTimeout(blockedTrailerTimer.current);
-        blockedTrailerTimer.current = null;
-      }
+      clearRevealTimer();
+      clearPhaseTimer();
+      clearBlockedTrailerTimer();
+      resetPlaybackCandidate();
+      posterFallbackRef.current = false;
       setUsePosterFallback(false);
       setDisplayed(pendingDisplay.current);
       setPlayerGeneration((generation) => generation + 1);
       setTvPhase("tuning");
     }
-  }, [displayed.movieId, displayed.youtubeId, movie.id, setTvPhase, youtubeId]);
+  }, [
+    clearBlockedTrailerTimer,
+    clearPhaseTimer,
+    clearRevealTimer,
+    displayed.movieId,
+    displayed.youtubeId,
+    movie.id,
+    resetPlaybackCandidate,
+    setTvPhase,
+    youtubeId,
+  ]);
 
   useEffect(() => {
     return () => {
-      if (revealTimer.current !== null) {
-        window.clearTimeout(revealTimer.current);
-      }
-      if (phaseTimer.current !== null) {
-        window.clearTimeout(phaseTimer.current);
-      }
-      if (blockedTrailerTimer.current !== null) {
-        window.clearTimeout(blockedTrailerTimer.current);
-      }
+      clearRevealTimer();
+      clearPhaseTimer();
+      clearBlockedTrailerTimer();
     };
-  }, []);
+  }, [clearBlockedTrailerTimer, clearPhaseTimer, clearRevealTimer]);
 
   const revealPicture = useCallback(
-    (delay: number) => {
+    (delay: number, requireStablePlayback = false) => {
       if (phaseRef.current !== "tuning") {
         return;
       }
@@ -256,30 +313,53 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         if (phaseRef.current !== "tuning") {
           return;
         }
+        if (requireStablePlayback && !isPlaybackStable()) {
+          return;
+        }
 
+        clearBlockedTrailerTimer();
         setTvPhase(advanceTvPhase(phaseRef.current, "signalReady"));
 
         phaseTimer.current = window.setTimeout(() => {
+          if (requireStablePlayback && !isPlaybackStable()) {
+            setTvPhase("tuning");
+            phaseTimer.current = null;
+            return;
+          }
+
           setTvPhase(advanceTvPhase(phaseRef.current, "powerOnFinished"));
           phaseTimer.current = null;
         }, TV_TRANSITION_TIMING.powerOnMs);
       }, delay);
     },
-    [setTvPhase],
+    [clearBlockedTrailerTimer, isPlaybackStable, setTvPhase],
   );
 
   const revealPosterFallback = useCallback(() => {
-    if (phaseRef.current !== "tuning") {
+    if (phaseRef.current === "poweringOff" || posterFallbackRef.current) {
       return;
     }
 
+    clearRevealTimer();
+    clearPhaseTimer();
+    clearBlockedTrailerTimer();
+    resetPlaybackCandidate();
+    posterFallbackRef.current = true;
     setUsePosterFallback(true);
+    setTvPhase("tuning");
     iframeRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
       "https://www.youtube-nocookie.com",
     );
     revealPicture(TV_TRANSITION_TIMING.posterSignalHoldMs);
-  }, [revealPicture]);
+  }, [
+    clearBlockedTrailerTimer,
+    clearPhaseTimer,
+    clearRevealTimer,
+    resetPlaybackCandidate,
+    revealPicture,
+    setTvPhase,
+  ]);
 
   useEffect(() => {
     if (phase === "tuning" && !displayed.youtubeId) {
@@ -289,6 +369,16 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       }
     }
   }, [displayed.youtubeId, phase, revealPicture]);
+
+  const postYoutubeCommand = useCallback(
+    (func: string, args: unknown[] = []) => {
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func, args }),
+        "https://www.youtube-nocookie.com",
+      );
+    },
+    [],
+  );
 
   const prepareTrailerPlayback = useCallback(() => {
     if (!displayed.youtubeId) {
@@ -305,16 +395,45 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         }),
         "https://www.youtube-nocookie.com",
       );
-      playerWindow.postMessage(
-        JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-        "https://www.youtube-nocookie.com",
-      );
+      for (const eventName of [
+        "onStateChange",
+        "onReady",
+        "onAutoplayBlocked",
+        "onError",
+      ]) {
+        postYoutubeCommand("addEventListener", [eventName]);
+      }
+      postYoutubeCommand("mute");
+      postYoutubeCommand("playVideo");
     }
 
     // Keep the no-signal layer visible until YouTube confirms playback.
     // Safari can reject autoplay even for muted embeds. In that case the
     // poster replaces the iframe before the signal layer is removed.
-  }, [displayed.youtubeId]);
+  }, [displayed.youtubeId, postYoutubeCommand]);
+
+  const retryTrailerPlayback = useCallback(() => {
+    if (!displayed.youtubeId) {
+      return;
+    }
+
+    clearRevealTimer();
+    clearPhaseTimer();
+    clearBlockedTrailerTimer();
+    resetPlaybackCandidate();
+    posterFallbackRef.current = false;
+    setUsePosterFallback(false);
+    setTvPhase("tuning");
+    prepareTrailerPlayback();
+  }, [
+    clearBlockedTrailerTimer,
+    clearPhaseTimer,
+    clearRevealTimer,
+    displayed.youtubeId,
+    prepareTrailerPlayback,
+    resetPlaybackCandidate,
+    setTvPhase,
+  ]);
 
   useEffect(() => {
     if (phase !== "tuning" || !displayed.youtubeId || usePosterFallback) {
@@ -341,15 +460,8 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       }
 
       restartPending.current = true;
-      const playerWindow = iframeRef.current?.contentWindow;
-      playerWindow?.postMessage(
-        JSON.stringify({ event: "command", func: "seekTo", args: [0, true] }),
-        "https://www.youtube-nocookie.com",
-      );
-      playerWindow?.postMessage(
-        JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-        "https://www.youtube-nocookie.com",
-      );
+      postYoutubeCommand("seekTo", [0, true]);
+      postYoutubeCommand("playVideo");
     };
 
     const handleYoutubeMessage = (event: MessageEvent<unknown>) => {
@@ -369,34 +481,90 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         }
       }
 
+      if (isYoutubeReadyMessage(payload)) {
+        postYoutubeCommand("mute");
+        postYoutubeCommand("playVideo");
+        return;
+      }
+
+      if (
+        isYoutubeAutoplayBlockedMessage(payload) ||
+        isYoutubeErrorMessage(payload)
+      ) {
+        revealPosterFallback();
+        return;
+      }
+
       const playbackSignal = isYoutubePlayingMessage(payload)
         ? "playing"
         : isYoutubePausedMessage(payload)
           ? "paused"
-          : null;
+          : isYoutubeBufferingMessage(payload)
+            ? "buffering"
+            : null;
 
-      if (playbackSignal === "playing") {
-        if (blockedTrailerTimer.current !== null) {
-          window.clearTimeout(blockedTrailerTimer.current);
-          blockedTrailerTimer.current = null;
-        }
-      }
-
-      if (
-        playbackSignal !== null &&
-        shouldRevealYoutubeTrailer(
+      if (playbackSignal !== null) {
+        const action = getYoutubePlaybackAction(
           phaseRef.current,
-          usePosterFallback,
+          posterFallbackRef.current,
           playbackSignal,
-        )
-      ) {
-        const delay = getTvRevealDelay(displayed.youtubeId, "youtubePlaying");
-        if (delay !== null) {
-          revealPicture(delay);
+        );
+
+        if (action === "startStabilityCheck") {
+          if (playbackSignalRef.current !== "playing") {
+            playbackCandidateStartedAt.current = Date.now();
+            lastPlaybackTime.current = null;
+            lastPlaybackProgressAt.current = null;
+            hasPlaybackAdvanced.current = false;
+          }
+          playbackSignalRef.current = "playing";
+        } else if (action === "cancelPendingReveal") {
+          clearRevealTimer();
+          resetPlaybackCandidate();
+        } else if (action === "returnToTuning") {
+          returnTrailerToTuning();
+          return;
+        } else if (action === "showPosterFallback") {
+          if (restartPending.current) {
+            returnTrailerToTuning();
+          } else {
+            revealPosterFallback();
+          }
+          return;
+        } else if (playbackSignal === "playing") {
+          playbackSignalRef.current = "playing";
         }
       }
 
       const progress = getYoutubePlaybackProgress(payload);
+      if (progress && playbackSignalRef.current === "playing") {
+        const now = Date.now();
+        const previousTime = lastPlaybackTime.current;
+        lastPlaybackTime.current = progress.currentTime;
+        lastPlaybackProgressAt.current = now;
+
+        if (
+          previousTime !== null &&
+          progress.currentTime > previousTime + 0.01
+        ) {
+          hasPlaybackAdvanced.current = true;
+
+          if (phaseRef.current === "tuning" && !posterFallbackRef.current) {
+            const fullDelay = getTvRevealDelay(
+              displayed.youtubeId,
+              "youtubePlaying",
+            );
+            const candidateStartedAt = playbackCandidateStartedAt.current;
+            if (fullDelay !== null && candidateStartedAt !== null) {
+              revealPicture(
+                Math.max(0, fullDelay - (now - candidateStartedAt)),
+                true,
+              );
+            }
+          }
+        }
+      }
+
       if (progress && progress.currentTime < progress.duration * 0.1) {
         restartPending.current = false;
       }
@@ -412,11 +580,34 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     window.addEventListener("message", handleYoutubeMessage);
     return () => window.removeEventListener("message", handleYoutubeMessage);
   }, [
+    clearPhaseTimer,
+    clearRevealTimer,
     displayed.youtubeId,
+    postYoutubeCommand,
+    resetPlaybackCandidate,
     revealPicture,
     revealPosterFallback,
-    usePosterFallback,
+    returnTrailerToTuning,
+    setTvPhase,
   ]);
+
+  useEffect(() => {
+    if (phase !== "playing" || !displayed.youtubeId || usePosterFallback) {
+      return;
+    }
+
+    const watchdog = window.setInterval(() => {
+      const progressAt = lastPlaybackProgressAt.current;
+      if (
+        progressAt === null ||
+        Date.now() - progressAt > PLAYBACK_WATCHDOG_GRACE_MS
+      ) {
+        returnTrailerToTuning();
+      }
+    }, 1_000);
+
+    return () => window.clearInterval(watchdog);
+  }, [displayed.youtubeId, phase, returnTrailerToTuning, usePosterFallback]);
 
   const pictureClassName = `${styles.nextTvPicture} ${
     phase === "poweringOff"
@@ -427,10 +618,13 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
           ? styles.nextTvPicturePlaying
           : styles.nextTvPictureTuning
   }`;
+  const screenClassName = `${styles.nextTvScreen} ${
+    usePosterFallback ? styles.nextTvScreenFallback : ""
+  }`;
 
   return (
     <div className={styles.nextTv} aria-label={`Trailer for ${movie.title}`}>
-      <div className={styles.nextTvScreen}>
+      <div className={screenClassName}>
         <div className={pictureClassName}>
           {displayed.youtubeId ? (
             <iframe
@@ -439,6 +633,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
               className={styles.nextTvVideo}
               src={buildYoutubeTrailerEmbedUrl(displayed.youtubeId)}
               title={`Trailer for ${displayed.title}`}
+              aria-hidden={usePosterFallback || undefined}
               allow="autoplay; encrypted-media"
               referrerPolicy="strict-origin-when-cross-origin"
               loading="eager"
@@ -447,13 +642,19 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
             />
           ) : null}
           {!displayed.youtubeId || usePosterFallback ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className={styles.nextTvPoster}
-              src={withBasePath(displayed.coverImage)}
-              alt=""
-              draggable={false}
-            />
+            <>
+              <span
+                className={styles.nextTvPosterBackdrop}
+                aria-hidden="true"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className={styles.nextTvPoster}
+                src={withBasePath(displayed.coverImage)}
+                alt=""
+                draggable={false}
+              />
+            </>
           ) : null}
         </div>
         {phase === "tuning" ? <TvStaticNoise /> : null}
@@ -468,6 +669,16 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         ) : null}
         <span className={styles.nextTvShield} aria-hidden="true" />
         <span className={styles.nextTvGlow} aria-hidden="true" />
+        {usePosterFallback && phase === "playing" ? (
+          <button
+            className={styles.nextTvRetry}
+            type="button"
+            aria-label={`Spill trailer for ${displayed.title}`}
+            onClick={retryTrailerPlayback}
+          >
+            Spill trailer
+          </button>
+        ) : null}
       </div>
     </div>
   );
