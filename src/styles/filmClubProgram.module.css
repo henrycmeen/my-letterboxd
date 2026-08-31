@@ -178,14 +178,17 @@
   z-index: 3;
 }
 
-.nextTvStaticVideo {
-  filter: brightness(0.64) contrast(1.62) saturate(0);
-  height: 100%;
-  inset: 0;
+.nextTvStaticGrain {
+  animation: tvStaticGrain 120ms steps(2, end) infinite;
+  filter: brightness(0.78) contrast(1.85) saturate(0);
+  height: 112%;
+  inset: -6%;
+  mix-blend-mode: screen;
   object-fit: cover;
+  opacity: 0.88;
   position: absolute;
-  transform: scale(1.08);
-  width: 100%;
+  width: 112%;
+  z-index: 1;
 }
 
 .nextTvSyncTear {
@@ -386,6 +389,19 @@
   }
 }
 
+@keyframes tvStaticGrain {
+  0% {
+    transform: translate(-1.8%, -1.2%) scale(1.05);
+  }
+  50% {
+    filter: brightness(1.18) contrast(2.15) saturate(0);
+    transform: translate(1.6%, 1.8%) scale(1.08);
+  }
+  100% {
+    transform: translate(-0.8%, 0.6%) scale(1.06);
+  }
+}
+
 @keyframes tvSyncRoll {
   0% {
     transform: translateY(0);
@@ -521,8 +537,12 @@
   z-index: 1;
 }
 
-.voteFilm[data-leader="true"] .voteCassetteTray {
-  transform: translateX(3%);
+.voteFilm[data-cassette-position="ejected"] {
+  z-index: 4;
+}
+
+.voteFilm[data-cassette-position="ejected"] .voteCassetteTray {
+  transform: translateX(34%);
 }
 
 .voteCaseCover {
@@ -606,6 +626,7 @@
   .voteCassetteTray,
   .nextTvPicture,
   .nextTvStatic,
+  .nextTvStaticGrain,
   .nextTvStatic::before,
   .nextTvStatic::after,
   .nextTvSyncTear,

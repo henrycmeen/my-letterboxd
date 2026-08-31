@@ -380,6 +380,7 @@ export const FilmVoteWall = ({
                 aria-busy={isPending || undefined}
                 aria-pressed={displayedHasVoted}
                 data-case-open={caseState.isOpen}
+                data-cassette-position={caseState.cassettePosition}
                 data-leader={isLeader}
                 data-suppress-preview={suppressPreview || undefined}
                 onBlur={() => clearSuppressedPreview(film.id)}

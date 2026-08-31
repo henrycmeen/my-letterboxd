@@ -43,20 +43,48 @@ interface DisplayedTrailer {
 
 const TvStaticNoise = () => (
   <span className={styles.nextTvStatic} aria-hidden="true">
-    <video
-      className={styles.nextTvStaticVideo}
-      src={withBasePath("/VHS/program/analog-no-signal.mp4")}
-      autoPlay
-      loop
-      muted
-      playsInline
-      preload="auto"
-      tabIndex={-1}
-      disablePictureInPicture
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img
+      className={styles.nextTvStaticGrain}
+      src={withBasePath("/VHS/program/analog-no-signal-frame.avif")}
+      alt=""
+      draggable={false}
     />
     <span className={styles.nextTvSyncTear} />
   </span>
 );
+
+const EmptyNextFilmTv = () => {
+  const [isTuning, setIsTuning] = useState(true);
+
+  useEffect(() => {
+    const revealDelay = getTvRevealDelay(null, "emptyReady");
+    if (revealDelay === null) {
+      return;
+    }
+
+    const revealTimer = window.setTimeout(() => setIsTuning(false), revealDelay);
+    return () => window.clearTimeout(revealTimer);
+  }, []);
+
+  return (
+    <div
+      className={styles.nextTv}
+      aria-busy={isTuning || undefined}
+      aria-label={
+        isTuning
+          ? "Henter filmen som leder avstemningen"
+          : "Ingen film leder avstemningen ennå"
+      }
+    >
+      <div className={styles.nextTvScreen}>
+        {isTuning ? <TvStaticNoise /> : null}
+        <span className={styles.nextTvShield} aria-hidden="true" />
+        <span className={styles.nextTvGlow} aria-hidden="true" />
+      </div>
+    </div>
+  );
+};
 
 const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   const [trailer, setTrailer] = useState<TrailerState>({
@@ -71,7 +99,9 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   });
   const [phase, setPhase] = useState<TvPhase>("tuning");
   const [playerGeneration, setPlayerGeneration] = useState(0);
+  const [usePosterFallback, setUsePosterFallback] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const blockedTrailerTimer = useRef<number | null>(null);
   const phaseRef = useRef<TvPhase>("tuning");
   const revealTimer = useRef<number | null>(null);
   const phaseTimer = useRef<number | null>(null);
@@ -159,7 +189,12 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         window.clearTimeout(phaseTimer.current);
         phaseTimer.current = null;
       }
+      if (blockedTrailerTimer.current !== null) {
+        window.clearTimeout(blockedTrailerTimer.current);
+        blockedTrailerTimer.current = null;
+      }
 
+      setUsePosterFallback(false);
       setTvPhase(advanceTvPhase(phaseRef.current, "movieChanged"));
       phaseTimer.current = window.setTimeout(() => {
         setDisplayed(pendingDisplay.current);
@@ -179,6 +214,11 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         window.clearTimeout(phaseTimer.current);
         phaseTimer.current = null;
       }
+      if (blockedTrailerTimer.current !== null) {
+        window.clearTimeout(blockedTrailerTimer.current);
+        blockedTrailerTimer.current = null;
+      }
+      setUsePosterFallback(false);
       setDisplayed(pendingDisplay.current);
       setPlayerGeneration((generation) => generation + 1);
       setTvPhase("tuning");
@@ -192,6 +232,9 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       }
       if (phaseTimer.current !== null) {
         window.clearTimeout(phaseTimer.current);
+      }
+      if (blockedTrailerTimer.current !== null) {
+        window.clearTimeout(blockedTrailerTimer.current);
       }
     };
   }, []);
@@ -253,10 +296,27 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       );
     }
 
+    if (blockedTrailerTimer.current !== null) {
+      window.clearTimeout(blockedTrailerTimer.current);
+    }
+    blockedTrailerTimer.current = window.setTimeout(() => {
+      blockedTrailerTimer.current = null;
+      if (phaseRef.current !== "tuning") {
+        return;
+      }
+
+      setUsePosterFallback(true);
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
+        "https://www.youtube-nocookie.com",
+      );
+      revealPicture(TV_TRANSITION_TIMING.posterSignalHoldMs);
+    }, TV_TRANSITION_TIMING.blockedTrailerFallbackMs);
+
     // Keep the no-signal layer visible until YouTube confirms playback.
-    // Safari can reject autoplay even for muted embeds; revealing the iframe
-    // on a timer would expose YouTube's large red play button.
-  }, [displayed.youtubeId]);
+    // Safari can reject autoplay even for muted embeds. In that case the
+    // poster replaces the iframe before the signal layer is removed.
+  }, [displayed.youtubeId, revealPicture]);
 
   useEffect(() => {
     const restartTrailer = () => {
@@ -294,9 +354,15 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       }
 
       if (isYoutubePlayingMessage(payload)) {
-        const delay = getTvRevealDelay(displayed.youtubeId, "youtubePlaying");
-        if (delay !== null) {
-          revealPicture(delay);
+        if (blockedTrailerTimer.current !== null) {
+          window.clearTimeout(blockedTrailerTimer.current);
+          blockedTrailerTimer.current = null;
+        }
+        if (!usePosterFallback) {
+          const delay = getTvRevealDelay(displayed.youtubeId, "youtubePlaying");
+          if (delay !== null) {
+            revealPicture(delay);
+          }
         }
       }
 
@@ -315,7 +381,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
 
     window.addEventListener("message", handleYoutubeMessage);
     return () => window.removeEventListener("message", handleYoutubeMessage);
-  }, [displayed.youtubeId, revealPicture]);
+  }, [displayed.youtubeId, revealPicture, usePosterFallback]);
 
   const pictureClassName = `${styles.nextTvPicture} ${
     phase === "poweringOff"
@@ -331,15 +397,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     <div className={styles.nextTv} aria-label={`Trailer for ${movie.title}`}>
       <div className={styles.nextTvScreen}>
         <div className={pictureClassName}>
-          {!displayed.youtubeId ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className={styles.nextTvPoster}
-              src={withBasePath(displayed.coverImage)}
-              alt=""
-              draggable={false}
-            />
-          ) : (
+          {displayed.youtubeId ? (
             <iframe
               key={buildTvPlayerKey(displayed.youtubeId, playerGeneration)}
               ref={iframeRef}
@@ -352,7 +410,16 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
               tabIndex={-1}
               onLoad={prepareTrailerPlayback}
             />
-          )}
+          ) : null}
+          {!displayed.youtubeId || usePosterFallback ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className={styles.nextTvPoster}
+              src={withBasePath(displayed.coverImage)}
+              alt=""
+              draggable={false}
+            />
+          ) : null}
         </div>
         {phase === "tuning" ? <TvStaticNoise /> : null}
         {phase === "poweringOn" ? (
@@ -376,17 +443,5 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
     return <ReadyNextFilmTv movie={movie} />;
   }
 
-  return (
-    <div
-      className={styles.nextTv}
-      aria-busy="true"
-      aria-label="Henter filmen som leder avstemningen"
-    >
-      <div className={styles.nextTvScreen}>
-        <TvStaticNoise />
-        <span className={styles.nextTvShield} aria-hidden="true" />
-        <span className={styles.nextTvGlow} aria-hidden="true" />
-      </div>
-    </div>
-  );
+  return <EmptyNextFilmTv />;
 };
