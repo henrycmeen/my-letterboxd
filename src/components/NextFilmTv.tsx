@@ -5,6 +5,11 @@ import {
   buildYoutubeTrailerEmbedUrl,
   isYoutubePlayingMessage,
 } from "@/lib/youtubeEmbed";
+import {
+  advanceTvPhase,
+  TV_TRANSITION_TIMING,
+  type TvPhase,
+} from "@/lib/tvTransition";
 import styles from "@/styles/filmClubProgram.module.css";
 
 interface NextFilmTvProps {
@@ -25,8 +30,6 @@ interface DisplayedTrailer {
   youtubeId: string | null;
 }
 
-type TvPhase = "waiting" | "poweringOff" | "poweringOn" | "playing";
-
 export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
   const [trailer, setTrailer] = useState<TrailerState>({
     movieId: movie.id,
@@ -38,9 +41,9 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
     title: movie.title,
     youtubeId: movie.trailerYoutubeId ?? null,
   });
-  const [phase, setPhase] = useState<TvPhase>("waiting");
+  const [phase, setPhase] = useState<TvPhase>("tuning");
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const phaseRef = useRef<TvPhase>("waiting");
+  const phaseRef = useRef<TvPhase>("tuning");
   const revealTimer = useRef<number | null>(null);
   const phaseTimer = useRef<number | null>(null);
   const previousMovieId = useRef(movie.id);
@@ -122,18 +125,22 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         window.clearTimeout(phaseTimer.current);
       }
 
-      setTvPhase("poweringOff");
+      setTvPhase(advanceTvPhase(phaseRef.current, "movieChanged"));
       phaseTimer.current = window.setTimeout(() => {
         setDisplayed(pendingDisplay.current);
-        setTvPhase("waiting");
+        setTvPhase(advanceTvPhase("poweringOff", "powerOffFinished"));
         phaseTimer.current = null;
-      }, 640);
+      }, TV_TRANSITION_TIMING.powerOffMs);
       return;
     }
 
     if (displayed.movieId === movie.id && displayed.youtubeId !== youtubeId) {
+      if (revealTimer.current !== null) {
+        window.clearTimeout(revealTimer.current);
+        revealTimer.current = null;
+      }
       setDisplayed(pendingDisplay.current);
-      setTvPhase("waiting");
+      setTvPhase("tuning");
     }
   }, [displayed.movieId, displayed.youtubeId, movie.id, setTvPhase, youtubeId]);
 
@@ -148,9 +155,9 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
     };
   }, []);
 
-  const revealPlayingTrailer = useCallback(
+  const revealPicture = useCallback(
     (delay: number) => {
-      if (!displayed.youtubeId) {
+      if (phaseRef.current !== "tuning") {
         return;
       }
 
@@ -159,21 +166,27 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       }
 
       revealTimer.current = window.setTimeout(() => {
-        if (phaseRef.current !== "waiting") {
+        revealTimer.current = null;
+        if (phaseRef.current !== "tuning") {
           return;
         }
 
-        setTvPhase("poweringOn");
-        revealTimer.current = null;
+        setTvPhase(advanceTvPhase(phaseRef.current, "signalReady"));
 
         phaseTimer.current = window.setTimeout(() => {
-          setTvPhase("playing");
+          setTvPhase(advanceTvPhase("poweringOn", "powerOnFinished"));
           phaseTimer.current = null;
-        }, 920);
+        }, TV_TRANSITION_TIMING.powerOnMs);
       }, delay);
     },
-    [displayed.youtubeId, setTvPhase],
+    [setTvPhase],
   );
+
+  useEffect(() => {
+    if (phase === "tuning" && !displayed.youtubeId) {
+      revealPicture(TV_TRANSITION_TIMING.posterSignalHoldMs);
+    }
+  }, [displayed.youtubeId, phase, revealPicture]);
 
   const prepareTrailerPlayback = useCallback(() => {
     if (!displayed.youtubeId) {
@@ -198,8 +211,8 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
 
     // A bounded fallback still powers the TV on if a browser suppresses
     // YouTube's playback-state message.
-    revealPlayingTrailer(11_000);
-  }, [displayed.youtubeId, revealPlayingTrailer]);
+    revealPicture(TV_TRANSITION_TIMING.playerFallbackMs);
+  }, [displayed.youtubeId, revealPicture]);
 
   useEffect(() => {
     const handleYoutubeMessage = (event: MessageEvent<unknown>) => {
@@ -220,13 +233,13 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
       }
 
       if (isYoutubePlayingMessage(payload)) {
-        revealPlayingTrailer(6_000);
+        revealPicture(TV_TRANSITION_TIMING.youtubeSignalHoldMs);
       }
     };
 
     window.addEventListener("message", handleYoutubeMessage);
     return () => window.removeEventListener("message", handleYoutubeMessage);
-  }, [revealPlayingTrailer]);
+  }, [revealPicture]);
 
   const pictureClassName = `${styles.nextTvPicture} ${
     phase === "poweringOff"
@@ -235,7 +248,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         ? styles.nextTvPicturePoweringOn
         : phase === "playing"
           ? styles.nextTvPicturePlaying
-          : styles.nextTvPictureWaiting
+          : styles.nextTvPictureTuning
   }`;
 
   return (
@@ -265,8 +278,27 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
             />
           )}
         </div>
+        {phase === "tuning" ? (
+          <span className={styles.nextTvStatic} aria-hidden="true">
+            <video
+              className={styles.nextTvStaticVideo}
+              src={withBasePath("/VHS/program/analog-no-signal.mp4")}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              tabIndex={-1}
+              disablePictureInPicture
+            />
+            <span className={styles.nextTvSyncTear} />
+          </span>
+        ) : null}
         {phase === "poweringOn" ? (
-          <span className={styles.nextTvPowerOnFlash} aria-hidden="true" />
+          <>
+            <span className={styles.nextTvSignalLock} aria-hidden="true" />
+            <span className={styles.nextTvPowerOnFlash} aria-hidden="true" />
+          </>
         ) : null}
         {phase === "poweringOff" ? (
           <span className={styles.nextTvPowerOffFlash} aria-hidden="true" />
