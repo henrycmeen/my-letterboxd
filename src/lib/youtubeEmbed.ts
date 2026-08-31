@@ -59,6 +59,42 @@ export const isYoutubePausedMessage = (value: unknown): boolean => {
   );
 };
 
+export const isYoutubeBufferingMessage = (value: unknown): boolean => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const message = value as { event?: unknown; info?: unknown };
+  if (message.event === "onStateChange") {
+    return message.info === 3;
+  }
+
+  if (message.event !== "infoDelivery") {
+    return false;
+  }
+
+  return (
+    !!message.info &&
+    typeof message.info === "object" &&
+    (message.info as { playerState?: unknown }).playerState === 3
+  );
+};
+
+export const isYoutubeAutoplayBlockedMessage = (value: unknown): boolean =>
+  !!value &&
+  typeof value === "object" &&
+  (value as { event?: unknown }).event === "onAutoplayBlocked";
+
+export const isYoutubeErrorMessage = (value: unknown): boolean =>
+  !!value &&
+  typeof value === "object" &&
+  (value as { event?: unknown }).event === "onError";
+
+export const isYoutubeReadyMessage = (value: unknown): boolean =>
+  !!value &&
+  typeof value === "object" &&
+  (value as { event?: unknown }).event === "onReady";
+
 export const isYoutubeEndedMessage = (value: unknown): boolean => {
   if (!value || typeof value !== "object") {
     return false;

@@ -82,6 +82,10 @@
   z-index: 3;
 }
 
+.nextTvScreenFallback::before {
+  opacity: 0.24;
+}
+
 .nextTvPoster,
 .nextTvVideo {
   border: 0;
@@ -94,8 +98,10 @@
 }
 
 .nextTvPicture {
+  background: #050505;
   inset: 0;
   opacity: 0;
+  overflow: hidden;
   position: absolute;
   transform-origin: 50% 50%;
   z-index: 1;
@@ -123,6 +129,19 @@
   max-width: none;
   top: 0;
   width: 111.11%;
+  z-index: 1;
+}
+
+.nextTvPosterBackdrop {
+  background: #050505;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.nextTvPoster {
+  z-index: 3;
 }
 
 .nextTvStatic {
@@ -266,6 +285,46 @@
   inset: 0;
   position: absolute;
   z-index: 4;
+}
+
+.nextTvRetry {
+  align-items: center;
+  background: rgba(5, 5, 5, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  bottom: clamp(0.8rem, 3vw, 1.35rem);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: clamp(0.62rem, 2.3vw, 0.78rem);
+  font-weight: 760;
+  gap: 0.5rem;
+  left: 50%;
+  letter-spacing: 0.13em;
+  min-height: 44px;
+  padding: 0.68rem 0.9rem;
+  position: absolute;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 6;
+}
+
+.nextTvRetry::before {
+  border-bottom: 0.28rem solid transparent;
+  border-left: 0.46rem solid currentColor;
+  border-top: 0.28rem solid transparent;
+  content: "";
+  display: block;
+  height: 0;
+  width: 0;
+}
+
+.nextTvRetry:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
 @keyframes nextTvPowerOn {
