@@ -203,7 +203,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       }
 
       if (revealTimer.current !== null) {
-        window.clearTimeout(revealTimer.current);
+        return;
       }
 
       revealTimer.current = window.setTimeout(() => {

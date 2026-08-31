@@ -21,6 +21,8 @@ export interface LiveProgramResponse {
   now: LiveProgramMovie | null;
 }
 
+export const FILM_CLUB_TIME_ZONE = "Europe/Oslo";
+
 const PROGRAM_COVER_BY_ID: Record<number, string> = {
   62: "/VHS/program/covers/2001-a-space-odyssey.webp",
   78: "/VHS/program/covers/blade-runner.webp",
@@ -42,7 +44,7 @@ export const FALLBACK_NEXT_MOVIE: FilmProgramMovie = {
   title: "Blade Runner",
   year: 1982,
   director: "Ridley Scott",
-  scheduledAt: "2026-09-06T19:00:00+02:00",
+  scheduledAt: "2026-09-22T16:00:00+02:00",
   coverImage: PROGRAM_COVER_BY_ID[78]!,
   trailerYoutubeId: PROGRAM_TRAILER_BY_ID[78]!,
 };
@@ -95,6 +97,7 @@ export const formatFilmDate = (value: string): string => {
   }
 
   return new Intl.DateTimeFormat("nb-NO", {
+    timeZone: FILM_CLUB_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",

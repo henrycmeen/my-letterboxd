@@ -23,11 +23,12 @@ Ingen gjenværende P0-, P1- eller P2-avvik.
 
 - **Hierarki:** Bare «Neste film» og dato står igjen over innholdet. Menyer, instruksjoner, filmtitler, rangeringer og synlige stemmetall er fjernet.
 - **Desktop:** CRT-en står alene og sentrert. Den store, løsrevne lederkassetten ved siden av TV-en er fjernet. Den åpne lederplassen er nå første objekt i den tette veggen rett under TV-en.
-- **Mobil:** CRT-en er kvadratisk. Lederen er første objekt rett under TV-en, står moderat åpen og er tom fordi den fysiske kassetten er i TV-en.
-- **VHS-bevegelse:** Coveret hengsler fra venstre kant. Kassetten blir liggende inne i etuiet ved hover; skall og kassett er skalert inn så ingenting stikker gjennom plasten.
-- **Video:** YouTube-traileren autospiller dempet med `controls=0`, tastatur og pekerinteraksjon avskåret. Den lastes bak en svart TV og vises først når avspilling har startet og YouTubes oppstartsoverlegg har rukket å forsvinne. Videoen fyller CRT-flaten uten letterbox-felt.
+- **Mobil:** CRT-en er kvadratisk. Lederen er første objekt rett under TV-en og beholder kassetten i etuiet.
+- **VHS-bevegelse:** Coveret hengsler fra venstre kant. Lederkassetten er forskjøvet 3 % lenger ut enn de andre; skall og kassett er ellers skalert inn i samme fysiske system.
+- **Video:** YouTube-traileren autospiller dempet med `controls=0`, tastatur og pekerinteraksjon avskåret. Den lastes bak en svart TV og holdes skjult bak skurring i fire sekunder etter bekreftet avspilling, slik at oppstartsoverlegget rekker å forsvinne. Videoen fyller CRT-flaten uten letterbox-felt.
 - **TV-effekt:** Oppstart bruker Filmklubbens gamle hvite bilderørblink. Ved filmbytte kollapser forrige bilde til en lys, horisontal stripe, skjermen blir svart, og den nye traileren slås deretter på med samme CRT-sekvens.
-- **Avstemning:** Et klikk lagres delt på serveren og oppdaterer rangeringen med FLIP-bevegelse. Samme IP kan stemme på flere filmer, men bare én gang per film. TV-en byttes bare når en ny film faktisk overtar førsteplassen. Duplikatstemme, delt oppdatering fra en annen IP og uavgjort førsteplass er kontrollert.
+- **Avstemning:** Et klikk lagres delt på serveren og oppdaterer rangeringen med FLIP-bevegelse. Hver nettleserprofil får en anonym, signert enhetsidentitet og kan stemme én gang per film, uavhengig av IP. TV-en byttes bare når en film med minst én stemme faktisk overtar førsteplassen. Duplikatstemme, delt oppdatering fra en annen enhet og uavgjort førsteplass er kontrollert.
+- **Program og resultater:** Hver filmkveld har en egen avstemnings-ID og en fast dato i programdataene. Den separate, skrivebeskyttede resultatsiden viser aggregert rangering, stemmer, deltakende enheter og tidligere vinnere uten velgeridentifikatorer.
 - **Objekter:** Alle 100 filmene har omslag. VHS-etuiet og kassetten er rasterressurser fra prosjektets eget visuelle språk, ikke tegnede CSS-erstatninger.
 - **Tetthet:** Sammenligningsbildet viser samme raske, skannbare rytme som bokreferansen, med mindre mellomrom og uten tekstblokker mellom radene.
 - **Tilgjengelighet:** Hver VHS er en ekte knapp med filmtittel, rangering, stemmetall og valgt tilstand tilgjengelig for hjelpemidler. Ingen forklarende eller bekreftende tekst legges oppå det visuelle uttrykket. Redusert bevegelse støttes.
@@ -36,6 +37,6 @@ Ingen gjenværende P0-, P1- eller P2-avvik.
 
 ## Avgrensning
 
-YouTube bestemmer fortsatt eventuell annonsevisning og kan ikke garanteres annonsefritt fra klientkoden. IP-regelen betyr også at personer bak samme offentlige IP deler stemmeretten for hver enkelt film. Rå IP-adresser lagres ikke.
+YouTube bestemmer fortsatt eventuell annonsevisning og kan ikke garanteres annonsefritt fra klientkoden. Enhetsidentiteten er praktisk, ikke manipulasjonssikker: sletting av informasjonskapsler eller en ny nettleserprofil gir en ny identitet. IP-adresser brukes ikke som stemmeidentitet.
 
 final result: passed

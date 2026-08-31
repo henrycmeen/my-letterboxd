@@ -25,8 +25,7 @@ void test("a movie change passes through analog tuning before the new picture ap
 });
 
 void test("the tuning window masks YouTube controls before revealing the leader", () => {
-  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs >= 2_500);
-  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs <= 3_200);
+  assert.equal(TV_TRANSITION_TIMING.youtubeSignalHoldMs, 4_000);
   assert.ok(
     TV_TRANSITION_TIMING.posterSignalHoldMs <
       TV_TRANSITION_TIMING.youtubeSignalHoldMs,

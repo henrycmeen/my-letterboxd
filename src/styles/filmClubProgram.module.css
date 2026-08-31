@@ -137,8 +137,7 @@
 
 .nextTvStatic::before {
   animation: tvStaticJitter 180ms steps(2, end) infinite;
-  background-image:
-    repeating-linear-gradient(
+  background-image: repeating-linear-gradient(
       0deg,
       rgba(255, 255, 255, 0.1) 0,
       rgba(255, 255, 255, 0.1) 1px,
@@ -520,6 +519,10 @@
   transform: translateX(0);
   transition: transform 560ms cubic-bezier(0.25, 1, 0.5, 1);
   z-index: 1;
+}
+
+.voteFilm[data-leader="true"] .voteCassetteTray {
+  transform: translateX(3%);
 }
 
 .voteCaseCover {

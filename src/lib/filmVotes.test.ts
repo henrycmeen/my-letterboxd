@@ -15,9 +15,9 @@ const createStore = async () => {
 
 afterEach(async () => {
   await Promise.all(
-    testDirectories.splice(0).map((directory) =>
-      fs.rm(directory, { force: true, recursive: true }),
-    ),
+    testDirectories
+      .splice(0)
+      .map((directory) => fs.rm(directory, { force: true, recursive: true })),
   );
 });
 
@@ -121,12 +121,7 @@ void test("uses the higher TMDB score when vote totals are tied", async () => {
   store.recordVote("na", 42, "voter-a");
   store.recordVote("na", 7, "voter-a");
 
-  const snapshot = store.getSnapshot(
-    "na",
-    "voter-a",
-    [42, 7, 3],
-    tmdbScores,
-  );
+  const snapshot = store.getSnapshot("na", "voter-a", [42, 7, 3], tmdbScores);
   assert.deepEqual(snapshot.ranking, [
     { filmId: 7, votes: 1 },
     { filmId: 42, votes: 1 },
@@ -163,4 +158,35 @@ void test("isolates votes between club boards", async () => {
   assert.equal(otherClub.revision, 0);
   assert.deepEqual(otherClub.ranking, [{ filmId: 7, votes: 0 }]);
   assert.deepEqual(otherClub.votedFilmIds, []);
+});
+
+void test("reports aggregate participation without exposing voter keys", async () => {
+  const store = await createStore();
+
+  store.recordVote("na-round", 7, "device-v1:voter-a");
+  store.recordVote("na-round", 42, "device-v1:voter-a");
+  store.recordVote("na-round", 7, "device-v1:voter-b");
+
+  const results = store.getResults("na-round", [42, 7, 3]);
+  assert.equal(results.boardId, "na-round");
+  assert.equal(results.revision, 3);
+  assert.equal(results.totalVotes, 3);
+  assert.equal(results.participatingDevices, 2);
+  assert.match(results.lastVoteAt ?? "", /^\d{4}-\d{2}-\d{2}T/);
+  assert.deepEqual(results.ranking, [
+    { filmId: 7, votes: 2 },
+    { filmId: 42, votes: 1 },
+    { filmId: 3, votes: 0 },
+  ]);
+  assert.equal(JSON.stringify(results).includes("voter-a"), false);
+});
+
+void test("reports an empty aggregate for a fresh screening", async () => {
+  const store = await createStore();
+
+  const results = store.getResults("fresh-round", [42, 7]);
+  assert.equal(results.revision, 0);
+  assert.equal(results.totalVotes, 0);
+  assert.equal(results.participatingDevices, 0);
+  assert.equal(results.lastVoteAt, null);
 });

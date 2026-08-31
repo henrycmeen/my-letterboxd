@@ -2,22 +2,18 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 import { normalizeClubSlug } from "@/lib/clubSlug";
+import { getFilmVoteStore, type FilmVoteSnapshot } from "@/lib/filmVotes";
 import {
-  getFilmVoteStore,
-  type FilmVoteSnapshot,
-} from "@/lib/filmVotes";
-import {
-  createVoterKey,
+  createDeviceIdentity,
+  DEVICE_COOKIE_NAME,
   getOrCreateVoterSecret,
-  resolveTrustedClientIp,
+  parseDeviceIdentity,
+  serializeDeviceCookie,
 } from "@/lib/voterIdentity";
 
 interface ApiError {
   error: {
-    code:
-      | "INVALID_REQUEST"
-      | "METHOD_NOT_ALLOWED"
-      | "VOTING_UNAVAILABLE";
+    code: "INVALID_REQUEST" | "METHOD_NOT_ALLOWED" | "VOTING_UNAVAILABLE";
     message: string;
   };
 }
@@ -47,9 +43,7 @@ const resolveBoardId = (req: NextApiRequest): string | null => {
   return boardId.length <= 64 ? boardId : null;
 };
 
-const votingUnavailable = (
-  res: NextApiResponse<ApiResponse>,
-): void =>
+const votingUnavailable = (res: NextApiResponse<ApiResponse>): void =>
   res.status(503).json({
     error: {
       code: "VOTING_UNAVAILABLE",
@@ -80,14 +74,25 @@ export default async function handler(
     });
   }
 
-  const clientIp = resolveTrustedClientIp(req);
-  if (!clientIp) {
-    return votingUnavailable(res);
-  }
-
   try {
     const voterSecret = await getOrCreateVoterSecret();
-    const voterKey = createVoterKey(clientIp, voterSecret);
+    const existingVoterKey = parseDeviceIdentity(
+      req.cookies?.[DEVICE_COOKIE_NAME],
+      voterSecret,
+    );
+    const createdIdentity = existingVoterKey
+      ? null
+      : createDeviceIdentity(voterSecret);
+    const voterKey = existingVoterKey ?? createdIdentity!.voterKey;
+    if (createdIdentity) {
+      res.setHeader(
+        "Set-Cookie",
+        serializeDeviceCookie(createdIdentity.cookieValue, {
+          basePath: process.env.NEXT_PUBLIC_BASE_PATH,
+          secure: process.env.NODE_ENV === "production",
+        }),
+      );
+    }
     const store = getFilmVoteStore();
 
     if (req.method === "POST") {

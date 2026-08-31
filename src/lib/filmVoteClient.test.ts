@@ -6,6 +6,7 @@ import {
   getPublishedVoteLeaderId,
   getVoteCaseState,
   getVoteToggleInteraction,
+  isPublishedVoteLeader,
   parseFilmVoteSnapshot,
   shouldApplyVoteSnapshot,
 } from "./filmVoteClient";
@@ -139,6 +140,39 @@ void test("publishes no leader until the first authoritative snapshot", () => {
   assert.equal(getPublishedVoteLeaderId(snapshot, true), 20);
 });
 
+void test("publishes no leader before the active screening has any votes", () => {
+  const snapshot = {
+    boardId: "na-2026-09-22",
+    ranking: [
+      { filmId: 20, votes: 0 },
+      { filmId: 10, votes: 0 },
+      { filmId: 30, votes: 0 },
+    ],
+    revision: 0,
+    votedFilmIds: [],
+  };
+
+  assert.equal(getPublishedVoteLeaderId(snapshot, true), null);
+  assert.equal(isPublishedVoteLeader(snapshot, true, 20), false);
+});
+
+void test("marks only the actual positive-vote leader cassette in the DOM", () => {
+  const snapshot = {
+    boardId: "na-2026-09-22",
+    ranking: [
+      { filmId: 20, votes: 2 },
+      { filmId: 10, votes: 1 },
+      { filmId: 30, votes: 0 },
+    ],
+    revision: 3,
+    votedFilmIds: [10],
+  };
+
+  assert.equal(isPublishedVoteLeader(snapshot, true, 20), true);
+  assert.equal(isPublishedVoteLeader(snapshot, true, 10), false);
+  assert.equal(isPublishedVoteLeader(snapshot, false, 20), false);
+});
+
 void test("recognizes an unchanged poll response without restarting motion", () => {
   const first = {
     boardId: "na",
@@ -188,14 +222,14 @@ void test("keeps unvoted cases closed and opens the films this voter supported",
   });
 });
 
-void test("keeps the leader case empty without changing its voted open state", () => {
+void test("keeps a cassette in the leader case without changing its voted open state", () => {
   assert.deepEqual(getVoteCaseState({ hasVoted: false, isLeader: true }), {
     isOpen: false,
-    showsCassette: false,
+    showsCassette: true,
   });
   assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: true }), {
     isOpen: true,
-    showsCassette: false,
+    showsCassette: true,
   });
 });
 

@@ -39,13 +39,12 @@ export interface VoteToggleInteraction {
 
 export const getVoteCaseState = ({
   hasVoted,
-  isLeader,
 }: {
   hasVoted: boolean;
   isLeader: boolean;
 }): VoteCaseState => ({
   isOpen: hasVoted,
-  showsCassette: !isLeader,
+  showsCassette: true,
 });
 
 export const getVoteToggleInteraction = (
@@ -125,8 +124,16 @@ export const shouldApplyVoteSnapshot = (
 export const getPublishedVoteLeaderId = (
   snapshot: FilmVoteClientSnapshot,
   isAuthoritative: boolean,
-): number | null =>
-  isAuthoritative ? (snapshot.ranking[0]?.filmId ?? null) : null;
+): number | null => {
+  const leader = snapshot.ranking[0];
+  return isAuthoritative && leader && leader.votes > 0 ? leader.filmId : null;
+};
+
+export const isPublishedVoteLeader = (
+  snapshot: FilmVoteClientSnapshot,
+  isAuthoritative: boolean,
+  filmId: number,
+): boolean => getPublishedVoteLeaderId(snapshot, isAuthoritative) === filmId;
 
 export const getFlipMotion = (
   previous: SlotPosition,

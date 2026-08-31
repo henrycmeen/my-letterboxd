@@ -2,9 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { NextApiRequest } from "next";
 import {
+  createDeviceIdentity,
   createVoterKey,
+  DEVICE_COOKIE_NAME,
+  parseDeviceIdentity,
   resolveTrustedClientIp,
+  serializeDeviceCookie,
 } from "./voterIdentity";
+
+const identitySecret = Buffer.alloc(32, 7);
 
 const request = ({
   clientIp,
@@ -65,4 +71,66 @@ void test("creates a stable keyed identity without exposing the IP", () => {
   assert.equal(first, second);
   assert.match(first, /^[a-f0-9]{64}$/);
   assert.equal(first.includes("203.0.113.8"), false);
+});
+
+void test("creates a signed opaque device identity and a server-only voter key", () => {
+  const first = createDeviceIdentity(identitySecret, Buffer.alloc(32, 1));
+  const second = createDeviceIdentity(identitySecret, Buffer.alloc(32, 1));
+
+  assert.equal(first.cookieValue, second.cookieValue);
+  assert.equal(first.voterKey, second.voterKey);
+  assert.match(first.cookieValue, /^v1\.[A-Za-z0-9_-]{43}\.[A-Za-z0-9_-]{43}$/);
+  assert.match(first.voterKey, /^device-v1:[a-f0-9]{64}$/);
+  assert.equal(
+    parseDeviceIdentity(first.cookieValue, identitySecret),
+    first.voterKey,
+  );
+  assert.equal(first.cookieValue.includes(first.voterKey), false);
+});
+
+void test("rejects malformed, truncated, and tampered device cookies", () => {
+  const identity = createDeviceIdentity(identitySecret, Buffer.alloc(32, 2));
+  const tampered = `${identity.cookieValue.slice(0, -1)}${
+    identity.cookieValue.endsWith("A") ? "B" : "A"
+  }`;
+
+  assert.equal(
+    parseDeviceIdentity("not-a-device-cookie", identitySecret),
+    null,
+  );
+  assert.equal(
+    parseDeviceIdentity(identity.cookieValue.slice(0, -1), identitySecret),
+    null,
+  );
+  assert.equal(parseDeviceIdentity(tampered, identitySecret), null);
+  assert.equal(
+    parseDeviceIdentity(identity.cookieValue, Buffer.alloc(32, 8)),
+    null,
+  );
+});
+
+void test("serializes a host-only long-lived cookie for the configured app path", () => {
+  const value = createDeviceIdentity(
+    identitySecret,
+    Buffer.alloc(32, 3),
+  ).cookieValue;
+  const productionCookie = serializeDeviceCookie(value, {
+    basePath: "/filmklubb/",
+    secure: true,
+  });
+
+  assert.match(productionCookie, new RegExp(`^${DEVICE_COOKIE_NAME}=`));
+  assert.match(productionCookie, /; Max-Age=31536000/);
+  assert.match(productionCookie, /; Path=\/filmklubb/);
+  assert.match(productionCookie, /; HttpOnly/);
+  assert.match(productionCookie, /; SameSite=Lax/);
+  assert.match(productionCookie, /; Secure/);
+  assert.equal(productionCookie.includes("Domain="), false);
+
+  const localCookie = serializeDeviceCookie(value, {
+    basePath: "",
+    secure: false,
+  });
+  assert.match(localCookie, /; Path=\//);
+  assert.equal(localCookie.includes("; Secure"), false);
 });
