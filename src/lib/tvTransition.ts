@@ -13,8 +13,8 @@ export type TvRevealSource =
 
 export const TV_TRANSITION_TIMING = {
   powerOffMs: 520,
-  youtubeSignalHoldMs: 3_000,
-  posterSignalHoldMs: 900,
+  youtubeSignalHoldMs: 900,
+  posterSignalHoldMs: 650,
   powerOnMs: 760,
 } as const;
 

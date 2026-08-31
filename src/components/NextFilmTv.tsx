@@ -17,10 +17,16 @@ import {
 } from "@/lib/tvTransition";
 import styles from "@/styles/filmClubProgram.module.css";
 
+type NextFilmMovie = Pick<FilmProgramMovie, "id" | "title" | "coverImage"> & {
+  trailerYoutubeId?: string | null;
+};
+
 interface NextFilmTvProps {
-  movie: Pick<FilmProgramMovie, "id" | "title" | "coverImage"> & {
-    trailerYoutubeId?: string | null;
-  };
+  movie: NextFilmMovie | null;
+}
+
+interface ReadyNextFilmTvProps {
+  movie: NextFilmMovie;
 }
 
 interface TrailerState {
@@ -35,7 +41,24 @@ interface DisplayedTrailer {
   youtubeId: string | null;
 }
 
-export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
+const TvStaticNoise = () => (
+  <span className={styles.nextTvStatic} aria-hidden="true">
+    <video
+      className={styles.nextTvStaticVideo}
+      src={withBasePath("/VHS/program/analog-no-signal.mp4")}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload="auto"
+      tabIndex={-1}
+      disablePictureInPicture
+    />
+    <span className={styles.nextTvSyncTear} />
+  </span>
+);
+
+const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   const [trailer, setTrailer] = useState<TrailerState>({
     movieId: movie.id,
     youtubeId: movie.trailerYoutubeId ?? null,
@@ -331,22 +354,7 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
             />
           )}
         </div>
-        {phase === "tuning" ? (
-          <span className={styles.nextTvStatic} aria-hidden="true">
-            <video
-              className={styles.nextTvStaticVideo}
-              src={withBasePath("/VHS/program/analog-no-signal.mp4")}
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="auto"
-              tabIndex={-1}
-              disablePictureInPicture
-            />
-            <span className={styles.nextTvSyncTear} />
-          </span>
-        ) : null}
+        {phase === "tuning" ? <TvStaticNoise /> : null}
         {phase === "poweringOn" ? (
           <>
             <span className={styles.nextTvSignalLock} aria-hidden="true" />
@@ -356,6 +364,26 @@ export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
         {phase === "poweringOff" ? (
           <span className={styles.nextTvPowerOffFlash} aria-hidden="true" />
         ) : null}
+        <span className={styles.nextTvShield} aria-hidden="true" />
+        <span className={styles.nextTvGlow} aria-hidden="true" />
+      </div>
+    </div>
+  );
+};
+
+export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
+  if (movie) {
+    return <ReadyNextFilmTv movie={movie} />;
+  }
+
+  return (
+    <div
+      className={styles.nextTv}
+      aria-busy="true"
+      aria-label="Henter filmen som leder avstemningen"
+    >
+      <div className={styles.nextTvScreen}>
+        <TvStaticNoise />
         <span className={styles.nextTvShield} aria-hidden="true" />
         <span className={styles.nextTvGlow} aria-hidden="true" />
       </div>

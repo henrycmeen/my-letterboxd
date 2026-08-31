@@ -1,6 +1,6 @@
 import Head from "next/head";
-import { useState } from "react";
-import { FilmVoteWall, INITIAL_VOTE_LEADER } from "@/components/FilmVoteWall";
+import { useEffect, useState } from "react";
+import { FilmVoteWall, type FilmVoteMovie } from "@/components/FilmVoteWall";
 import { formatFilmDate } from "@/components/filmClubProgramData";
 import { NextFilmTv } from "@/components/NextFilmTv";
 import { useClubNextMovie } from "@/components/useClubNextMovie";
@@ -14,7 +14,11 @@ interface ClubProgramHomeProps {
 export const ClubProgramHome = ({ clubSlug }: ClubProgramHomeProps) => {
   const boardId = getBoardIdFromClubSlug(clubSlug);
   const nextMovie = useClubNextMovie(boardId);
-  const [leader, setLeader] = useState(INITIAL_VOTE_LEADER);
+  const [leader, setLeader] = useState<FilmVoteMovie | null>(null);
+
+  useEffect(() => {
+    setLeader(null);
+  }, [boardId]);
 
   return (
     <>
@@ -40,7 +44,11 @@ export const ClubProgramHome = ({ clubSlug }: ClubProgramHomeProps) => {
           </div>
         </section>
 
-        <FilmVoteWall boardId={boardId} onLeaderChange={setLeader} />
+        <FilmVoteWall
+          key={boardId}
+          boardId={boardId}
+          onLeaderChange={setLeader}
+        />
       </main>
     </>
   );
