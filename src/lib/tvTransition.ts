@@ -25,7 +25,7 @@ export const TV_TRANSITION_TIMING = {
   blockedTrailerFallbackMs: 7_000,
   emptySignalHoldMs: 1_000,
   powerOffMs: 180,
-  youtubeSignalHoldMs: 4_000,
+  youtubeSignalHoldMs: 1_000,
   posterSignalHoldMs: 120,
   posterRetryMs: 1_200,
   powerOnMs: 180,
