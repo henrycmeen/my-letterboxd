@@ -552,28 +552,12 @@
     "trailerYoutubeId": "I1dHzoRl0sQ"
   },
   {
-    "id": 81,
-    "title": "Nausicaä of the Valley of the Wind",
-    "year": 1984,
-    "tmdbVoteAverage": 7.944,
-    "coverImage": "/VHS/program/vote-covers/070-warriors-of-the-wind.webp",
-    "trailerYoutubeId": "zaskbIZtfxQ"
-  },
-  {
     "id": 16859,
     "title": "Kiki's Delivery Service",
     "year": 1989,
     "tmdbVoteAverage": 7.84,
     "coverImage": "/VHS/program/vote-covers/071-kiki-s-delivery-service.webp",
     "trailerYoutubeId": "nu4OX6RKeLY"
-  },
-  {
-    "id": 8392,
-    "title": "My Neighbor Totoro",
-    "year": 1988,
-    "tmdbVoteAverage": 8.067,
-    "coverImage": "/VHS/program/vote-covers/072-my-neighbor-totoro.webp",
-    "trailerYoutubeId": "_nv94fL_IA8"
   },
   {
     "id": 149871,
@@ -592,14 +576,6 @@
     "trailerYoutubeId": "VuIaCvIFWIA"
   },
   {
-    "id": 120467,
-    "title": "The Grand Budapest Hotel",
-    "year": 2014,
-    "tmdbVoteAverage": 8.025,
-    "coverImage": "/VHS/program/vote-covers/075-the-grand-budapest-hotel.webp",
-    "trailerYoutubeId": "G1jG8HUY4zI"
-  },
-  {
     "id": 9428,
     "title": "The Royal Tenenbaums",
     "year": 2001,
@@ -614,14 +590,6 @@
     "tmdbVoteAverage": 7.392,
     "coverImage": "/VHS/program/vote-covers/077-rushmore.webp",
     "trailerYoutubeId": "846UzdeHI1g"
-  },
-  {
-    "id": 421,
-    "title": "The Life Aquatic with Steve Zissou",
-    "year": 2004,
-    "tmdbVoteAverage": 7.07,
-    "coverImage": "/VHS/program/vote-covers/078-the-life-aquatic-with-steve-zissou.webp",
-    "trailerYoutubeId": "XVRXYnGz-Mo"
   },
   {
     "id": 275,
@@ -894,5 +862,29 @@
     "tmdbVoteAverage": 8.446,
     "coverImage": "/VHS/program/vote-covers/112-grave-of-the-fireflies.webp",
     "trailerYoutubeId": "QZbcx0WNrMU"
+  },
+  {
+    "id": 299269,
+    "title": "Do Androids Dream",
+    "year": 2014,
+    "tmdbVoteAverage": 4.7,
+    "coverImage": "/VHS/program/vote-covers/113-do-androids-dream.webp",
+    "trailerYoutubeId": "WubkCisTDuA"
+  },
+  {
+    "id": 62385,
+    "title": "The Girl Who Leapt Through Time",
+    "year": 1983,
+    "tmdbVoteAverage": 6.756,
+    "coverImage": "/VHS/program/vote-covers/114-the-girl-who-leapt-through-time.webp",
+    "trailerYoutubeId": "p1xoU5E-8Yc"
+  },
+  {
+    "id": 1221061,
+    "title": "Sound of Falling",
+    "year": 2025,
+    "tmdbVoteAverage": 6.9,
+    "coverImage": "/VHS/program/vote-covers/115-sound-of-falling.webp",
+    "trailerYoutubeId": "O-jgGbvLgVo"
   }
 ]

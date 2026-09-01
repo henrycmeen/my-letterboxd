@@ -58,5 +58,20 @@
     "tmdbId": 12477,
     "posterPath": "/k9tv1rXZbOhH7eiCk378x61kNQ1.jpg",
     "outputFile": "112-grave-of-the-fireflies.webp"
+  },
+  {
+    "tmdbId": 299269,
+    "posterPath": "/gLFqPjjqXQkHawF1HJnBYrhx3FQ.jpg",
+    "outputFile": "113-do-androids-dream.webp"
+  },
+  {
+    "tmdbId": 62385,
+    "posterPath": "/dMKQzb1DseArcrCWYYHFrdgbWfl.jpg",
+    "outputFile": "114-the-girl-who-leapt-through-time.webp"
+  },
+  {
+    "tmdbId": 1221061,
+    "posterPath": "/5hLiXAqZ3xTHExOIsxYANIswBjZ.jpg",
+    "outputFile": "115-sound-of-falling.webp"
   }
 ]

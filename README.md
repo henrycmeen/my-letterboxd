@@ -49,15 +49,22 @@ the programme forward with Codex:
 3. Change `activeScreening.id` and `activeScreening.scheduledAt` together.
 4. Run `pnpm test && pnpm check && pnpm build` before release.
 
-The vote wall itself is a fixed, manually curated catalogue in
+The vote wall itself is a curated catalogue in
 `src/data/filmVoteCatalogue.json`; it is not synced automatically from
-Letterboxd. TMDB supplies the canonical movie id, year, rating and poster
-source, while each trailer is pinned to a YouTube video id. Additions are
-appended so the existing zero-vote order remains stable. Their versioned VHS
-covers live in `public/VHS/program/vote-covers/` and can be regenerated from
-the checked-in source manifest with `pnpm covers:vote`. Existing files are
-kept by default; use `pnpm covers:vote -- --force` only when intentionally
-regenerating them from updated sources.
+Letterboxd. Add and remove films by their canonical TMDB ids:
+
+```bash
+pnpm catalogue:vote -- --add 299269 --add 62385 --remove 421
+```
+
+The command fetches the year, rating, poster and YouTube trailer from TMDB,
+appends additions so the existing zero-vote order stays stable, generates the
+versioned VHS covers, and removes retired cover files. It rejects films from
+the current year because they may not be obtainable yet. The cover sources are
+recorded in `scripts/vhs/vote_cover_sources.json`; regenerate them with
+`pnpm covers:vote`. Existing files are kept by default; use
+`pnpm covers:vote -- --force` only when intentionally replacing the checked-in
+covers.
 
 The results route is intentionally unlinked and read-only. It exposes film
 ranking, total active votes and participating browser profiles, never voter
