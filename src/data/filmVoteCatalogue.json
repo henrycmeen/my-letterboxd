@@ -798,5 +798,101 @@
     "tmdbVoteAverage": 7.8,
     "coverImage": "/VHS/program/vote-covers/100-mishima-a-life-in-four-chapters.webp",
     "trailerYoutubeId": "5nVKJDSrxNg"
+  },
+  {
+    "id": 404,
+    "title": "The Straight Story",
+    "year": 1999,
+    "tmdbVoteAverage": 7.738,
+    "coverImage": "/VHS/program/vote-covers/101-the-straight-story.webp",
+    "trailerYoutubeId": "lcMyFckt_Hs"
+  },
+  {
+    "id": 379,
+    "title": "Miller's Crossing",
+    "year": 1990,
+    "tmdbVoteAverage": 7.443,
+    "coverImage": "/VHS/program/vote-covers/102-millers-crossing.webp",
+    "trailerYoutubeId": "R1kRUyVeEOg"
+  },
+  {
+    "id": 11524,
+    "title": "Thief",
+    "year": 1981,
+    "tmdbVoteAverage": 7.231,
+    "coverImage": "/VHS/program/vote-covers/103-thief.webp",
+    "trailerYoutubeId": "YDa_z0op7iU"
+  },
+  {
+    "id": 10843,
+    "title": "After Hours",
+    "year": 1985,
+    "tmdbVoteAverage": 7.5,
+    "coverImage": "/VHS/program/vote-covers/104-after-hours.webp",
+    "trailerYoutubeId": "wixOBXjZvtw"
+  },
+  {
+    "id": 44012,
+    "title": "Jeanne Dielman, 23, quai du Commerce, 1080 Bruxelles",
+    "year": 1975,
+    "tmdbVoteAverage": 7.376,
+    "coverImage": "/VHS/program/vote-covers/105-jeanne-dielman.webp",
+    "trailerYoutubeId": "iuP1MN6RNJU"
+  },
+  {
+    "id": 8214,
+    "title": "Drifting Clouds",
+    "year": 1996,
+    "tmdbVoteAverage": 7.575,
+    "coverImage": "/VHS/program/vote-covers/106-drifting-clouds.webp",
+    "trailerYoutubeId": "hsRRJ2ZE03U"
+  },
+  {
+    "id": 8051,
+    "title": "Punch-Drunk Love",
+    "year": 2002,
+    "tmdbVoteAverage": 7.1,
+    "coverImage": "/VHS/program/vote-covers/107-punch-drunk-love.webp",
+    "trailerYoutubeId": "9pG2nfxoUcs"
+  },
+  {
+    "id": 614,
+    "title": "Wild Strawberries",
+    "year": 1957,
+    "tmdbVoteAverage": 8.1,
+    "coverImage": "/VHS/program/vote-covers/108-wild-strawberries.webp",
+    "trailerYoutubeId": "EwMgTyVbCS0"
+  },
+  {
+    "id": 483,
+    "title": "Wild at Heart",
+    "year": 1990,
+    "tmdbVoteAverage": 7,
+    "coverImage": "/VHS/program/vote-covers/109-wild-at-heart.webp",
+    "trailerYoutubeId": "dQIdBfrF0Ik"
+  },
+  {
+    "id": 567,
+    "title": "Rear Window",
+    "year": 1954,
+    "tmdbVoteAverage": 8.336,
+    "coverImage": "/VHS/program/vote-covers/110-rear-window.webp",
+    "trailerYoutubeId": "iZOTTxwzyMU"
+  },
+  {
+    "id": 3782,
+    "title": "Ikiru",
+    "year": 1952,
+    "tmdbVoteAverage": 8.3,
+    "coverImage": "/VHS/program/vote-covers/111-ikiru.webp",
+    "trailerYoutubeId": "geKhyNerWM8"
+  },
+  {
+    "id": 12477,
+    "title": "Grave of the Fireflies",
+    "year": 1988,
+    "tmdbVoteAverage": 8.446,
+    "coverImage": "/VHS/program/vote-covers/112-grave-of-the-fireflies.webp",
+    "trailerYoutubeId": "QZbcx0WNrMU"
   }
 ]
