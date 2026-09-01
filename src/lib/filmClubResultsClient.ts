@@ -4,11 +4,17 @@ import { withBasePath } from "@/lib/basePath";
 
 const resultFilmSchema = z
   .object({
-    rank: z.number().int().positive(),
     filmId: z.number().int().positive(),
     title: z.string().trim().min(1),
     coverImage: z.string().trim().min(1),
     votes: z.number().int().nonnegative(),
+  })
+  .strict();
+
+const rankingFilmSchema = resultFilmSchema
+  .extend({
+    rank: z.number().int().positive(),
+    tmdbVoteAverage: z.number().min(0).max(10),
   })
   .strict();
 
@@ -31,7 +37,7 @@ const historyEntrySchema = z
   .object({
     screeningId: z.string().trim().min(1),
     scheduledAt: z.string().trim().min(1),
-    winner: resultFilmSchema.omit({ rank: true }).strict(),
+    winner: resultFilmSchema,
     totalVotes: z.number().int().nonnegative(),
     participatingDevices: z.number().int().nonnegative(),
   })
@@ -46,7 +52,7 @@ const filmClubResultsSchema = z
       })
       .strict(),
     activeScreening: activeScreeningSchema,
-    ranking: z.array(resultFilmSchema),
+    ranking: z.array(rankingFilmSchema),
     stats: statsSchema,
     history: z.array(historyEntrySchema),
     revision: z.number().int().nonnegative(),
