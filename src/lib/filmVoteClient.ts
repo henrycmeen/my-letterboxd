@@ -123,13 +123,21 @@ export const shouldApplyVoteSnapshot = (
   );
 };
 
+export const getUniquePositiveLeaderId = (
+  ranking: ReadonlyArray<{ filmId: number; votes: number }>,
+): number | null => {
+  const leader = ranking[0];
+  const runnerUp = ranking[1];
+  return leader && leader.votes > 0 && leader.votes > (runnerUp?.votes ?? 0)
+    ? leader.filmId
+    : null;
+};
+
 export const getPublishedVoteLeaderId = (
   snapshot: FilmVoteClientSnapshot,
   isAuthoritative: boolean,
-): number | null => {
-  const leader = snapshot.ranking[0];
-  return isAuthoritative && leader && leader.votes > 0 ? leader.filmId : null;
-};
+): number | null =>
+  isAuthoritative ? getUniquePositiveLeaderId(snapshot.ranking) : null;
 
 export const isPublishedVoteLeader = (
   snapshot: FilmVoteClientSnapshot,

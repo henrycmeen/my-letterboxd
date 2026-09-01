@@ -173,6 +173,23 @@ void test("marks only the actual positive-vote leader cassette in the DOM", () =
   assert.equal(isPublishedVoteLeader(snapshot, false, 20), false);
 });
 
+void test("publishes no leader while first place is tied", () => {
+  const snapshot = {
+    boardId: "na-2026-09-22",
+    ranking: [
+      { filmId: 20, votes: 2 },
+      { filmId: 10, votes: 2 },
+      { filmId: 30, votes: 1 },
+    ],
+    revision: 5,
+    votedFilmIds: [20],
+  };
+
+  assert.equal(getPublishedVoteLeaderId(snapshot, true), null);
+  assert.equal(isPublishedVoteLeader(snapshot, true, 20), false);
+  assert.equal(isPublishedVoteLeader(snapshot, true, 10), false);
+});
+
 void test("recognizes an unchanged poll response without restarting motion", () => {
   const first = {
     boardId: "na",

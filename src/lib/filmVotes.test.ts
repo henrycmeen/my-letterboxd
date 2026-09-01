@@ -143,27 +143,63 @@ void test("reads each device vote and shared ranking from one SQLite snapshot", 
       workerData: { databasePath, stopBuffer },
     },
   );
-
-  await new Promise<void>((resolve, reject) => {
-    writer.once("message", () => resolve());
+  let workerReady = false;
+  let workerError: Error | null = null;
+  let exitCode: number | null = null;
+  let inconsistentSnapshot: ReturnType<typeof store.getSnapshot> | null = null;
+  writer.on("error", (error: Error) => {
+    workerError = error;
+  });
+  const exitPromise = new Promise<number>((resolve) => {
+    writer.once("exit", resolve);
+  });
+  const readyPromise = new Promise<void>((resolve, reject) => {
+    writer.once("message", (message) => {
+      if (message !== "ready") {
+        reject(new Error(`Unexpected writer message: ${String(message)}`));
+        return;
+      }
+      workerReady = true;
+      resolve();
+    });
     writer.once("error", reject);
+    writer.once("exit", (code) => {
+      if (!workerReady) {
+        reject(new Error(`Writer exited before ready with code ${code}`));
+      }
+    });
   });
 
-  let inconsistentSnapshot: ReturnType<typeof store.getSnapshot> | null = null;
   try {
+    await readyPromise;
     for (let index = 0; index < 25_000; index += 1) {
       const snapshot = store.getSnapshot("na", "voter-a", [42]);
-      if (snapshot.ranking[0]?.votes !== snapshot.votedFilmIds.length) {
+      const expectedVoteState = snapshot.revision % 2;
+      if (
+        snapshot.ranking[0]?.votes !== expectedVoteState ||
+        snapshot.votedFilmIds.length !== expectedVoteState
+      ) {
         inconsistentSnapshot = snapshot;
         break;
       }
     }
   } finally {
     Atomics.store(stop, 0, 1);
-    await writer.terminate();
+    exitCode = await new Promise<number | null>((resolve) => {
+      const timeout = setTimeout(() => resolve(null), 5_000);
+      void exitPromise.then((code) => {
+        clearTimeout(timeout);
+        resolve(code);
+      });
+    });
+    if (exitCode === null) {
+      await writer.terminate();
+    }
     store.close();
   }
 
+  assert.equal(workerError, null);
+  assert.equal(exitCode, 0);
   assert.equal(inconsistentSnapshot, null);
 });
 

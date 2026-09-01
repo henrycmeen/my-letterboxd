@@ -9,6 +9,7 @@ import {
   type FilmClubResultsHistoryEntry,
   type FilmClubResultsRankingEntry,
 } from "@/lib/filmClubResultsClient";
+import { getUniquePositiveLeaderId } from "@/lib/filmVoteClient";
 import { getClubHomePath, resolveClubSlugParam } from "@/lib/clubSlug";
 import { withBasePath } from "@/lib/basePath";
 import styles from "@/styles/filmClubResults.module.css";
@@ -86,23 +87,38 @@ const ResultStats = ({ results }: { results: FilmClubResultsData }) => (
 );
 
 const LeaderPanel = ({ results }: { results: FilmClubResultsData }) => {
-  const leader = results.ranking[0] ?? null;
-  const hasLeader = leader !== null && leader.votes > 0;
+  const topRanked = results.ranking[0] ?? null;
+  const leaderId = getUniquePositiveLeaderId(results.ranking);
+  const leader = leaderId === null ? null : topRanked;
+  const tiedFilmCount = topRanked
+    ? results.ranking.filter((entry) => entry.votes === topRanked.votes).length
+    : 0;
+  const isTiedFirst =
+    leader === null && topRanked !== null && topRanked.votes > 0;
 
   return (
     <section className={styles.leaderPanel} aria-labelledby="current-leader">
       <div className={styles.leaderCopy}>
         <p className={styles.eyebrow}>Stilling akkurat nå</p>
         <h2 id="current-leader">
-          {hasLeader ? "Nå leder" : "Ingen leder ennå"}
+          {leader
+            ? "Nå leder"
+            : isTiedFirst
+              ? "Delt førsteplass"
+              : "Ingen leder ennå"}
         </h2>
-        {hasLeader ? (
+        {leader ? (
           <>
             <p className={styles.leaderTitle}>{leader.title}</p>
             <p className={styles.leaderScore}>
               {formatCount(leader.votes, "stemme", "stemmer")}
             </p>
           </>
+        ) : isTiedFirst ? (
+          <p className={styles.emptyCopy}>
+            {formatCount(tiedFilmCount, "film", "filmer")} har{" "}
+            {formatCount(topRanked.votes, "stemme", "stemmer")} hver.
+          </p>
         ) : (
           <p className={styles.emptyCopy}>
             Når den første stemmen er inne, vises filmen som leder her.
@@ -112,7 +128,7 @@ const LeaderPanel = ({ results }: { results: FilmClubResultsData }) => {
           Neste visning: {formatFilmDate(results.activeScreening.scheduledAt)}
         </p>
       </div>
-      {hasLeader ? (
+      {leader ? (
         <div className={styles.leaderCover}>
           <ResultCover
             coverImage={leader.coverImage}
