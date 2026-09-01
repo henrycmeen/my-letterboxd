@@ -80,14 +80,6 @@
     "trailerYoutubeId": "sVwH0hIvV5k"
   },
   {
-    "id": 679,
-    "title": "Aliens",
-    "year": 1986,
-    "tmdbVoteAverage": 7.966,
-    "coverImage": "/VHS/program/vote-covers/011-aliens.webp",
-    "trailerYoutubeId": "8OxirbuHsBA"
-  },
-  {
     "id": 1091,
     "title": "The Thing",
     "year": 1982,
@@ -280,14 +272,6 @@
     "trailerYoutubeId": "9NJj12tJzqc"
   },
   {
-    "id": 258480,
-    "title": "Carol",
-    "year": 2015,
-    "tmdbVoteAverage": 7.484,
-    "coverImage": "/VHS/program/vote-covers/036-carol.webp",
-    "trailerYoutubeId": "Y6ekAV16RIs"
-  },
-  {
     "id": 666277,
     "title": "Past Lives",
     "year": 2023,
@@ -472,28 +456,12 @@
     "trailerYoutubeId": "A_7ATU9dslE"
   },
   {
-    "id": 5548,
-    "title": "RoboCop",
-    "year": 1987,
-    "tmdbVoteAverage": 7.365,
-    "coverImage": "/VHS/program/vote-covers/060-robocop.webp",
-    "trailerYoutubeId": "IqvRDhW-XVA"
-  },
-  {
     "id": 861,
     "title": "Total Recall",
     "year": 1990,
     "tmdbVoteAverage": 7.328,
     "coverImage": "/VHS/program/vote-covers/061-total-recall.webp",
     "trailerYoutubeId": "IRaRhZE-1b4"
-  },
-  {
-    "id": 218,
-    "title": "The Terminator",
-    "year": 1984,
-    "tmdbVoteAverage": 7.689,
-    "coverImage": "/VHS/program/vote-covers/062-the-terminator.webp",
-    "trailerYoutubeId": "nGrW-OR2uDk"
   },
   {
     "id": 280,

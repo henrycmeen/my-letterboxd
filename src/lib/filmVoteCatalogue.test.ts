@@ -5,14 +5,14 @@ import path from "node:path";
 import { test } from "node:test";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 
-const CURATED_BASE_SIZE = 96;
+const CURATED_BASE_SIZE = 92;
 const CURATED_BASE_DIGEST =
-  "8f4681383a21b44f74bb3cb6628a34408bfed8cb46a325e10fe2f17daaa70369";
+  "5a35433eba0d8b989cef05ce5fe355fa9700e14082c5cebe8ddead779838804b";
 const WATCHLIST_ADDITION_IDS = [
   404, 379, 11524, 10843, 44012, 8214, 8051, 614, 483, 567, 3782, 12477, 299269,
   62385, 1221061,
 ] as const;
-const REMOVED_IDS = [421, 8392, 81, 120467] as const;
+const REMOVED_IDS = [421, 8392, 81, 120467, 218, 5548, 679, 258480] as const;
 
 void test("keeps the retained curated catalogue unchanged", () => {
   const digest = createHash("sha256")
