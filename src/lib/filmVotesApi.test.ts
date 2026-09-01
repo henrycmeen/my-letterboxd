@@ -10,6 +10,7 @@ const secondFilmId = filmVoteCatalogue[1]!.id;
 const thirdFilmId = filmVoteCatalogue[2]!.id;
 const fourthFilmId = filmVoteCatalogue[3]!.id;
 const firstFilmId = filmVoteCatalogue[0]!.id;
+const newestFilmId = filmVoteCatalogue.at(-1)!.id;
 
 const testDirectory = await fs.mkdtemp(
   path.join(tmpdir(), "filmklubb-votes-api-"),
@@ -100,7 +101,7 @@ void test("GET returns the shared ranking and this device's voted films", async 
     votedFilmIds: number[];
   };
   assert.equal(body.boardId, "na");
-  assert.equal(body.ranking.length, 100);
+  assert.equal(body.ranking.length, filmVoteCatalogue.length);
   assert.equal(body.ranking[0]?.filmId, firstFilmId);
   assert.equal(body.revision, 0);
   assert.deepEqual(body.votedFilmIds, []);
@@ -146,6 +147,23 @@ void test("POST is idempotent per device and film", async () => {
   assert.equal(body.revision, 1);
   assert.deepEqual(body.ranking[0], { filmId: secondFilmId, votes: 1 });
   assert.deepEqual(body.votedFilmIds, [secondFilmId]);
+});
+
+void test("POST accepts a film appended to the curated catalogue", async () => {
+  const response = await invoke({
+    body: { filmId: newestFilmId },
+    cookies: deviceCookie(31),
+    method: "POST",
+    query: { boardId: "watchlist-addition" },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+    votedFilmIds: number[];
+  };
+  assert.deepEqual(body.ranking[0], { filmId: newestFilmId, votes: 1 });
+  assert.deepEqual(body.votedFilmIds, [newestFilmId]);
 });
 
 void test("POST removes one device's vote without removing another device's vote", async () => {

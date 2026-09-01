@@ -49,6 +49,16 @@ the programme forward with Codex:
 3. Change `activeScreening.id` and `activeScreening.scheduledAt` together.
 4. Run `pnpm test && pnpm check && pnpm build` before release.
 
+The vote wall itself is a fixed, manually curated catalogue in
+`src/data/filmVoteCatalogue.json`; it is not synced automatically from
+Letterboxd. TMDB supplies the canonical movie id, year, rating and poster
+source, while each trailer is pinned to a YouTube video id. Additions are
+appended so the existing zero-vote order remains stable. Their versioned VHS
+covers live in `public/VHS/program/vote-covers/` and can be regenerated from
+the checked-in source manifest with `pnpm covers:vote`. Existing files are
+kept by default; use `pnpm covers:vote -- --force` only when intentionally
+regenerating them from updated sources.
+
 The results route is intentionally unlinked and read-only. It exposes film
 ranking, total active votes and participating browser profiles, never voter
 keys. A hidden URL is convenience rather than access control; any future write
