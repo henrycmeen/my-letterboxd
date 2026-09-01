@@ -20,7 +20,20 @@ export type YoutubeTvPlaybackAction =
   | "showPosterFallback"
   | "startStabilityCheck";
 
+export type NextFilmTvView = "booting" | "empty" | "ready";
+
 export const INITIAL_TV_PHASE: TvPhase = "poweringOn";
+
+export const getNextFilmTvView = (
+  hasCompletedInitialPowerOn: boolean,
+  hasMovie: boolean,
+): NextFilmTvView => {
+  if (!hasCompletedInitialPowerOn) {
+    return "booting";
+  }
+
+  return hasMovie ? "ready" : "empty";
+};
 
 export const TV_TRANSITION_TIMING = {
   blockedTrailerFallbackMs: 7_000,

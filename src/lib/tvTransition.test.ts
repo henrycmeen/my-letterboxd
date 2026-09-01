@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   advanceTvPhase,
   buildTvPlayerKey,
+  getNextFilmTvView,
   getTvRevealDelay,
   getYoutubePlaybackAction,
   INITIAL_TV_PHASE,
@@ -14,6 +15,13 @@ import {
 const SHORT_TV_INTRO_MAX_MS = 1_200;
 const FAST_TRAILER_REVEAL_MS = 200;
 const VISIBLE_POWER_ON_MS = 420;
+
+void test("keeps one page-entry power-on while the leading movie loads", () => {
+  assert.equal(getNextFilmTvView(false, false), "booting");
+  assert.equal(getNextFilmTvView(false, true), "booting");
+  assert.equal(getNextFilmTvView(true, true), "ready");
+  assert.equal(getNextFilmTvView(true, false), "empty");
+});
 
 void test("the TV powers on into analog tuning before the first picture appears", () => {
   let phase: TvPhase = INITIAL_TV_PHASE;
