@@ -17,9 +17,9 @@ import {
 import {
   advanceTvPhase,
   buildTvPlayerKey,
+  getNextFilmTvView,
   getTvRevealDelay,
   getYoutubePlaybackAction,
-  INITIAL_TV_PHASE,
   TV_TRANSITION_TIMING,
   type TvPhase,
   type YoutubeTvPlaybackSignal,
@@ -72,27 +72,17 @@ const TvStaticNoise = ({ poweringOn = false }: { poweringOn?: boolean }) => (
 );
 
 const EmptyNextFilmTv = () => {
-  const [phase, setPhase] = useState<TvPhase>(INITIAL_TV_PHASE);
+  const [isTuning, setIsTuning] = useState(true);
 
   useEffect(() => {
-    const delay =
-      phase === "poweringOn"
-        ? TV_TRANSITION_TIMING.powerOnMs
-        : phase === "tuning"
-          ? getTvRevealDelay(null, "emptyReady")
-          : null;
+    const delay = getTvRevealDelay(null, "emptyReady");
     if (delay === null) {
       return;
     }
 
-    const event = phase === "poweringOn" ? "powerOnFinished" : "signalReady";
-    const revealTimer = window.setTimeout(() => {
-      setPhase((currentPhase) => advanceTvPhase(currentPhase, event));
-    }, delay);
+    const revealTimer = window.setTimeout(() => setIsTuning(false), delay);
     return () => window.clearTimeout(revealTimer);
-  }, [phase]);
-
-  const isTuning = phase !== "playing";
+  }, []);
 
   return (
     <div
@@ -105,18 +95,25 @@ const EmptyNextFilmTv = () => {
       }
     >
       <div className={styles.nextTvScreen}>
-        {isTuning ? (
-          <TvStaticNoise poweringOn={phase === "poweringOn"} />
-        ) : null}
-        {phase === "poweringOn" ? (
-          <span className={styles.nextTvPowerOnFlash} aria-hidden="true" />
-        ) : null}
+        {isTuning ? <TvStaticNoise /> : null}
         <span className={styles.nextTvShield} aria-hidden="true" />
         <span className={styles.nextTvGlow} aria-hidden="true" />
       </div>
     </div>
   );
 };
+
+const BootingNextFilmTv = () => (
+  <div className={styles.nextTv} aria-busy="true" aria-label="Slår på TV-en">
+    <div className={styles.nextTvScreen}>
+      <TvStaticNoise poweringOn />
+      <span className={styles.nextTvSignalLock} aria-hidden="true" />
+      <span className={styles.nextTvPowerOnFlash} aria-hidden="true" />
+      <span className={styles.nextTvShield} aria-hidden="true" />
+      <span className={styles.nextTvGlow} aria-hidden="true" />
+    </div>
+  </div>
+);
 
 const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   const [trailer, setTrailer] = useState<TrailerState>({
@@ -129,12 +126,12 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     title: movie.title,
     youtubeId: movie.trailerYoutubeId ?? null,
   });
-  const [phase, setPhase] = useState<TvPhase>(INITIAL_TV_PHASE);
+  const [phase, setPhase] = useState<TvPhase>("tuning");
   const [playerGeneration, setPlayerGeneration] = useState(0);
   const [usePosterFallback, setUsePosterFallback] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const blockedTrailerTimer = useRef<number | null>(null);
-  const phaseRef = useRef<TvPhase>(INITIAL_TV_PHASE);
+  const phaseRef = useRef<TvPhase>("tuning");
   const revealTimer = useRef<number | null>(null);
   const phaseTimer = useRef<number | null>(null);
   const previousMovieId = useRef(movie.id);
@@ -707,7 +704,24 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
 };
 
 export const NextFilmTv = ({ movie }: NextFilmTvProps) => {
-  if (movie) {
+  const [hasCompletedInitialPowerOn, setHasCompletedInitialPowerOn] =
+    useState(false);
+
+  useEffect(() => {
+    const powerOnTimer = window.setTimeout(
+      () => setHasCompletedInitialPowerOn(true),
+      TV_TRANSITION_TIMING.powerOnMs,
+    );
+    return () => window.clearTimeout(powerOnTimer);
+  }, []);
+
+  const view = getNextFilmTvView(hasCompletedInitialPowerOn, movie !== null);
+
+  if (view === "booting") {
+    return <BootingNextFilmTv />;
+  }
+
+  if (view === "ready" && movie) {
     return <ReadyNextFilmTv movie={movie} />;
   }
 
