@@ -390,7 +390,6 @@
 }
 
 .voteWallSection {
-  border-top: 1px solid var(--rule);
   padding: 0 clamp(0.45rem, 1.1vw, 1.1rem) 2rem;
 }
 
