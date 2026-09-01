@@ -50,6 +50,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               filmId: film.id,
               title: film.title,
               coverImage: film.coverImage,
+              tmdbVoteAverage: film.tmdbVoteAverage,
               votes: entry.votes,
             },
           ]

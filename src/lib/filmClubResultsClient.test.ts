@@ -17,6 +17,7 @@ const completeResults = {
       filmId: 78,
       title: "Blade Runner",
       coverImage: "/VHS/program/covers/blade-runner.webp",
+      tmdbVoteAverage: 8.2,
       votes: 7,
     },
     {
@@ -24,6 +25,7 @@ const completeResults = {
       filmId: 655,
       title: "Paris, Texas",
       coverImage: "/VHS/program/covers/paris-texas.webp",
+      tmdbVoteAverage: 8.1,
       votes: 4,
     },
   ],
@@ -56,6 +58,7 @@ void test("parses the complete aggregate results contract", () => {
   assert.equal(results?.club.id, "na");
   assert.equal(results?.ranking[0]?.title, "Blade Runner");
   assert.equal(results?.ranking[0]?.votes, 7);
+  assert.equal(results?.ranking[0]?.tmdbVoteAverage, 8.2);
   assert.equal(results?.stats.participatingDevices, 6);
   assert.equal(results?.history[0]?.winner.title, "Paris, Texas");
 });

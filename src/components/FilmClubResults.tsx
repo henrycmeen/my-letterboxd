@@ -9,8 +9,7 @@ import {
   type FilmClubResultsHistoryEntry,
   type FilmClubResultsRankingEntry,
 } from "@/lib/filmClubResultsClient";
-import { getUniquePositiveLeaderId } from "@/lib/filmVoteClient";
-import { getClubHomePath, resolveClubSlugParam } from "@/lib/clubSlug";
+import { resolveClubSlugParam } from "@/lib/clubSlug";
 import { withBasePath } from "@/lib/basePath";
 import styles from "@/styles/filmClubResults.module.css";
 
@@ -24,6 +23,14 @@ const POLL_INTERVAL_MS = 1_500;
 
 const formatCount = (count: number, singular: string, plural: string): string =>
   `${count} ${count === 1 ? singular : plural}`;
+
+const tmdbScoreFormatter = new Intl.NumberFormat("nb-NO", {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 1,
+});
+
+const formatTmdbScore = (score: number): string =>
+  tmdbScoreFormatter.format(score);
 
 const formatDateTime = (value: string): string => {
   const date = new Date(value);
@@ -49,18 +56,16 @@ const resolveCoverImage = (coverImage: string): string => {
 const ResultCover = ({
   coverImage,
   title,
-  eager = false,
 }: {
   coverImage: string;
   title: string;
-  eager?: boolean;
 }) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img
     className={styles.coverImage}
     src={resolveCoverImage(coverImage)}
     alt={`Omslag for ${title}`}
-    loading={eager ? "eager" : "lazy"}
+    loading="lazy"
     decoding="async"
   />
 );
@@ -86,65 +91,6 @@ const ResultStats = ({ results }: { results: FilmClubResultsData }) => (
   </dl>
 );
 
-const LeaderPanel = ({ results }: { results: FilmClubResultsData }) => {
-  const topRanked = results.ranking[0] ?? null;
-  const leaderId = getUniquePositiveLeaderId(results.ranking);
-  const leader = leaderId === null ? null : topRanked;
-  const tiedFilmCount = topRanked
-    ? results.ranking.filter((entry) => entry.votes === topRanked.votes).length
-    : 0;
-  const isTiedFirst =
-    leader === null && topRanked !== null && topRanked.votes > 0;
-
-  return (
-    <section className={styles.leaderPanel} aria-labelledby="current-leader">
-      <div className={styles.leaderCopy}>
-        <p className={styles.eyebrow}>Stilling akkurat nå</p>
-        <h2 id="current-leader">
-          {leader
-            ? "Nå leder"
-            : isTiedFirst
-              ? "Delt førsteplass"
-              : "Ingen leder ennå"}
-        </h2>
-        {leader ? (
-          <>
-            <p className={styles.leaderTitle}>{leader.title}</p>
-            <p className={styles.leaderScore}>
-              {formatCount(leader.votes, "stemme", "stemmer")}
-            </p>
-          </>
-        ) : isTiedFirst ? (
-          <p className={styles.emptyCopy}>
-            {formatCount(tiedFilmCount, "film", "filmer")} har{" "}
-            {formatCount(topRanked.votes, "stemme", "stemmer")} hver.
-          </p>
-        ) : (
-          <p className={styles.emptyCopy}>
-            Når den første stemmen er inne, vises filmen som leder her.
-          </p>
-        )}
-        <p className={styles.screeningMeta}>
-          Neste visning: {formatFilmDate(results.activeScreening.scheduledAt)}
-        </p>
-      </div>
-      {leader ? (
-        <div className={styles.leaderCover}>
-          <ResultCover
-            coverImage={leader.coverImage}
-            title={leader.title}
-            eager
-          />
-        </div>
-      ) : (
-        <div className={styles.leaderEmptyCover} aria-hidden="true">
-          <span>VHS</span>
-        </div>
-      )}
-    </section>
-  );
-};
-
 const RankingRow = ({
   entry,
   maximumVotes,
@@ -168,9 +114,14 @@ const RankingRow = ({
         />
       </div>
     </div>
-    <span className={styles.rankingVotes}>
-      {formatCount(entry.votes, "stemme", "stemmer")}
-    </span>
+    <div className={styles.rankingMeta}>
+      <span className={styles.rankingVotes}>
+        {formatCount(entry.votes, "stemme", "stemmer")}
+      </span>
+      <span className={styles.rankingScore}>
+        TMDB {formatTmdbScore(entry.tmdbVoteAverage)}
+      </span>
+    </div>
   </li>
 );
 
@@ -190,10 +141,7 @@ const RankingSection = ({
       aria-labelledby="ranking-heading"
     >
       <div className={styles.sectionHeading}>
-        <div>
-          <p className={styles.eyebrow}>Alle filmer</p>
-          <h2 id="ranking-heading">Rangering</h2>
-        </div>
+        <h2 id="ranking-heading">Rangering</h2>
         <span className={styles.sectionCount}>
           {formatCount(ranking.length, "film", "filmer")}
         </span>
@@ -245,10 +193,7 @@ const HistorySection = ({
 }) => (
   <section className={styles.historySection} aria-labelledby="history-heading">
     <div className={styles.sectionHeading}>
-      <div>
-        <p className={styles.eyebrow}>Arkiv</p>
-        <h2 id="history-heading">Tidligere vinnere</h2>
-      </div>
+      <h2 id="history-heading">Tidligere vinnere</h2>
       <span className={styles.sectionCount}>{history.length}</span>
     </div>
     {history.length > 0 ? (
@@ -273,8 +218,7 @@ const LoadingState = () => (
     aria-label="Laster resultater"
   >
     <div className={styles.resultsShell}>
-      <div className={styles.loadingHeader} />
-      <div className={styles.loadingHero} />
+      <div className={styles.loadingStats} />
       <div className={styles.loadingColumns}>
         <div className={styles.loadingPanel} />
         <div className={styles.loadingPanel} />
@@ -380,28 +324,15 @@ export const FilmClubResults = ({ clubSlug }: FilmClubResultsProps) => {
     return <ErrorState onRetry={retry} />;
   }
 
-  const returnPath = withBasePath(getClubHomePath(normalizedClubSlug));
-
   return (
     <main className={styles.resultsPage}>
       <div className={styles.resultsShell}>
-        <header className={styles.resultsHeader}>
-          <div>
-            <p className={styles.eyebrow}>Filmklubben</p>
-            <h1>{results.club.name}: Resultater</h1>
-          </div>
-          <a className={styles.returnLink} href={returnPath}>
-            <span aria-hidden="true">←</span> Tilbake til avstemningen
-          </a>
-        </header>
-
-        <p className={styles.generatedAt} aria-live="polite">
-          {updateError
-            ? "Oppdateringen feilet – viser sist bekreftede resultat."
-            : `Oppdatert ${formatDateTime(results.generatedAt)}`}
-        </p>
-
-        <LeaderPanel results={results} />
+        <h1 className={styles.srOnly}>Resultater</h1>
+        {updateError ? (
+          <p className={styles.srOnly} role="status">
+            Oppdateringen feilet – viser sist bekreftede resultat.
+          </p>
+        ) : null}
         <ResultStats results={results} />
 
         <div className={styles.resultsColumns}>

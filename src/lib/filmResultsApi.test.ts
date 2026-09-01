@@ -74,7 +74,12 @@ void test("returns the active screening, exact ranking, and aggregate use", asyn
     activeScreening: { id: string; scheduledAt: string };
     club: { id: string; name: string };
     history: unknown[];
-    ranking: Array<{ filmId: number; rank: number; votes: number }>;
+    ranking: Array<{
+      filmId: number;
+      rank: number;
+      tmdbVoteAverage: number;
+      votes: number;
+    }>;
     revision: number;
     stats: {
       lastVoteAt: string | null;
@@ -92,6 +97,7 @@ void test("returns the active screening, exact ranking, and aggregate use", asyn
     rank: 1,
     title: filmVoteCatalogue[1]!.title,
     coverImage: filmVoteCatalogue[1]!.coverImage,
+    tmdbVoteAverage: filmVoteCatalogue[1]!.tmdbVoteAverage,
     votes: 2,
   });
   assert.equal(body.revision, 3);
@@ -132,6 +138,7 @@ void test("orders tied results by TMDB score", async () => {
       rank: 1,
       title: yiYi.title,
       coverImage: yiYi.coverImage,
+      tmdbVoteAverage: yiYi.tmdbVoteAverage,
       votes: 1,
     },
     {
@@ -139,6 +146,7 @@ void test("orders tied results by TMDB score", async () => {
       rank: 2,
       title: master.title,
       coverImage: master.coverImage,
+      tmdbVoteAverage: master.tmdbVoteAverage,
       votes: 1,
     },
   ]);
