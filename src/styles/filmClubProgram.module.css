@@ -200,6 +200,7 @@
   filter: brightness(0.78) contrast(1.85) saturate(0);
   height: 112%;
   inset: -6%;
+  max-width: none;
   mix-blend-mode: screen;
   object-fit: cover;
   opacity: 0.88;
