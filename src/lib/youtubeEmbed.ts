@@ -1,7 +1,11 @@
+export const YOUTUBE_TRAILER_INITIAL_START_SECONDS = 3;
+export const YOUTUBE_TRAILER_LOOP_START_SECONDS = 0;
+
 export const buildYoutubeTrailerEmbedUrl = (youtubeId: string): string => {
   const params = new URLSearchParams({
     autoplay: "1",
     mute: "1",
+    start: String(YOUTUBE_TRAILER_INITIAL_START_SECONDS),
     controls: "0",
     loop: "1",
     playlist: youtubeId,
