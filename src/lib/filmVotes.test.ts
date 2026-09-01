@@ -217,6 +217,30 @@ void test("keeps the earlier leader ahead when another film only draws level", a
   ]);
 });
 
+void test("ranks tied positive films by TMDB score", async () => {
+  const store = await createStore();
+
+  store.recordVote("na", 68722, "voter-a");
+  store.recordVote("na", 25538, "voter-a");
+
+  const snapshot = store.getSnapshot(
+    "na",
+    "voter-a",
+    [68722, 25538, 680],
+    new Map([
+      [68722, 7.094],
+      [25538, 7.9],
+      [680, 8.48],
+    ]),
+  );
+
+  assert.deepEqual(snapshot.ranking, [
+    { filmId: 25538, votes: 1 },
+    { filmId: 68722, votes: 1 },
+    { filmId: 680, votes: 0 },
+  ]);
+});
+
 void test("keeps the earlier film ahead when vote totals are tied", async () => {
   const store = await createStore();
 

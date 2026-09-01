@@ -22,6 +22,9 @@ type ApiResponse = FilmVoteSnapshot | ApiError;
 
 const catalogueFilmIds = filmVoteCatalogue.map((film) => film.id);
 const catalogueFilmIdSet = new Set(catalogueFilmIds);
+const tieBreakScores = new Map(
+  filmVoteCatalogue.map((film) => [film.id, film.tmdbVoteAverage]),
+);
 
 const voteInputSchema = z
   .object({
@@ -115,7 +118,9 @@ export default async function handler(
 
     return res
       .status(200)
-      .json(store.getSnapshot(boardId, voterKey, catalogueFilmIds));
+      .json(
+        store.getSnapshot(boardId, voterKey, catalogueFilmIds, tieBreakScores),
+      );
   } catch {
     return votingUnavailable(res);
   }
