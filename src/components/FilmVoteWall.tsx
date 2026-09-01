@@ -11,7 +11,7 @@ import { withBasePath } from "@/lib/basePath";
 import {
   areVoteSnapshotsEqual,
   getFlipMotion,
-  getPublishedVoteLeaderId,
+  getPublishedVoteTrailerFilmId,
   getVoteCaseState,
   getVoteToggleInteraction,
   isPublishedVoteLeader,
@@ -24,6 +24,9 @@ import styles from "@/styles/filmClubProgram.module.css";
 
 const FILM_BY_ID = new Map(filmVoteCatalogue.map((film) => [film.id, film]));
 const FILM_ID_SET = new Set(filmVoteCatalogue.map((film) => film.id));
+const TMDB_SCORE_BY_FILM_ID = new Map(
+  filmVoteCatalogue.map((film) => [film.id, film.tmdbVoteAverage]),
+);
 
 export type FilmVoteMovie = (typeof filmVoteCatalogue)[number];
 
@@ -223,9 +226,10 @@ export const FilmVoteWall = ({
   }, [boardId, loadSnapshot]);
 
   useLayoutEffect(() => {
-    const leaderId = getPublishedVoteLeaderId(
+    const leaderId = getPublishedVoteTrailerFilmId(
       snapshot,
       isAuthoritativeSnapshot,
+      TMDB_SCORE_BY_FILM_ID,
     );
     onLeaderChange?.(
       leaderId === null ? null : (FILM_BY_ID.get(leaderId) ?? null),

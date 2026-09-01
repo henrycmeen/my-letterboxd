@@ -139,6 +139,27 @@ export const getPublishedVoteLeaderId = (
 ): number | null =>
   isAuthoritative ? getUniquePositiveLeaderId(snapshot.ranking) : null;
 
+export const getPublishedVoteTrailerFilmId = (
+  snapshot: FilmVoteClientSnapshot,
+  isAuthoritative: boolean,
+  tmdbScores: ReadonlyMap<number, number>,
+): number | null => {
+  const topVotes = snapshot.ranking[0]?.votes ?? 0;
+  if (!isAuthoritative || topVotes === 0) {
+    return null;
+  }
+
+  const tiedLeaders = snapshot.ranking.filter(
+    ({ votes }) => votes === topVotes,
+  );
+  return tiedLeaders.reduce((best, candidate) =>
+    (tmdbScores.get(candidate.filmId) ?? Number.NEGATIVE_INFINITY) >
+    (tmdbScores.get(best.filmId) ?? Number.NEGATIVE_INFINITY)
+      ? candidate
+      : best,
+  ).filmId;
+};
+
 export const isPublishedVoteLeader = (
   snapshot: FilmVoteClientSnapshot,
   isAuthoritative: boolean,
