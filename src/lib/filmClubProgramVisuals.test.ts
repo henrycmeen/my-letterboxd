@@ -38,6 +38,13 @@ void test("zooms mobile trailers beyond the square cover crop", () => {
   );
 });
 
+void test("keeps the cassette grid free of a visible top divider", () => {
+  assert.doesNotMatch(
+    stylesheet,
+    /\.voteWallSection\s*\{[^}]*border-top\s*:/s,
+  );
+});
+
 void test("retries blocked autoplay without rendering a manual trailer button", () => {
   assert.doesNotMatch(nextFilmTvSource, /Spill trailer|nextTvRetry/);
   assert.doesNotMatch(stylesheet, /\.nextTvRetry\b/);
