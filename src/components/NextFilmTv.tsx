@@ -12,6 +12,7 @@ import {
   isYoutubePlayingMessage,
   isYoutubeReadyMessage,
   shouldRestartYoutubeTrailer,
+  YOUTUBE_TRAILER_LOOP_START_SECONDS,
 } from "@/lib/youtubeEmbed";
 import {
   advanceTvPhase,
@@ -471,7 +472,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
       }
 
       restartPending.current = true;
-      postYoutubeCommand("seekTo", [0, true]);
+      postYoutubeCommand("seekTo", [YOUTUBE_TRAILER_LOOP_START_SECONDS, true]);
       postYoutubeCommand("playVideo");
     };
 

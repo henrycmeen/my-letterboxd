@@ -11,7 +11,7 @@ import {
 } from "./tvTransition";
 
 const SHORT_TV_INTRO_MAX_MS = 1_200;
-const FAST_TRAILER_REVEAL_MS = 1_000;
+const FAST_TRAILER_REVEAL_MS = 200;
 
 void test("a movie change passes through analog tuning before the new picture appears", () => {
   let phase: TvPhase = "playing";
@@ -29,7 +29,7 @@ void test("a movie change passes through analog tuning before the new picture ap
   assert.equal(phase, "playing");
 });
 
-void test("reveals a confirmed YouTube trailer after one second", () => {
+void test("reveals a confirmed YouTube trailer after 0.2 seconds", () => {
   assert.equal(
     TV_TRANSITION_TIMING.youtubeSignalHoldMs,
     FAST_TRAILER_REVEAL_MS,

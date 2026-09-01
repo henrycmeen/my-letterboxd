@@ -10,9 +10,11 @@ import {
   isYoutubePlayingMessage,
   isYoutubeReadyMessage,
   shouldRestartYoutubeTrailer,
+  YOUTUBE_TRAILER_INITIAL_START_SECONDS,
+  YOUTUBE_TRAILER_LOOP_START_SECONDS,
 } from "./youtubeEmbed";
 
-void test("builds a muted looping trailer URL without controls or a start offset", () => {
+void test("starts the first trailer play slightly in before loops restart from zero", () => {
   const result = new URL(buildYoutubeTrailerEmbedUrl("sVwH0hIvV5k"));
 
   assert.equal(result.origin, "https://www.youtube-nocookie.com");
@@ -27,7 +29,15 @@ void test("builds a muted looping trailer URL without controls or a start offset
   assert.equal(result.searchParams.get("fs"), "0");
   assert.equal(result.searchParams.get("cc_load_policy"), "0");
   assert.equal(result.searchParams.get("enablejsapi"), "1");
-  assert.equal(result.searchParams.has("start"), false);
+  assert.equal(
+    result.searchParams.get("start"),
+    String(YOUTUBE_TRAILER_INITIAL_START_SECONDS),
+  );
+  assert.equal(YOUTUBE_TRAILER_INITIAL_START_SECONDS, 3);
+  assert.equal(YOUTUBE_TRAILER_LOOP_START_SECONDS, 0);
+  assert.ok(
+    YOUTUBE_TRAILER_INITIAL_START_SECONDS > YOUTUBE_TRAILER_LOOP_START_SECONDS,
+  );
   assert.equal(result.searchParams.has("modestbranding"), false);
   assert.equal(result.searchParams.has("showinfo"), false);
   assert.equal(result.searchParams.has("autohide"), false);
