@@ -5,6 +5,7 @@ import {
   buildTvPlayerKey,
   getTvRevealDelay,
   getYoutubePlaybackAction,
+  INITIAL_TV_PHASE,
   shouldRevealYoutubeTrailer,
   TV_TRANSITION_TIMING,
   type TvPhase,
@@ -14,19 +15,31 @@ const SHORT_TV_INTRO_MAX_MS = 1_200;
 const FAST_TRAILER_REVEAL_MS = 200;
 const VISIBLE_POWER_ON_MS = 420;
 
-void test("a movie change passes through analog tuning before the new picture appears", () => {
+void test("the TV powers on into analog tuning before the first picture appears", () => {
+  let phase: TvPhase = INITIAL_TV_PHASE;
+
+  assert.equal(phase, "poweringOn");
+
+  phase = advanceTvPhase(phase, "powerOnFinished");
+  assert.equal(phase, "tuning");
+
+  phase = advanceTvPhase(phase, "signalReady");
+  assert.equal(phase, "playing");
+});
+
+void test("a movie change powers back on into tuning before the new picture appears", () => {
   let phase: TvPhase = "playing";
 
   phase = advanceTvPhase(phase, "movieChanged");
   assert.equal(phase, "poweringOff");
 
   phase = advanceTvPhase(phase, "powerOffFinished");
-  assert.equal(phase, "tuning");
-
-  phase = advanceTvPhase(phase, "signalReady");
   assert.equal(phase, "poweringOn");
 
   phase = advanceTvPhase(phase, "powerOnFinished");
+  assert.equal(phase, "tuning");
+
+  phase = advanceTvPhase(phase, "signalReady");
   assert.equal(phase, "playing");
 });
 
@@ -92,11 +105,11 @@ void test("YouTube playback actions keep the trailer reveal stable on mobile", (
   );
   assert.equal(
     getYoutubePlaybackAction("poweringOn", false, "paused"),
-    "returnToTuning",
+    "cancelPendingReveal",
   );
   assert.equal(
     getYoutubePlaybackAction("poweringOn", false, "buffering"),
-    "returnToTuning",
+    "cancelPendingReveal",
   );
   assert.equal(
     getYoutubePlaybackAction("playing", false, "paused"),
@@ -119,7 +132,7 @@ void test("YouTube playback actions keep the trailer reveal stable on mobile", (
 
 void test("irrelevant phase events do not skip the signal transition", () => {
   assert.equal(advanceTvPhase("poweringOff", "signalReady"), "poweringOff");
-  assert.equal(advanceTvPhase("tuning", "powerOnFinished"), "tuning");
+  assert.equal(advanceTvPhase("playing", "powerOnFinished"), "playing");
 });
 
 void test("the same trailer can be remounted after a rapid A to B to A switch", () => {

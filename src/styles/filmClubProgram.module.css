@@ -116,7 +116,7 @@
 }
 
 .nextTvPicturePoweringOn {
-  animation: nextTvPowerOn 420ms cubic-bezier(0.16, 0.78, 0.24, 1) both;
+  opacity: 0;
 }
 
 .nextTvPicturePoweringOff {
@@ -151,6 +151,11 @@
   pointer-events: none;
   position: absolute;
   z-index: 2;
+}
+
+.nextTvStaticPoweringOn {
+  animation: nextTvPowerOn 420ms cubic-bezier(0.16, 0.78, 0.24, 1) both;
+  transform-origin: 50% 50%;
 }
 
 .nextTvStatic::before {
@@ -598,12 +603,12 @@
     transition: none;
   }
 
-  .nextTvPicturePlaying,
-  .nextTvPicturePoweringOn {
+  .nextTvPicturePlaying {
     opacity: 1;
   }
 
   .nextTvPictureTuning,
+  .nextTvPicturePoweringOn,
   .nextTvPicturePoweringOff,
   .nextTvStatic,
   .nextTvPowerOnFlash,
