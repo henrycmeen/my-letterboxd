@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
+    "catalogue:vote": "node --env-file-if-exists=.env --import tsx scripts/vhs/update_vote_catalogue.ts",
     "check": "pnpm lint && pnpm typecheck",
     "covers:vote": "tsx scripts/vhs/generate_vote_covers.ts",
     "dev": "next dev",
