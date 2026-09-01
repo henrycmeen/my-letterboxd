@@ -27,14 +27,29 @@ void test("keeps the TV static frame and grain at one stable size", () => {
   assert.doesNotMatch(stylesheet, /@keyframes\s+tvStatic(?:Arrival|Grain)\b/);
 });
 
-void test("zooms mobile trailers beyond the square cover crop", () => {
-  const videoRules = [
-    ...stylesheet.matchAll(/\.nextTvVideo\s*\{([^}]*)\}/gs),
-  ].map((match) => match[1] ?? "");
+void test("keeps the TV square and capped at the mobile presentation size", () => {
+  assert.match(getRuleBody(".nextCase"), /max-width\s*:\s*34rem/);
+  assert.match(getRuleBody(".nextTv"), /aspect-ratio\s*:\s*1(?:\s*\/\s*1)?/);
+});
 
-  assert.ok(
-    videoRules.some((rule) => /transform\s*:\s*scale\(1\.14\)/.test(rule)),
+void test("lets the cassette wall keep filling wide screens", () => {
+  assert.doesNotMatch(getRuleBody(".voteWallSection"), /max-width\s*:/);
+  assert.match(
+    getRuleBody(".voteGrid"),
+    /grid-template-columns\s*:\s*repeat\(auto-fill,\s*minmax\(6rem,\s*1fr\)\)/,
   );
+});
+
+void test("zooms trailers to fill the square TV at every width", () => {
+  const videoRule = [
+    ...stylesheet.matchAll(/\.nextTvVideo\s*\{([^}]*)\}/gs),
+  ]
+    .map((match) => match[1] ?? "")
+    .find((rule) => /max-width\s*:\s*none/.test(rule));
+  assert.ok(videoRule, "Fant ikke hovedregelen for trailervideoen");
+  assert.match(videoRule, /left\s*:\s*-38\.89%/);
+  assert.match(videoRule, /transform\s*:\s*scale\(1\.14\)/);
+  assert.match(videoRule, /width\s*:\s*177\.78%/);
 });
 
 void test("opens the static from a bright CRT line before revealing the trailer", () => {
