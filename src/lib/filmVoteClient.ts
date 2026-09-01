@@ -28,7 +28,7 @@ export interface FlipMotion {
 }
 
 export interface VoteCaseState {
-  cassettePosition: "ejected" | "seated";
+  cassettePosition: "seated";
   isOpen: boolean;
   showsCassette: boolean;
 }
@@ -40,12 +40,11 @@ export interface VoteToggleInteraction {
 
 export const getVoteCaseState = ({
   hasVoted,
-  isLeader,
 }: {
   hasVoted: boolean;
   isLeader: boolean;
 }): VoteCaseState => ({
-  cassettePosition: isLeader ? "ejected" : "seated",
+  cassettePosition: "seated",
   isOpen: hasVoted,
   showsCassette: true,
 });

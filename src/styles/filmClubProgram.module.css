@@ -145,7 +145,6 @@
 }
 
 .nextTvStatic {
-  animation: tvStaticArrival 130ms steps(2, end) both;
   background: #090a09;
   inset: 0;
   overflow: hidden;
@@ -198,7 +197,6 @@
 }
 
 .nextTvStaticGrain {
-  animation: tvStaticGrain 120ms steps(2, end) infinite;
   filter: brightness(0.78) contrast(1.85) saturate(0);
   height: 112%;
   inset: -6%;
@@ -287,46 +285,6 @@
   z-index: 4;
 }
 
-.nextTvRetry {
-  align-items: center;
-  background: rgba(5, 5, 5, 0.84);
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 999px;
-  bottom: clamp(0.8rem, 3vw, 1.35rem);
-  color: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: clamp(0.62rem, 2.3vw, 0.78rem);
-  font-weight: 760;
-  gap: 0.5rem;
-  left: 50%;
-  letter-spacing: 0.13em;
-  min-height: 44px;
-  padding: 0.68rem 0.9rem;
-  position: absolute;
-  text-transform: uppercase;
-  touch-action: manipulation;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  z-index: 6;
-}
-
-.nextTvRetry::before {
-  border-bottom: 0.28rem solid transparent;
-  border-left: 0.46rem solid currentColor;
-  border-top: 0.28rem solid transparent;
-  content: "";
-  display: block;
-  height: 0;
-  width: 0;
-}
-
-.nextTvRetry:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-
 @keyframes nextTvPowerOn {
   0% {
     filter: brightness(1.18) contrast(1.08) saturate(0.82);
@@ -379,21 +337,6 @@
   }
 }
 
-@keyframes tvStaticArrival {
-  0% {
-    opacity: 0;
-    transform: scaleY(0.025);
-  }
-  58% {
-    opacity: 1;
-    transform: scaleY(0.025);
-  }
-  100% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}
-
 @keyframes tvStaticJitter {
   0% {
     transform: translate(-1.5%, -1%);
@@ -403,19 +346,6 @@
   }
   100% {
     transform: translate(-0.5%, 0.5%);
-  }
-}
-
-@keyframes tvStaticGrain {
-  0% {
-    transform: translate(-1.8%, -1.2%) scale(1.05);
-  }
-  50% {
-    filter: brightness(1.18) contrast(2.15) saturate(0);
-    transform: translate(1.6%, 1.8%) scale(1.08);
-  }
-  100% {
-    transform: translate(-0.8%, 0.6%) scale(1.06);
   }
 }
 
@@ -542,14 +472,6 @@
   z-index: 1;
 }
 
-.voteFilm[data-cassette-position="ejected"] {
-  z-index: 4;
-}
-
-.voteFilm[data-cassette-position="ejected"] .voteCassetteTray {
-  transform: translateX(34%);
-}
-
 .voteCaseCover {
   backface-visibility: hidden;
   filter: drop-shadow(0.25rem 0.35rem 0.3rem rgba(12, 12, 10, 0.14));
@@ -614,6 +536,7 @@
 
   .nextTvVideo {
     left: -38.89%;
+    transform: scale(1.14);
     width: 177.78%;
   }
 

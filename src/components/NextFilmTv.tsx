@@ -408,8 +408,8 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     }
 
     // Keep the no-signal layer visible until YouTube confirms playback.
-    // Safari can reject autoplay even for muted embeds. In that case the
-    // poster replaces the iframe before the signal layer is removed.
+    // If Safari blocks a muted attempt, the player is remounted and retried
+    // automatically behind the TV treatment.
   }, [displayed.youtubeId, postYoutubeCommand]);
 
   const retryTrailerPlayback = useCallback(() => {
@@ -423,17 +423,28 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     resetPlaybackCandidate();
     posterFallbackRef.current = false;
     setUsePosterFallback(false);
+    setPlayerGeneration((generation) => generation + 1);
     setTvPhase("tuning");
-    prepareTrailerPlayback();
   }, [
     clearBlockedTrailerTimer,
     clearPhaseTimer,
     clearRevealTimer,
     displayed.youtubeId,
-    prepareTrailerPlayback,
     resetPlaybackCandidate,
     setTvPhase,
   ]);
+
+  useEffect(() => {
+    if (!usePosterFallback || phase !== "playing" || !displayed.youtubeId) {
+      return;
+    }
+
+    const retryTimer = window.setTimeout(
+      retryTrailerPlayback,
+      TV_TRANSITION_TIMING.posterRetryMs,
+    );
+    return () => window.clearTimeout(retryTimer);
+  }, [displayed.youtubeId, phase, retryTrailerPlayback, usePosterFallback]);
 
   useEffect(() => {
     if (phase !== "tuning" || !displayed.youtubeId || usePosterFallback) {
@@ -669,16 +680,6 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         ) : null}
         <span className={styles.nextTvShield} aria-hidden="true" />
         <span className={styles.nextTvGlow} aria-hidden="true" />
-        {usePosterFallback && phase === "playing" ? (
-          <button
-            className={styles.nextTvRetry}
-            type="button"
-            aria-label={`Spill trailer for ${displayed.title}`}
-            onClick={retryTrailerPlayback}
-          >
-            Spill trailer
-          </button>
-        ) : null}
       </div>
     </div>
   );

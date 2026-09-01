@@ -11,6 +11,8 @@ import {
 } from "./tvTransition";
 
 const SHORT_TV_INTRO_MAX_MS = 1_200;
+const YOUTUBE_CONTROL_MASK_MIN_MS = 3_500;
+const YOUTUBE_CONTROL_MASK_MAX_MS = 5_000;
 
 void test("a movie change passes through analog tuning before the new picture appears", () => {
   let phase: TvPhase = "playing";
@@ -29,8 +31,12 @@ void test("a movie change passes through analog tuning before the new picture ap
 });
 
 void test("the tuning window masks YouTube controls before revealing the leader", () => {
-  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs >= 700);
-  assert.ok(TV_TRANSITION_TIMING.youtubeSignalHoldMs <= SHORT_TV_INTRO_MAX_MS);
+  assert.ok(
+    TV_TRANSITION_TIMING.youtubeSignalHoldMs >= YOUTUBE_CONTROL_MASK_MIN_MS,
+  );
+  assert.ok(
+    TV_TRANSITION_TIMING.youtubeSignalHoldMs <= YOUTUBE_CONTROL_MASK_MAX_MS,
+  );
   assert.ok(
     TV_TRANSITION_TIMING.posterSignalHoldMs <
       TV_TRANSITION_TIMING.youtubeSignalHoldMs,
@@ -45,11 +51,12 @@ void test("an empty vote board leaves tuning after the same bounded intro", () =
   );
 });
 
-void test("YouTube playback does not add a separate long post-play hold", () => {
+void test("YouTube playback uses one bounded control-masking hold", () => {
   const revealDelay = getTvRevealDelay("trailer-a", "youtubePlaying");
 
   assert.ok(revealDelay !== null);
-  assert.ok(revealDelay <= SHORT_TV_INTRO_MAX_MS);
+  assert.equal(revealDelay, TV_TRANSITION_TIMING.youtubeSignalHoldMs);
+  assert.ok(revealDelay <= YOUTUBE_CONTROL_MASK_MAX_MS);
 });
 
 void test("only an active YouTube playing signal may begin the reveal", () => {
@@ -95,7 +102,7 @@ void test("YouTube playback actions keep the trailer reveal stable on mobile", (
   );
   assert.equal(
     getYoutubePlaybackAction("playing", false, "buffering"),
-    "returnToTuning",
+    "ignore",
   );
 
   for (const signal of ["playing", "paused", "buffering"] as const) {
@@ -125,7 +132,7 @@ void test("a blocked YouTube player falls back to the poster instead of tuning f
     TV_TRANSITION_TIMING.blockedTrailerFallbackMs >=
       TV_TRANSITION_TIMING.youtubeSignalHoldMs + 2_000,
   );
-  assert.ok(TV_TRANSITION_TIMING.blockedTrailerFallbackMs <= 4_500);
+  assert.ok(TV_TRANSITION_TIMING.blockedTrailerFallbackMs <= 8_000);
   assert.equal(getTvRevealDelay("trailer-a", "playerFallback"), null);
   assert.equal(
     getTvRevealDelay("trailer-a", "youtubePlaying"),
@@ -141,8 +148,10 @@ void test("successful and blocked players both leave tuning within bounded total
     TV_TRANSITION_TIMING.posterSignalHoldMs +
     TV_TRANSITION_TIMING.powerOnMs;
 
-  assert.ok(successfulTotal <= 1_400);
-  assert.ok(blockedTotal <= 4_500);
+  assert.ok(successfulTotal <= 5_200);
+  assert.ok(blockedTotal <= 8_500);
+  assert.ok(TV_TRANSITION_TIMING.posterRetryMs >= 800);
+  assert.ok(TV_TRANSITION_TIMING.posterRetryMs <= 2_000);
 });
 
 void test("a film without a trailer can still reveal its poster", () => {
