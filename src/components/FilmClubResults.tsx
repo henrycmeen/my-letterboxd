@@ -136,16 +136,7 @@ const RankingSection = ({
   );
 
   return (
-    <section
-      className={styles.rankingSection}
-      aria-labelledby="ranking-heading"
-    >
-      <div className={styles.sectionHeading}>
-        <h2 id="ranking-heading">Rangering</h2>
-        <span className={styles.sectionCount}>
-          {formatCount(ranking.length, "film", "filmer")}
-        </span>
-      </div>
+    <section className={styles.rankingSection} aria-label="Rangering">
       {ranking.length > 0 ? (
         <ol
           className={styles.rankingList}
@@ -333,6 +324,12 @@ export const FilmClubResults = ({ clubSlug }: FilmClubResultsProps) => {
             Oppdateringen feilet – viser sist bekreftede resultat.
           </p>
         ) : null}
+        <a
+          className={styles.backLink}
+          href={withBasePath(`/${normalizedClubSlug}`)}
+        >
+          Tilbake til avstemningen
+        </a>
         <ResultStats results={results} />
 
         <div className={styles.resultsColumns}>

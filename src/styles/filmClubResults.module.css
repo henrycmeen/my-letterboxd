@@ -52,6 +52,26 @@
   text-transform: uppercase;
 }
 
+.backLink {
+  align-items: center;
+  color: var(--results-muted);
+  display: inline-flex;
+  font-size: 0.72rem;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0.75rem;
+  text-decoration: none;
+}
+
+.backLink::before {
+  color: var(--results-red);
+  content: "←";
+}
+
+.backLink:hover,
+.backLink:focus-visible {
+  color: var(--results-cream);
+}
+
 .statsGrid {
   background: var(--results-panel);
   border-bottom: 1px solid var(--results-rule);
