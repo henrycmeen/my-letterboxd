@@ -8,9 +8,6 @@ import {
 import { getFilmVoteStore } from "@/lib/filmVotes";
 
 const catalogueFilmIds = filmVoteCatalogue.map((film) => film.id);
-const catalogueTmdbScores = new Map(
-  filmVoteCatalogue.map((film) => [film.id, film.tmdbVoteAverage]),
-);
 const filmById = new Map(filmVoteCatalogue.map((film) => [film.id, film]));
 
 const getQueryValue = (
@@ -35,11 +32,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const clubId = resolveCanonicalClubId(requestedSlug);
     const programme = getFilmClubProgramme(clubId);
     const boardId = getActiveVoteBoardId(clubId);
-    const results = getFilmVoteStore().getResults(
-      boardId,
-      catalogueFilmIds,
-      catalogueTmdbScores,
-    );
+    const results = getFilmVoteStore().getResults(boardId, catalogueFilmIds);
 
     const ranking = results.ranking.flatMap((entry, index) => {
       const film = filmById.get(entry.filmId);

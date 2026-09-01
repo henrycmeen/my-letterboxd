@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
+import { Worker } from "node:worker_threads";
 import { createFilmVoteStore } from "./filmVotes";
 
 const testDirectories: string[] = [];
@@ -96,6 +97,76 @@ void test("counts votes from different voters for the same film", async () => {
   ]);
 });
 
+void test("reads each device vote and shared ranking from one SQLite snapshot", async () => {
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "filmklubb-votes-"));
+  testDirectories.push(directory);
+  const databasePath = path.join(directory, "votes.sqlite");
+  const store = createFilmVoteStore(databasePath);
+  const stopBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  const stop = new Int32Array(stopBuffer);
+  const writer = new Worker(
+    `
+      const { DatabaseSync } = require("node:sqlite");
+      const { parentPort, workerData } = require("node:worker_threads");
+      const database = new DatabaseSync(workerData.databasePath);
+      database.exec("PRAGMA journal_mode = WAL");
+      database.exec("PRAGMA busy_timeout = 5000");
+      const insertVote = database.prepare(
+        "INSERT OR IGNORE INTO film_votes (board_id, film_id, voter_key, created_at) VALUES (?, ?, ?, ?)",
+      );
+      const deleteVote = database.prepare(
+        "DELETE FROM film_votes WHERE board_id = ? AND film_id = ? AND voter_key = ?",
+      );
+      const updateRevision = database.prepare(
+        "INSERT INTO film_vote_boards (board_id, revision, updated_at) VALUES (?, 1, ?) " +
+          "ON CONFLICT(board_id) DO UPDATE SET revision = film_vote_boards.revision + 1, updated_at = excluded.updated_at",
+      );
+      const stop = new Int32Array(workerData.stopBuffer);
+      let hasVoted = false;
+      parentPort.postMessage("ready");
+      while (Atomics.load(stop, 0) === 0) {
+        database.exec("BEGIN IMMEDIATE");
+        const updatedAt = new Date().toISOString();
+        const result = hasVoted
+          ? deleteVote.run("na", 42, "voter-a")
+          : insertVote.run("na", 42, "voter-a", updatedAt);
+        if (result.changes > 0) {
+          updateRevision.run("na", updatedAt);
+        }
+        database.exec("COMMIT");
+        hasVoted = !hasVoted;
+      }
+      database.close();
+    `,
+    {
+      eval: true,
+      workerData: { databasePath, stopBuffer },
+    },
+  );
+
+  await new Promise<void>((resolve, reject) => {
+    writer.once("message", () => resolve());
+    writer.once("error", reject);
+  });
+
+  let inconsistentSnapshot: ReturnType<typeof store.getSnapshot> | null = null;
+  try {
+    for (let index = 0; index < 25_000; index += 1) {
+      const snapshot = store.getSnapshot("na", "voter-a", [42]);
+      if (snapshot.ranking[0]?.votes !== snapshot.votedFilmIds.length) {
+        inconsistentSnapshot = snapshot;
+        break;
+      }
+    }
+  } finally {
+    Atomics.store(stop, 0, 1);
+    await writer.terminate();
+    store.close();
+  }
+
+  assert.equal(inconsistentSnapshot, null);
+});
+
 void test("keeps the earlier leader ahead when another film only draws level", async () => {
   const store = await createStore();
 
@@ -110,39 +181,38 @@ void test("keeps the earlier leader ahead when another film only draws level", a
   ]);
 });
 
-void test("uses the higher TMDB score when vote totals are tied", async () => {
+void test("keeps the earlier film ahead when vote totals are tied", async () => {
   const store = await createStore();
-  const tmdbScores = new Map([
-    [42, 7.4],
-    [7, 8.6],
-    [3, 8.1],
-  ]);
 
   store.recordVote("na", 42, "voter-a");
   store.recordVote("na", 7, "voter-a");
 
-  const snapshot = store.getSnapshot("na", "voter-a", [42, 7, 3], tmdbScores);
+  const snapshot = store.getSnapshot("na", "voter-a", [42, 7, 3]);
   assert.deepEqual(snapshot.ranking, [
-    { filmId: 7, votes: 1 },
     { filmId: 42, votes: 1 },
+    { filmId: 7, votes: 1 },
     { filmId: 3, votes: 0 },
   ]);
 });
 
-void test("always ranks more votes ahead of a higher TMDB score", async () => {
+void test("keeps the catalogue order before anyone has voted", async () => {
+  const store = await createStore();
+
+  const snapshot = store.getSnapshot("na", "voter-a", [42, 7, 3]);
+
+  assert.deepEqual(snapshot.ranking, [
+    { filmId: 42, votes: 0 },
+    { filmId: 7, votes: 0 },
+    { filmId: 3, votes: 0 },
+  ]);
+});
+
+void test("always ranks more votes ahead of catalogue order", async () => {
   const store = await createStore();
 
   store.recordVote("na", 42, "voter-a");
 
-  const snapshot = store.getSnapshot(
-    "na",
-    "voter-a",
-    [42, 7],
-    new Map([
-      [42, 5.5],
-      [7, 9.9],
-    ]),
-  );
+  const snapshot = store.getSnapshot("na", "voter-a", [7, 42]);
   assert.deepEqual(snapshot.ranking, [
     { filmId: 42, votes: 1 },
     { filmId: 7, votes: 0 },

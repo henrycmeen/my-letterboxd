@@ -24,9 +24,6 @@ import styles from "@/styles/filmClubProgram.module.css";
 
 const FILM_BY_ID = new Map(filmVoteCatalogue.map((film) => [film.id, film]));
 const FILM_ID_SET = new Set(filmVoteCatalogue.map((film) => film.id));
-const INITIAL_RANKED_FILMS = [...filmVoteCatalogue].sort(
-  (first, second) => second.tmdbVoteAverage - first.tmdbVoteAverage,
-);
 
 export type FilmVoteMovie = (typeof filmVoteCatalogue)[number];
 
@@ -42,7 +39,7 @@ interface VoteMutation {
 
 const createInitialSnapshot = (boardId: string): FilmVoteClientSnapshot => ({
   boardId,
-  ranking: INITIAL_RANKED_FILMS.map((film) => ({ filmId: film.id, votes: 0 })),
+  ranking: filmVoteCatalogue.map((film) => ({ filmId: film.id, votes: 0 })),
   revision: 0,
   votedFilmIds: [],
 });

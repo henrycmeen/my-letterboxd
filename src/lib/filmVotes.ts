@@ -48,12 +48,10 @@ export interface FilmVoteStore {
     boardId: string,
     voterKey: string,
     catalogueFilmIds: number[],
-    tmdbScores?: ReadonlyMap<number, number>,
   ): FilmVoteSnapshot;
   getResults(
     boardId: string,
     catalogueFilmIds: number[],
-    tmdbScores?: ReadonlyMap<number, number>,
   ): FilmVoteResults;
   recordVote(boardId: string, filmId: number, voterKey: string): boolean;
   setVote(
@@ -139,7 +137,6 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
   const getRanking = (
     boardId: string,
     catalogueFilmIds: number[],
-    tmdbScores?: ReadonlyMap<number, number>,
   ): FilmVoteRankingEntry[] => {
     const countRows = database
       .prepare(
@@ -167,14 +164,12 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
           filmId,
           firstVoteOrder: count?.firstVoteOrder ?? Number.MAX_SAFE_INTEGER,
           initialRank,
-          tmdbScore: tmdbScores?.get(filmId) ?? 0,
           votes: count?.votes ?? 0,
         };
       })
       .sort(
         (first, second) =>
           second.votes - first.votes ||
-          second.tmdbScore - first.tmdbScore ||
           first.firstVoteOrder - second.firstVoteOrder ||
           first.initialRank - second.initialRank,
       )
@@ -229,25 +224,27 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
       database.close();
     },
 
-    getSnapshot(boardId, voterKey, catalogueFilmIds, tmdbScores) {
-      const votedRows = database
-        .prepare(
-          `SELECT film_id
-           FROM film_votes
-           WHERE board_id = ? AND voter_key = ?
-           ORDER BY vote_id ASC`,
-        )
-        .all(boardId, voterKey) as unknown as VotedFilmRow[];
+    getSnapshot(boardId, voterKey, catalogueFilmIds) {
+      return runInReadTransaction(database, () => {
+        const votedRows = database
+          .prepare(
+            `SELECT film_id
+             FROM film_votes
+             WHERE board_id = ? AND voter_key = ?
+             ORDER BY vote_id ASC`,
+          )
+          .all(boardId, voterKey) as unknown as VotedFilmRow[];
 
-      return {
-        boardId,
-        ranking: getRanking(boardId, catalogueFilmIds, tmdbScores),
-        revision: getRevision(boardId),
-        votedFilmIds: votedRows.map((row) => row.film_id),
-      };
+        return {
+          boardId,
+          ranking: getRanking(boardId, catalogueFilmIds),
+          revision: getRevision(boardId),
+          votedFilmIds: votedRows.map((row) => row.film_id),
+        };
+      });
     },
 
-    getResults(boardId, catalogueFilmIds, tmdbScores) {
+    getResults(boardId, catalogueFilmIds) {
       return runInReadTransaction(database, () => {
         const stats = database
           .prepare(
@@ -264,7 +261,7 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
           boardId,
           lastVoteAt: stats.last_vote_at,
           participatingDevices: stats.participating_devices,
-          ranking: getRanking(boardId, catalogueFilmIds, tmdbScores),
+          ranking: getRanking(boardId, catalogueFilmIds),
           revision: getRevision(boardId),
           totalVotes: stats.total_votes,
         };
