@@ -9,9 +9,7 @@ import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 const secondFilmId = filmVoteCatalogue[1]!.id;
 const thirdFilmId = filmVoteCatalogue[2]!.id;
 const fourthFilmId = filmVoteCatalogue[3]!.id;
-const highestRatedFilmId = [...filmVoteCatalogue].sort(
-  (first, second) => second.tmdbVoteAverage - first.tmdbVoteAverage,
-)[0]!.id;
+const firstFilmId = filmVoteCatalogue[0]!.id;
 
 const testDirectory = await fs.mkdtemp(
   path.join(tmpdir(), "filmklubb-votes-api-"),
@@ -103,13 +101,13 @@ void test("GET returns the shared ranking and this device's voted films", async 
   };
   assert.equal(body.boardId, "na");
   assert.equal(body.ranking.length, 100);
-  assert.equal(body.ranking[0]?.filmId, highestRatedFilmId);
+  assert.equal(body.ranking[0]?.filmId, firstFilmId);
   assert.equal(body.revision, 0);
   assert.deepEqual(body.votedFilmIds, []);
   assert.equal(JSON.stringify(body).includes("203.0.113.8"), false);
 });
 
-void test("GET uses TMDB score to order films with equal vote totals", async () => {
+void test("GET keeps catalogue order when vote totals are equal", async () => {
   const response = await invoke({
     method: "GET",
     query: { boardId: "tmdb-tie-break" },
@@ -120,7 +118,7 @@ void test("GET uses TMDB score to order films with equal vote totals", async () 
     ranking: Array<{ filmId: number; votes: number }>;
   };
   assert.deepEqual(body.ranking[0], {
-    filmId: highestRatedFilmId,
+    filmId: firstFilmId,
     votes: 0,
   });
 });
@@ -313,6 +311,15 @@ void test("a first visit works without an IP and issues a secure device cookie",
   );
   assert.match(response.headers["set-cookie"] ?? "", /HttpOnly/);
   assert.match(response.headers["set-cookie"] ?? "", /SameSite=Lax/);
+});
+
+void test("rejects a request without an explicit screening board", async () => {
+  const response = await invoke({ method: "GET", query: {} });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.body, {
+    error: { code: "INVALID_REQUEST", message: "Ugyldig stemme." },
+  });
 });
 
 void test("rejects films outside the fixed catalogue", async () => {

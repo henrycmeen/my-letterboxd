@@ -45,6 +45,13 @@ void test("keeps the cassette grid free of a visible top divider", () => {
   );
 });
 
+void test("keeps dark VHS covers legible against the black mobile wall", () => {
+  assert.match(
+    getRuleBody(".voteCaseCover img"),
+    /filter\s*:\s*drop-shadow\(0 0 0\.035rem rgba\(255, 255, 255, 0\.18\)\)/,
+  );
+});
+
 void test("retries blocked autoplay without rendering a manual trailer button", () => {
   assert.doesNotMatch(nextFilmTvSource, /Spill trailer|nextTvRetry/);
   assert.doesNotMatch(stylesheet, /\.nextTvRetry\b/);

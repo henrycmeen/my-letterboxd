@@ -22,9 +22,6 @@ type ApiResponse = FilmVoteSnapshot | ApiError;
 
 const catalogueFilmIds = filmVoteCatalogue.map((film) => film.id);
 const catalogueFilmIdSet = new Set(catalogueFilmIds);
-const catalogueTmdbScores = new Map(
-  filmVoteCatalogue.map((film) => [film.id, film.tmdbVoteAverage]),
-);
 
 const voteInputSchema = z
   .object({
@@ -39,7 +36,12 @@ const getQueryValue = (
 ): string | undefined => (Array.isArray(value) ? value[0] : value);
 
 const resolveBoardId = (req: NextApiRequest): string | null => {
-  const boardId = normalizeClubSlug(getQueryValue(req.query.boardId));
+  const requestedBoardId = getQueryValue(req.query.boardId);
+  if (!requestedBoardId?.trim()) {
+    return null;
+  }
+
+  const boardId = normalizeClubSlug(requestedBoardId);
   return boardId.length <= 64 ? boardId : null;
 };
 
@@ -113,14 +115,7 @@ export default async function handler(
 
     return res
       .status(200)
-      .json(
-        store.getSnapshot(
-          boardId,
-          voterKey,
-          catalogueFilmIds,
-          catalogueTmdbScores,
-        ),
-      );
+      .json(store.getSnapshot(boardId, voterKey, catalogueFilmIds));
   } catch {
     return votingUnavailable(res);
   }
