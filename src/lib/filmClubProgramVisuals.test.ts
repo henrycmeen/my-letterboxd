@@ -37,11 +37,12 @@ void test("zooms mobile trailers beyond the square cover crop", () => {
   );
 });
 
-void test("opens the first trailer from a bright CRT line instead of fading it in", () => {
+void test("opens the static from a bright CRT line before revealing the trailer", () => {
   assert.match(
-    getRuleBody(".nextTvPicturePoweringOn"),
+    getRuleBody(".nextTvStaticPoweringOn"),
     /animation\s*:\s*nextTvPowerOn 420ms/,
   );
+  assert.doesNotMatch(getRuleBody(".nextTvPicturePoweringOn"), /animation\s*:/);
   assert.match(
     getRuleBody(".nextTvPowerOnFlash"),
     /animation\s*:\s*nextTvPowerFlash 420ms/,

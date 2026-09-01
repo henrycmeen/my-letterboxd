@@ -19,6 +19,7 @@ import {
   buildTvPlayerKey,
   getTvRevealDelay,
   getYoutubePlaybackAction,
+  INITIAL_TV_PHASE,
   TV_TRANSITION_TIMING,
   type TvPhase,
   type YoutubeTvPlaybackSignal,
@@ -52,8 +53,13 @@ interface DisplayedTrailer {
 const MAX_STABLE_PROGRESS_AGE_MS = 1_500;
 const PLAYBACK_WATCHDOG_GRACE_MS = 4_000;
 
-const TvStaticNoise = () => (
-  <span className={styles.nextTvStatic} aria-hidden="true">
+const TvStaticNoise = ({ poweringOn = false }: { poweringOn?: boolean }) => (
+  <span
+    className={`${styles.nextTvStatic} ${
+      poweringOn ? styles.nextTvStaticPoweringOn : ""
+    }`}
+    aria-hidden="true"
+  >
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img
       className={styles.nextTvStaticGrain}
@@ -66,20 +72,27 @@ const TvStaticNoise = () => (
 );
 
 const EmptyNextFilmTv = () => {
-  const [isTuning, setIsTuning] = useState(true);
+  const [phase, setPhase] = useState<TvPhase>(INITIAL_TV_PHASE);
 
   useEffect(() => {
-    const revealDelay = getTvRevealDelay(null, "emptyReady");
-    if (revealDelay === null) {
+    const delay =
+      phase === "poweringOn"
+        ? TV_TRANSITION_TIMING.powerOnMs
+        : phase === "tuning"
+          ? getTvRevealDelay(null, "emptyReady")
+          : null;
+    if (delay === null) {
       return;
     }
 
-    const revealTimer = window.setTimeout(
-      () => setIsTuning(false),
-      revealDelay,
-    );
+    const event = phase === "poweringOn" ? "powerOnFinished" : "signalReady";
+    const revealTimer = window.setTimeout(() => {
+      setPhase((currentPhase) => advanceTvPhase(currentPhase, event));
+    }, delay);
     return () => window.clearTimeout(revealTimer);
-  }, []);
+  }, [phase]);
+
+  const isTuning = phase !== "playing";
 
   return (
     <div
@@ -92,7 +105,12 @@ const EmptyNextFilmTv = () => {
       }
     >
       <div className={styles.nextTvScreen}>
-        {isTuning ? <TvStaticNoise /> : null}
+        {isTuning ? (
+          <TvStaticNoise poweringOn={phase === "poweringOn"} />
+        ) : null}
+        {phase === "poweringOn" ? (
+          <span className={styles.nextTvPowerOnFlash} aria-hidden="true" />
+        ) : null}
         <span className={styles.nextTvShield} aria-hidden="true" />
         <span className={styles.nextTvGlow} aria-hidden="true" />
       </div>
@@ -111,12 +129,12 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     title: movie.title,
     youtubeId: movie.trailerYoutubeId ?? null,
   });
-  const [phase, setPhase] = useState<TvPhase>("tuning");
+  const [phase, setPhase] = useState<TvPhase>(INITIAL_TV_PHASE);
   const [playerGeneration, setPlayerGeneration] = useState(0);
   const [usePosterFallback, setUsePosterFallback] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const blockedTrailerTimer = useRef<number | null>(null);
-  const phaseRef = useRef<TvPhase>("tuning");
+  const phaseRef = useRef<TvPhase>(INITIAL_TV_PHASE);
   const revealTimer = useRef<number | null>(null);
   const phaseTimer = useRef<number | null>(null);
   const previousMovieId = useRef(movie.id);
@@ -299,6 +317,20 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     };
   }, [clearBlockedTrailerTimer, clearPhaseTimer, clearRevealTimer]);
 
+  useEffect(() => {
+    if (phase !== "poweringOn") {
+      return;
+    }
+
+    const powerOnTimer = window.setTimeout(() => {
+      if (phaseRef.current === "poweringOn") {
+        setTvPhase(advanceTvPhase(phaseRef.current, "powerOnFinished"));
+      }
+    }, TV_TRANSITION_TIMING.powerOnMs);
+
+    return () => window.clearTimeout(powerOnTimer);
+  }, [phase, setTvPhase]);
+
   const revealPicture = useCallback(
     (delay: number, requireStablePlayback = false) => {
       if (phaseRef.current !== "tuning") {
@@ -320,17 +352,6 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
 
         clearBlockedTrailerTimer();
         setTvPhase(advanceTvPhase(phaseRef.current, "signalReady"));
-
-        phaseTimer.current = window.setTimeout(() => {
-          if (requireStablePlayback && !isPlaybackStable()) {
-            setTvPhase("tuning");
-            phaseTimer.current = null;
-            return;
-          }
-
-          setTvPhase(advanceTvPhase(phaseRef.current, "powerOnFinished"));
-          phaseTimer.current = null;
-        }, TV_TRANSITION_TIMING.powerOnMs);
       }, delay);
     },
     [clearBlockedTrailerTimer, isPlaybackStable, setTvPhase],
@@ -533,9 +554,6 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         } else if (action === "cancelPendingReveal") {
           clearRevealTimer();
           resetPlaybackCandidate();
-        } else if (action === "returnToTuning") {
-          returnTrailerToTuning();
-          return;
         } else if (action === "showPosterFallback") {
           if (restartPending.current) {
             returnTrailerToTuning();
@@ -669,7 +687,9 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
             </>
           ) : null}
         </div>
-        {phase === "tuning" ? <TvStaticNoise /> : null}
+        {phase === "tuning" || phase === "poweringOn" ? (
+          <TvStaticNoise poweringOn={phase === "poweringOn"} />
+        ) : null}
         {phase === "poweringOn" ? (
           <>
             <span className={styles.nextTvSignalLock} aria-hidden="true" />

@@ -17,9 +17,10 @@ export type YoutubeTvPlaybackSignal = "buffering" | "paused" | "playing";
 export type YoutubeTvPlaybackAction =
   | "cancelPendingReveal"
   | "ignore"
-  | "returnToTuning"
   | "showPosterFallback"
   | "startStabilityCheck";
+
+export const INITIAL_TV_PHASE: TvPhase = "poweringOn";
 
 export const TV_TRANSITION_TIMING = {
   blockedTrailerFallbackMs: 7_000,
@@ -46,6 +47,10 @@ export const getYoutubePlaybackAction = (
     return "ignore";
   }
 
+  if (phase === "poweringOn") {
+    return signal === "playing" ? "ignore" : "cancelPendingReveal";
+  }
+
   if (signal === "playing") {
     return phase === "tuning" ? "startStabilityCheck" : "ignore";
   }
@@ -56,10 +61,6 @@ export const getYoutubePlaybackAction = (
 
   if (phase === "playing" && signal === "buffering") {
     return "ignore";
-  }
-
-  if (phase === "poweringOn") {
-    return "returnToTuning";
   }
 
   return "showPosterFallback";
@@ -97,12 +98,12 @@ export const advanceTvPhase = (
     return "poweringOff";
   }
   if (phase === "poweringOff" && event === "powerOffFinished") {
-    return "tuning";
-  }
-  if (phase === "tuning" && event === "signalReady") {
     return "poweringOn";
   }
   if (phase === "poweringOn" && event === "powerOnFinished") {
+    return "tuning";
+  }
+  if (phase === "tuning" && event === "signalReady") {
     return "playing";
   }
   return phase;
