@@ -24,6 +24,7 @@ const getRuleBody = (selector: string): string => {
 void test("keeps the TV static frame and grain at one stable size", () => {
   assert.doesNotMatch(getRuleBody(".nextTvStatic"), /animation\s*:/);
   assert.doesNotMatch(getRuleBody(".nextTvStaticGrain"), /animation\s*:/);
+  assert.match(getRuleBody(".nextTvStaticGrain"), /max-width\s*:\s*none/);
   assert.doesNotMatch(stylesheet, /@keyframes\s+tvStatic(?:Arrival|Grain)\b/);
 });
 
