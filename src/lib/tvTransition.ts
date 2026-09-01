@@ -22,11 +22,12 @@ export type YoutubeTvPlaybackAction =
   | "startStabilityCheck";
 
 export const TV_TRANSITION_TIMING = {
-  blockedTrailerFallbackMs: 4_000,
+  blockedTrailerFallbackMs: 7_000,
   emptySignalHoldMs: 1_000,
   powerOffMs: 180,
-  youtubeSignalHoldMs: 1_000,
+  youtubeSignalHoldMs: 4_000,
   posterSignalHoldMs: 120,
+  posterRetryMs: 1_200,
   powerOnMs: 180,
 } as const;
 
@@ -53,7 +54,11 @@ export const getYoutubePlaybackAction = (
     return "cancelPendingReveal";
   }
 
-  if (phase === "poweringOn" || signal === "buffering") {
+  if (phase === "playing" && signal === "buffering") {
+    return "ignore";
+  }
+
+  if (phase === "poweringOn") {
     return "returnToTuning";
   }
 

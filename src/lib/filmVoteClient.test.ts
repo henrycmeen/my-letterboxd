@@ -224,14 +224,14 @@ void test("keeps unvoted cases closed and opens the films this voter supported",
   });
 });
 
-void test("keeps a cassette in the leader case without changing its voted open state", () => {
+void test("keeps the leader cassette seated like every other film", () => {
   assert.deepEqual(getVoteCaseState({ hasVoted: false, isLeader: true }), {
-    cassettePosition: "ejected",
+    cassettePosition: "seated",
     isOpen: false,
     showsCassette: true,
   });
   assert.deepEqual(getVoteCaseState({ hasVoted: true, isLeader: true }), {
-    cassettePosition: "ejected",
+    cassettePosition: "seated",
     isOpen: true,
     showsCassette: true,
   });
