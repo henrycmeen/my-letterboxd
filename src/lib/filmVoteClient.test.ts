@@ -4,6 +4,7 @@ import {
   areVoteSnapshotsEqual,
   getFlipMotion,
   getPublishedVoteLeaderId,
+  getPublishedVoteTrailerFilmId,
   getVoteCaseState,
   getVoteToggleInteraction,
   isPublishedVoteLeader,
@@ -188,6 +189,29 @@ void test("publishes no leader while first place is tied", () => {
   assert.equal(getPublishedVoteLeaderId(snapshot, true), null);
   assert.equal(isPublishedVoteLeader(snapshot, true, 20), false);
   assert.equal(isPublishedVoteLeader(snapshot, true, 10), false);
+});
+
+void test("uses the highest TMDB score for the trailer while first place is tied", () => {
+  const snapshot = {
+    boardId: "na-2026-09-22",
+    ranking: [
+      { filmId: 20, votes: 2 },
+      { filmId: 10, votes: 2 },
+      { filmId: 30, votes: 1 },
+    ],
+    revision: 5,
+    votedFilmIds: [20],
+  };
+  const tmdbScores = new Map([
+    [20, 7.1],
+    [10, 7.9],
+    [30, 8.8],
+  ]);
+
+  assert.equal(
+    getPublishedVoteTrailerFilmId(snapshot, true, tmdbScores),
+    10,
+  );
 });
 
 void test("recognizes an unchanged poll response without restarting motion", () => {
