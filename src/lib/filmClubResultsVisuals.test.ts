@@ -18,9 +18,15 @@ void test("starts with the useful voting stats instead of a decorative results h
   assert.match(resultsSource, /<ResultStats\s+results=\{results\}\s*\/>/);
 });
 
-void test("keeps the ranking title without the redundant all-films label", () => {
+void test("lets the ordered list explain the ranking without a visible heading", () => {
   assert.doesNotMatch(resultsSource, />Alle filmer</);
-  assert.match(resultsSource, /<h2 id="ranking-heading">Rangering<\/h2>/);
+  assert.doesNotMatch(resultsSource, /<h2 id="ranking-heading">Rangering<\/h2>/);
+  assert.match(resultsSource, /aria-label="Full rangering av filmer"/);
+});
+
+void test("keeps a quiet route back to the voting page", () => {
+  assert.match(resultsSource, /className=\{styles\.backLink\}/);
+  assert.match(resultsSource, />\s*Tilbake til avstemningen\s*<\/a>/);
 });
 
 void test("keeps the winner history without the redundant archive label", () => {
