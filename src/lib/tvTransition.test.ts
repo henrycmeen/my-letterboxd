@@ -11,8 +11,7 @@ import {
 } from "./tvTransition";
 
 const SHORT_TV_INTRO_MAX_MS = 1_200;
-const YOUTUBE_CONTROL_MASK_MIN_MS = 3_500;
-const YOUTUBE_CONTROL_MASK_MAX_MS = 5_000;
+const FAST_TRAILER_REVEAL_MS = 1_000;
 
 void test("a movie change passes through analog tuning before the new picture appears", () => {
   let phase: TvPhase = "playing";
@@ -30,12 +29,10 @@ void test("a movie change passes through analog tuning before the new picture ap
   assert.equal(phase, "playing");
 });
 
-void test("the tuning window masks YouTube controls before revealing the leader", () => {
-  assert.ok(
-    TV_TRANSITION_TIMING.youtubeSignalHoldMs >= YOUTUBE_CONTROL_MASK_MIN_MS,
-  );
-  assert.ok(
-    TV_TRANSITION_TIMING.youtubeSignalHoldMs <= YOUTUBE_CONTROL_MASK_MAX_MS,
+void test("reveals a confirmed YouTube trailer after one second", () => {
+  assert.equal(
+    TV_TRANSITION_TIMING.youtubeSignalHoldMs,
+    FAST_TRAILER_REVEAL_MS,
   );
   assert.ok(
     TV_TRANSITION_TIMING.posterSignalHoldMs <
@@ -56,7 +53,7 @@ void test("YouTube playback uses one bounded control-masking hold", () => {
 
   assert.ok(revealDelay !== null);
   assert.equal(revealDelay, TV_TRANSITION_TIMING.youtubeSignalHoldMs);
-  assert.ok(revealDelay <= YOUTUBE_CONTROL_MASK_MAX_MS);
+  assert.equal(revealDelay, FAST_TRAILER_REVEAL_MS);
 });
 
 void test("only an active YouTube playing signal may begin the reveal", () => {
