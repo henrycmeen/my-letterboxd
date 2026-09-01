@@ -104,6 +104,31 @@ export const areVoteSnapshotsEqual = (
     (filmId, index) => filmId === second.votedFilmIds[index],
   );
 
+const haveSameVoteCounts = (
+  first: FilmVoteClientSnapshot,
+  second: FilmVoteClientSnapshot,
+): boolean => {
+  if (first.ranking.length !== second.ranking.length) {
+    return false;
+  }
+
+  const secondVotesByFilm = new Map(
+    second.ranking.map(({ filmId, votes }) => [filmId, votes]),
+  );
+  return first.ranking.every(
+    ({ filmId, votes }) => secondVotesByFilm.get(filmId) === votes,
+  );
+};
+
+const haveSameVotedFilmIds = (
+  first: FilmVoteClientSnapshot,
+  second: FilmVoteClientSnapshot,
+): boolean =>
+  first.votedFilmIds.length === second.votedFilmIds.length &&
+  first.votedFilmIds.every(
+    (filmId, index) => filmId === second.votedFilmIds[index],
+  );
+
 export const shouldApplyVoteSnapshot = (
   activeBoardId: string,
   current: FilmVoteClientSnapshot,
@@ -119,7 +144,9 @@ export const shouldApplyVoteSnapshot = (
 
   return (
     candidate.revision > current.revision ||
-    areVoteSnapshotsEqual(current, candidate)
+    areVoteSnapshotsEqual(current, candidate) ||
+    (haveSameVoteCounts(current, candidate) &&
+      haveSameVotedFilmIds(current, candidate))
   );
 };
 

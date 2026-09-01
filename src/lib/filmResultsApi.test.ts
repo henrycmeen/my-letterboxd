@@ -12,6 +12,7 @@ const testDirectory = await fs.mkdtemp(
 process.env.CLUB_DB_PATH = path.join(testDirectory, "results.sqlite");
 
 const { getFilmVoteStore } = await import("./filmVotes");
+const { getActiveVoteBoardId } = await import("./filmClubProgramme");
 const { default: handler } = await import("../pages/api/club/results");
 
 interface RecordedResponse {
@@ -110,6 +111,37 @@ void test("maps the long Nasjonalarkivet alias to the same active results", asyn
 
   assert.equal(body.club.id, "na");
   assert.equal(body.revision, 3);
+});
+
+void test("orders tied results by TMDB score", async () => {
+  const master = filmVoteCatalogue.find(({ title }) => title === "The Master")!;
+  const yiYi = filmVoteCatalogue.find(({ title }) => title === "Yi Yi")!;
+  const boardId = getActiveVoteBoardId("default");
+  const store = getFilmVoteStore();
+  store.setVote(boardId, master.id, "results-master", true);
+  store.setVote(boardId, yiYi.id, "results-yi-yi", true);
+
+  const response = await invoke({ query: { clubSlug: "default" } });
+  const body = response.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+  };
+
+  assert.deepEqual(body.ranking.slice(0, 2), [
+    {
+      filmId: yiYi.id,
+      rank: 1,
+      title: yiYi.title,
+      coverImage: yiYi.coverImage,
+      votes: 1,
+    },
+    {
+      filmId: master.id,
+      rank: 2,
+      title: master.title,
+      coverImage: master.coverImage,
+      votes: 1,
+    },
+  ]);
 });
 
 void test("rejects unsupported methods", async () => {

@@ -125,6 +125,29 @@ void test("rejects wrong-board and conflicting same-revision snapshots", () => {
   );
 });
 
+void test("accepts a same-revision snapshot when only tie order changed", () => {
+  const current = {
+    boardId: "na",
+    ranking: [
+      { filmId: 68722, votes: 1 },
+      { filmId: 25538, votes: 1 },
+      { filmId: 680, votes: 0 },
+    ],
+    revision: 72,
+    votedFilmIds: [68722, 25538],
+  };
+  const reranked = {
+    ...current,
+    ranking: [
+      { filmId: 25538, votes: 1 },
+      { filmId: 68722, votes: 1 },
+      { filmId: 680, votes: 0 },
+    ],
+  };
+
+  assert.equal(shouldApplyVoteSnapshot("na", current, reranked), true);
+});
+
 void test("publishes no leader until the first authoritative snapshot", () => {
   const snapshot = {
     boardId: "na",
@@ -208,10 +231,7 @@ void test("uses the highest TMDB score for the trailer while first place is tied
     [30, 8.8],
   ]);
 
-  assert.equal(
-    getPublishedVoteTrailerFilmId(snapshot, true, tmdbScores),
-    10,
-  );
+  assert.equal(getPublishedVoteTrailerFilmId(snapshot, true, tmdbScores), 10);
 });
 
 void test("recognizes an unchanged poll response without restarting motion", () => {

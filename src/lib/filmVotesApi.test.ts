@@ -11,6 +11,8 @@ const thirdFilmId = filmVoteCatalogue[2]!.id;
 const fourthFilmId = filmVoteCatalogue[3]!.id;
 const firstFilmId = filmVoteCatalogue[0]!.id;
 const newestFilmId = filmVoteCatalogue.at(-1)!.id;
+const master = filmVoteCatalogue.find(({ title }) => title === "The Master")!;
+const yiYi = filmVoteCatalogue.find(({ title }) => title === "Yi Yi")!;
 
 const testDirectory = await fs.mkdtemp(
   path.join(tmpdir(), "filmklubb-votes-api-"),
@@ -122,6 +124,32 @@ void test("GET keeps catalogue order when vote totals are equal", async () => {
     filmId: firstFilmId,
     votes: 0,
   });
+});
+
+void test("GET ranks a positive vote tie by TMDB score", async () => {
+  assert.ok(yiYi.tmdbVoteAverage > master.tmdbVoteAverage);
+  const boardId = "tmdb-positive-tie-break";
+
+  await invoke({
+    body: { filmId: master.id },
+    cookies: deviceCookie(41),
+    method: "POST",
+    query: { boardId },
+  });
+  const response = await invoke({
+    body: { filmId: yiYi.id },
+    cookies: deviceCookie(42),
+    method: "POST",
+    query: { boardId },
+  });
+
+  const body = response.body as {
+    ranking: Array<{ filmId: number; votes: number }>;
+  };
+  assert.deepEqual(body.ranking.slice(0, 2), [
+    { filmId: yiYi.id, votes: 1 },
+    { filmId: master.id, votes: 1 },
+  ]);
 });
 
 void test("POST is idempotent per device and film", async () => {

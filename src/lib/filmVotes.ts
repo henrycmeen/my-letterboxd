@@ -48,10 +48,12 @@ export interface FilmVoteStore {
     boardId: string,
     voterKey: string,
     catalogueFilmIds: number[],
+    tieBreakScores?: ReadonlyMap<number, number>,
   ): FilmVoteSnapshot;
   getResults(
     boardId: string,
     catalogueFilmIds: number[],
+    tieBreakScores?: ReadonlyMap<number, number>,
   ): FilmVoteResults;
   recordVote(boardId: string, filmId: number, voterKey: string): boolean;
   setVote(
@@ -137,6 +139,7 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
   const getRanking = (
     boardId: string,
     catalogueFilmIds: number[],
+    tieBreakScores?: ReadonlyMap<number, number>,
   ): FilmVoteRankingEntry[] => {
     const countRows = database
       .prepare(
@@ -167,12 +170,30 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
           votes: count?.votes ?? 0,
         };
       })
-      .sort(
-        (first, second) =>
-          second.votes - first.votes ||
+      .sort((first, second) => {
+        const voteDifference = second.votes - first.votes;
+        if (voteDifference !== 0) {
+          return voteDifference;
+        }
+
+        if (first.votes > 0 && tieBreakScores) {
+          const firstScore = tieBreakScores.get(first.filmId);
+          const secondScore = tieBreakScores.get(second.filmId);
+          if (firstScore !== undefined || secondScore !== undefined) {
+            const scoreDifference =
+              (secondScore ?? Number.NEGATIVE_INFINITY) -
+              (firstScore ?? Number.NEGATIVE_INFINITY);
+            if (scoreDifference !== 0) {
+              return scoreDifference;
+            }
+          }
+        }
+
+        return (
           first.firstVoteOrder - second.firstVoteOrder ||
-          first.initialRank - second.initialRank,
-      )
+          first.initialRank - second.initialRank
+        );
+      })
       .map(({ filmId, votes }) => ({ filmId, votes }));
   };
 
@@ -224,7 +245,7 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
       database.close();
     },
 
-    getSnapshot(boardId, voterKey, catalogueFilmIds) {
+    getSnapshot(boardId, voterKey, catalogueFilmIds, tieBreakScores) {
       return runInReadTransaction(database, () => {
         const votedRows = database
           .prepare(
@@ -237,14 +258,14 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
 
         return {
           boardId,
-          ranking: getRanking(boardId, catalogueFilmIds),
+          ranking: getRanking(boardId, catalogueFilmIds, tieBreakScores),
           revision: getRevision(boardId),
           votedFilmIds: votedRows.map((row) => row.film_id),
         };
       });
     },
 
-    getResults(boardId, catalogueFilmIds) {
+    getResults(boardId, catalogueFilmIds, tieBreakScores) {
       return runInReadTransaction(database, () => {
         const stats = database
           .prepare(
@@ -261,7 +282,7 @@ export const createFilmVoteStore = (databasePath: string): FilmVoteStore => {
           boardId,
           lastVoteAt: stats.last_vote_at,
           participatingDevices: stats.participating_devices,
-          ranking: getRanking(boardId, catalogueFilmIds),
+          ranking: getRanking(boardId, catalogueFilmIds, tieBreakScores),
           revision: getRevision(boardId),
           totalVotes: stats.total_votes,
         };
