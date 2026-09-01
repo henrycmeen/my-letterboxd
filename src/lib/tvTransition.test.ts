@@ -12,6 +12,7 @@ import {
 
 const SHORT_TV_INTRO_MAX_MS = 1_200;
 const FAST_TRAILER_REVEAL_MS = 200;
+const VISIBLE_POWER_ON_MS = 420;
 
 void test("a movie change passes through analog tuning before the new picture appears", () => {
   let phase: TvPhase = "playing";
@@ -38,6 +39,10 @@ void test("reveals a confirmed YouTube trailer after 0.2 seconds", () => {
     TV_TRANSITION_TIMING.posterSignalHoldMs <
       TV_TRANSITION_TIMING.youtubeSignalHoldMs,
   );
+});
+
+void test("keeps the CRT power-on phase long enough to read as a TV turning on", () => {
+  assert.equal(TV_TRANSITION_TIMING.powerOnMs, VISIBLE_POWER_ON_MS);
 });
 
 void test("an empty vote board leaves tuning after the same bounded intro", () => {

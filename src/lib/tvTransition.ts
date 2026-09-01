@@ -28,7 +28,7 @@ export const TV_TRANSITION_TIMING = {
   youtubeSignalHoldMs: 200,
   posterSignalHoldMs: 120,
   posterRetryMs: 1_200,
-  powerOnMs: 180,
+  powerOnMs: 420,
 } as const;
 
 export const shouldRevealYoutubeTrailer = (

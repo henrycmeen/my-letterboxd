@@ -13,10 +13,9 @@ const nextFilmTvSource = await readFile(
 
 const getRuleBody = (selector: string): string => {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = new RegExp(
-    `${escapedSelector}\\s*\\{([^}]*)\\}`,
-    "s",
-  ).exec(stylesheet);
+  const match = new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`, "s").exec(
+    stylesheet,
+  );
   assert.ok(match, `Fant ikke CSS-regelen ${selector}`);
   return match[1] ?? "";
 };
@@ -38,11 +37,27 @@ void test("zooms mobile trailers beyond the square cover crop", () => {
   );
 });
 
-void test("keeps the cassette grid free of a visible top divider", () => {
-  assert.doesNotMatch(
-    stylesheet,
-    /\.voteWallSection\s*\{[^}]*border-top\s*:/s,
+void test("opens the first trailer from a bright CRT line instead of fading it in", () => {
+  assert.match(
+    getRuleBody(".nextTvPicturePoweringOn"),
+    /animation\s*:\s*nextTvPowerOn 420ms/,
   );
+  assert.match(
+    getRuleBody(".nextTvPowerOnFlash"),
+    /animation\s*:\s*nextTvPowerFlash 420ms/,
+  );
+  assert.match(
+    stylesheet,
+    /@keyframes\s+nextTvPowerOn\s*\{[\s\S]*?scaleX\(0\.08\)\s+scaleY\(0\.008\)[\s\S]*?scaleX\(1\)\s+scaleY\(1\)/,
+  );
+  assert.match(
+    stylesheet,
+    /@keyframes\s+nextTvPowerFlash\s*\{[\s\S]*?opacity:\s*1;[\s\S]*?opacity:\s*0;/,
+  );
+});
+
+void test("keeps the cassette grid free of a visible top divider", () => {
+  assert.doesNotMatch(stylesheet, /\.voteWallSection\s*\{[^}]*border-top\s*:/s);
 });
 
 void test("keeps dark VHS covers legible against the black mobile wall", () => {
