@@ -224,14 +224,6 @@
     "trailerYoutubeId": "RApl06pYIuU"
   },
   {
-    "id": 400617,
-    "title": "Phantom Thread",
-    "year": 2017,
-    "tmdbVoteAverage": 7.314,
-    "coverImage": "/VHS/program/vote-covers/030-phantom-thread.webp",
-    "trailerYoutubeId": "xNsiQMeSvMk"
-  },
-  {
     "id": 531428,
     "title": "Portrait of a Lady on Fire",
     "year": 2019,
@@ -254,14 +246,6 @@
     "tmdbVoteAverage": 7.464,
     "coverImage": "/VHS/program/vote-covers/033-the-banshees-of-inisherin.webp",
     "trailerYoutubeId": "9-R9u2UD3FU"
-  },
-  {
-    "id": 559907,
-    "title": "The Green Knight",
-    "year": 2021,
-    "tmdbVoteAverage": 6.589,
-    "coverImage": "/VHS/program/vote-covers/034-the-green-knight.webp",
-    "trailerYoutubeId": "sS6ksY8xWCY"
   },
   {
     "id": 376867,
@@ -520,14 +504,6 @@
     "trailerYoutubeId": "I1dHzoRl0sQ"
   },
   {
-    "id": 16859,
-    "title": "Kiki's Delivery Service",
-    "year": 1989,
-    "tmdbVoteAverage": 7.84,
-    "coverImage": "/VHS/program/vote-covers/071-kiki-s-delivery-service.webp",
-    "trailerYoutubeId": "nu4OX6RKeLY"
-  },
-  {
     "id": 149871,
     "title": "The Tale of The Princess Kaguya",
     "year": 2013,
@@ -542,22 +518,6 @@
     "tmdbVoteAverage": 7.823,
     "coverImage": "/VHS/program/vote-covers/074-fantastic-mr-fox.webp",
     "trailerYoutubeId": "VuIaCvIFWIA"
-  },
-  {
-    "id": 9428,
-    "title": "The Royal Tenenbaums",
-    "year": 2001,
-    "tmdbVoteAverage": 7.454,
-    "coverImage": "/VHS/program/vote-covers/076-the-royal-tenenbaums.webp",
-    "trailerYoutubeId": "-DNAI9bhBFU"
-  },
-  {
-    "id": 11545,
-    "title": "Rushmore",
-    "year": 1998,
-    "tmdbVoteAverage": 7.392,
-    "coverImage": "/VHS/program/vote-covers/077-rushmore.webp",
-    "trailerYoutubeId": "846UzdeHI1g"
   },
   {
     "id": 275,
@@ -576,52 +536,12 @@
     "trailerYoutubeId": "GiwMMziJdqg"
   },
   {
-    "id": 378,
-    "title": "Raising Arizona",
-    "year": 1987,
-    "tmdbVoteAverage": 7.051,
-    "coverImage": "/VHS/program/vote-covers/081-raising-arizona.webp",
-    "trailerYoutubeId": "OjWu8i6eMZo"
-  },
-  {
-    "id": 12573,
-    "title": "A Serious Man",
-    "year": 2009,
-    "tmdbVoteAverage": 6.686,
-    "coverImage": "/VHS/program/vote-covers/082-a-serious-man.webp",
-    "trailerYoutubeId": "mDKHWRbK2_Q"
-  },
-  {
-    "id": 86829,
-    "title": "Inside Llewyn Davis",
-    "year": 2013,
-    "tmdbVoteAverage": 7.184,
-    "coverImage": "/VHS/program/vote-covers/083-inside-llewyn-davis.webp",
-    "trailerYoutubeId": "9JvHEDJEguY"
-  },
-  {
-    "id": 4512,
-    "title": "The Assassination of Jesse James by the Coward Robert Ford",
-    "year": 2007,
-    "tmdbVoteAverage": 7.064,
-    "coverImage": "/VHS/program/vote-covers/084-the-assassination-of-jesse-james-by-the-coward-robert-ford.webp",
-    "trailerYoutubeId": "SrGmmitc62Q"
-  },
-  {
     "id": 16642,
     "title": "Days of Heaven",
     "year": 1978,
     "tmdbVoteAverage": 7.48,
     "coverImage": "/VHS/program/vote-covers/085-days-of-heaven.webp",
     "trailerYoutubeId": "7LAqRFoT97o"
-  },
-  {
-    "id": 8967,
-    "title": "The Tree of Life",
-    "year": 2011,
-    "tmdbVoteAverage": 6.723,
-    "coverImage": "/VHS/program/vote-covers/086-the-tree-of-life.webp",
-    "trailerYoutubeId": "RrAz1YLh8nY"
   },
   {
     "id": 144,
@@ -854,5 +774,85 @@
     "tmdbVoteAverage": 6.9,
     "coverImage": "/VHS/program/vote-covers/115-sound-of-falling.webp",
     "trailerYoutubeId": "O-jgGbvLgVo"
+  },
+  {
+    "id": 429,
+    "title": "The Good, the Bad and the Ugly",
+    "year": 1966,
+    "tmdbVoteAverage": 8.466,
+    "coverImage": "/VHS/program/vote-covers/116-the-good-the-bad-and-the-ugly.webp",
+    "trailerYoutubeId": "WCnRSl24FPA"
+  },
+  {
+    "id": 11644,
+    "title": "Blow Out",
+    "year": 1981,
+    "tmdbVoteAverage": 7.356,
+    "coverImage": "/VHS/program/vote-covers/117-blow-out.webp",
+    "trailerYoutubeId": "rDve1A5EAvk"
+  },
+  {
+    "id": 578,
+    "title": "Jaws",
+    "year": 1975,
+    "tmdbVoteAverage": 7.684,
+    "coverImage": "/VHS/program/vote-covers/118-jaws.webp",
+    "trailerYoutubeId": "N9hzLQUGr34"
+  },
+  {
+    "id": 3176,
+    "title": "Battle Royale",
+    "year": 2000,
+    "tmdbVoteAverage": 7.266,
+    "coverImage": "/VHS/program/vote-covers/119-battle-royale.webp",
+    "trailerYoutubeId": "s4AFmGjndAA"
+  },
+  {
+    "id": 7340,
+    "title": "Carrie",
+    "year": 1976,
+    "tmdbVoteAverage": 7.34,
+    "coverImage": "/VHS/program/vote-covers/120-carrie.webp",
+    "trailerYoutubeId": "zbdIXI1s3aU"
+  },
+  {
+    "id": 925,
+    "title": "Do the Right Thing",
+    "year": 1989,
+    "tmdbVoteAverage": 7.773,
+    "coverImage": "/VHS/program/vote-covers/121-do-the-right-thing.webp",
+    "trailerYoutubeId": "yVAD4fYRcvA"
+  },
+  {
+    "id": 3112,
+    "title": "The Night of the Hunter",
+    "year": 1955,
+    "tmdbVoteAverage": 7.858,
+    "coverImage": "/VHS/program/vote-covers/122-the-night-of-the-hunter.webp",
+    "trailerYoutubeId": "GAxs6tChiKo"
+  },
+  {
+    "id": 3175,
+    "title": "Barry Lyndon",
+    "year": 1975,
+    "tmdbVoteAverage": 7.999,
+    "coverImage": "/VHS/program/vote-covers/123-barry-lyndon.webp",
+    "trailerYoutubeId": "JH8j_1dUlUU"
+  },
+  {
+    "id": 78,
+    "title": "Blade Runner",
+    "year": 1982,
+    "tmdbVoteAverage": 7.935,
+    "coverImage": "/VHS/program/vote-covers/124-blade-runner.webp",
+    "trailerYoutubeId": "qoEyZoOTtss"
+  },
+  {
+    "id": 793,
+    "title": "Blue Velvet",
+    "year": 1986,
+    "tmdbVoteAverage": 7.61,
+    "coverImage": "/VHS/program/vote-covers/125-blue-velvet.webp",
+    "trailerYoutubeId": "rAA6imfqMYQ"
   }
 ]
