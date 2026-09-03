@@ -73,5 +73,55 @@
     "tmdbId": 1221061,
     "posterPath": "/5hLiXAqZ3xTHExOIsxYANIswBjZ.jpg",
     "outputFile": "115-sound-of-falling.webp"
+  },
+  {
+    "tmdbId": 429,
+    "posterPath": "/bX2xnavhMYjWDoZp1VM6VnU1xwe.jpg",
+    "outputFile": "116-the-good-the-bad-and-the-ugly.webp"
+  },
+  {
+    "tmdbId": 11644,
+    "posterPath": "/uFzMscVLDrTaYd6KXOXlr6dly7w.jpg",
+    "outputFile": "117-blow-out.webp"
+  },
+  {
+    "tmdbId": 578,
+    "posterPath": "/lxM6kqilAdpdhqUl2biYp5frUxE.jpg",
+    "outputFile": "118-jaws.webp"
+  },
+  {
+    "tmdbId": 3176,
+    "posterPath": "/aLGKAQKgzWpJ6egyWzzC11jXBRJ.jpg",
+    "outputFile": "119-battle-royale.webp"
+  },
+  {
+    "tmdbId": 7340,
+    "posterPath": "/bJJ3xK4pMnfao0wfzySfC47dp8G.jpg",
+    "outputFile": "120-carrie.webp"
+  },
+  {
+    "tmdbId": 925,
+    "posterPath": "/63rmSDPahrH7C1gEFYzRuIBAN9W.jpg",
+    "outputFile": "121-do-the-right-thing.webp"
+  },
+  {
+    "tmdbId": 3112,
+    "posterPath": "/rBka0nFWiHxabHRLr0KfIA8Yiaq.jpg",
+    "outputFile": "122-the-night-of-the-hunter.webp"
+  },
+  {
+    "tmdbId": 3175,
+    "posterPath": "/znfLskGQnXYB2xcOGM9eInRHPAV.jpg",
+    "outputFile": "123-barry-lyndon.webp"
+  },
+  {
+    "tmdbId": 78,
+    "posterPath": "/63N9uy8nd9j7Eog2axPQ8lbr3Wj.jpg",
+    "outputFile": "124-blade-runner.webp"
+  },
+  {
+    "tmdbId": 793,
+    "posterPath": "/6v1zYh2FKOYVddY5pCQhd4PO9uX.jpg",
+    "outputFile": "125-blue-velvet.webp"
   }
 ]

@@ -5,14 +5,20 @@ import path from "node:path";
 import { test } from "node:test";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 
-const CURATED_BASE_SIZE = 92;
+const CURATED_BASE_SIZE = 82;
 const CURATED_BASE_DIGEST =
-  "5a35433eba0d8b989cef05ce5fe355fa9700e14082c5cebe8ddead779838804b";
+  "db1259d324fa7e264ef988a343c976fccf690ea51e9bdd272d6637f0a76055b0";
 const WATCHLIST_ADDITION_IDS = [
   404, 379, 11524, 10843, 44012, 8214, 8051, 614, 483, 567, 3782, 12477, 299269,
   62385, 1221061,
 ] as const;
-const REMOVED_IDS = [421, 8392, 81, 120467, 218, 5548, 679, 258480] as const;
+const SOURCE_CURATED_ADDITION_IDS = [
+  429, 11644, 578, 3176, 7340, 925, 3112, 3175, 78, 793,
+] as const;
+const REMOVED_IDS = [
+  421, 8392, 81, 120467, 218, 5548, 679, 258480, 400617, 559907, 16859,
+  9428, 11545, 378, 12573, 86829, 4512, 8967,
+] as const;
 
 void test("keeps the retained curated catalogue unchanged", () => {
   const digest = createHash("sha256")
@@ -34,6 +40,15 @@ void test("appends the curated pre-2026 watchlist films after the original catal
   );
 });
 
+void test("appends the sourced Tarantino and Sight and Sound films", () => {
+  assert.deepEqual(
+    filmVoteCatalogue
+      .slice(CURATED_BASE_SIZE + WATCHLIST_ADDITION_IDS.length)
+      .map(({ id }) => id),
+    SOURCE_CURATED_ADDITION_IDS,
+  );
+});
+
 void test("removes films retired from the vote wall", () => {
   const ids = new Set(filmVoteCatalogue.map(({ id }) => id));
 
@@ -46,7 +61,10 @@ void test("keeps every vote film uniquely identified and fully playable", () => 
   const ids = filmVoteCatalogue.map(({ id }) => id);
   assert.equal(new Set(ids).size, ids.length);
 
-  const additions = WATCHLIST_ADDITION_IDS.map((filmId) => {
+  const additions = [
+    ...WATCHLIST_ADDITION_IDS,
+    ...SOURCE_CURATED_ADDITION_IDS,
+  ].map((filmId) => {
     const film = filmVoteCatalogue.find(({ id }) => id === filmId);
     assert.ok(film, `Missing watchlist film ${filmId}`);
     return film;
