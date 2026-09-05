@@ -1,4 +1,6 @@
 import Head from "next/head";
+import dynamic from "next/dynamic";
+import { makeDemoFinalists, type DemoFinalist } from "@/lib/filmTicket";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getFlipMotion, type SlotPosition } from "@/lib/filmVoteClient";
@@ -8,8 +10,14 @@ import catalogue from "@/data/filmVoteCatalogue.json";
 import styles from "@/styles/filmClubProgram.module.css";
 import demo from "@/styles/filmClubDemo.module.css";
 
+const TicketFinale = dynamic(
+  () => import("@/components/TicketFinale").then((m) => m.TicketFinale),
+  { ssr: false },
+);
+
 // Local preview only: never mount the real vote wall or write a club vote.
 export const FilmClubDemo = () => {
+  const [finalists, setFinalists] = useState<DemoFinalist[] | null>(null);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   const [suppressedId, setSuppressedId] = useState<number | null>(null);
   const rankedFilms = useMemo(
@@ -114,7 +122,7 @@ export const FilmClubDemo = () => {
           </header>
           <div className={styles.nextLayout}>
             <div className={styles.nextCase}>
-              <NextFilmTv movie={movie} />
+              {!finalists && <NextFilmTv movie={movie} />}
             </div>
           </div>
         </section>
@@ -171,10 +179,35 @@ export const FilmClubDemo = () => {
         </section>
       </main>
       <footer className={demo.footer}>
-        <Link href="/inngang" className={`${styles.sectionLabel} ${demo.clubCodeLink}`}>
+        <button
+          type="button"
+          className={demo.announce}
+          onClick={() => setFinalists(makeDemoFinalists(rankedFilms))}
+        >
+          Annonser vinneren <span aria-hidden="true">↗</span>
+        </button>
+        <p className={demo.announcementNote}>
+          Prøv avslutningen med eksempelstemmer.
+        </p>
+        <Link
+          href="/billett"
+          className={`${styles.sectionLabel} ${demo.clubCodeLink}`}
+        >
+          Lag en filmbillett <span aria-hidden="true">↗</span>
+        </Link>
+        <Link
+          href="/inngang"
+          className={`${styles.sectionLabel} ${demo.clubCodeLink}`}
+        >
           Har du en filmklubbkode? <span aria-hidden="true">↗</span>
         </Link>
       </footer>
+      {finalists && (
+        <TicketFinale
+          finalists={finalists}
+          onClose={() => setFinalists(null)}
+        />
+      )}
     </div>
   );
 };
