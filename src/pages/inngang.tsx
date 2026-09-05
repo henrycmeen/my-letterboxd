@@ -585,13 +585,12 @@ const Home: NextPage = () => {
         : 'radial-gradient(circle at 32% 24%, rgba(255,177,104,0.26) 0%, rgba(255,131,79,0.12) 24%, rgba(0,0,0,0) 48%), radial-gradient(circle at 74% 28%, rgba(98,166,255,0.2) 0%, rgba(33,88,152,0.1) 26%, rgba(0,0,0,0) 50%), radial-gradient(circle at 52% 88%, rgba(255,238,180,0.08) 0%, rgba(0,0,0,0) 42%)';
 
   return (
-    <main className="fixed inset-0 overflow-auto bg-black text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,172,102,0.16),transparent_30%),linear-gradient(180deg,#06070b_0%,#020304_100%)]" />
+    <main className="fixed inset-0 overflow-auto bg-[#050505] text-white">
       <div className="relative mx-auto flex min-h-full w-full max-w-7xl flex-col items-center justify-center px-4 pb-20 pt-8 sm:pb-24">
         <section className="w-full max-w-6xl">
-          <div className="relative mx-auto w-full max-w-6xl aspect-square sm:aspect-[16/10] rounded-[2.2rem] bg-black p-4 shadow-[0_36px_120px_rgba(0,0,0,0.6)]">
+          <div className="relative mx-auto w-full max-w-6xl aspect-square sm:aspect-[16/10] rounded-[1.35rem] bg-[#070707] p-[clamp(0.45rem,1.1vw,0.8rem)] shadow-[0_1.2rem_3rem_rgba(0,0,0,0.7)]">
             <div
-              className="relative h-full w-full overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#090b12]
+              className="relative h-full w-full overflow-hidden rounded-[0.95rem] border border-white/[0.12] bg-[#090b12]
               before:pointer-events-none before:absolute before:inset-0 before:z-20
               before:bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.11)_50%)] before:bg-[length:100%_4px] before:content-['']
               after:pointer-events-none after:absolute after:inset-0 after:z-20
@@ -694,7 +693,6 @@ const Home: NextPage = () => {
         </section>
 
         <aside className="relative z-20 mt-4 flex w-full justify-center sm:-mt-5">
-          <div className="pointer-events-none absolute bottom-[82%] left-1/2 h-40 w-[30rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,218,164,0.18)_0%,rgba(255,218,164,0.08)_26%,rgba(255,218,164,0)_72%)] blur-2xl sm:h-52 sm:w-[40rem]" />
           <div className="relative w-full max-w-[320px] rotate-[9deg] sm:max-w-[360px] md:max-w-[400px]">
             <div className="absolute inset-x-[20%] top-[-8%] h-[16%] rounded-full bg-black/30 blur-2xl" />
             <div className="relative mx-auto aspect-[420/594] w-full overflow-visible p-0 shadow-none">
