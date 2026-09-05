@@ -171,7 +171,7 @@ export const FilmClubDemo = () => {
         </section>
       </main>
       <footer className={demo.footer}>
-        <Link href="/inngang" className={demo.clubCodeLink}>
+        <Link href="/inngang" className={`${styles.sectionLabel} ${demo.clubCodeLink}`}>
           Har du en filmklubbkode? <span aria-hidden="true">↗</span>
         </Link>
       </footer>
