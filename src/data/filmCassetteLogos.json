@@ -1,0 +1,418 @@
+{
+  "/VHS/program/vote-covers/001-pulp-fiction.webp": {
+    "image": "/VHS/program/cassette-logos/680.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/002-2001-a-space-odyssey.webp": {
+    "image": "/VHS/program/cassette-logos/62.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/003-the-lighthouse.webp": {
+    "image": "/VHS/program/cassette-logos/503919.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/004-dune.webp": {
+    "image": "/VHS/program/cassette-logos/438631.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/005-in-the-mood-for-love.webp": {
+    "image": "/VHS/program/cassette-logos/843.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/006-paris-texas.webp": {
+    "image": "/VHS/program/cassette-logos/655.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/007-aftersun.webp": {
+    "image": "/VHS/program/cassette-logos/965150.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/008-parasite.webp": {
+    "image": "/VHS/program/cassette-logos/496243.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/009-the-handmaiden.webp": {
+    "image": "/VHS/program/cassette-logos/290098.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/010-alien.webp": {
+    "image": "/VHS/program/cassette-logos/348.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/012-the-thing.webp": {
+    "image": "/VHS/program/cassette-logos/1091.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/013-heat.webp": {
+    "image": "/VHS/program/cassette-logos/949.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/014-mulholland-drive.webp": {
+    "image": "/VHS/program/cassette-logos/1018.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/015-spirited-away.webp": {
+    "image": "/VHS/program/cassette-logos/129.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/016-the-shining.webp": {
+    "image": "/VHS/program/cassette-logos/694.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/017-goodfellas.webp": {
+    "image": "/VHS/program/cassette-logos/769.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/018-apocalypse-now.webp": {
+    "image": "/VHS/program/cassette-logos/28.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/019-taxi-driver.webp": {
+    "image": "/VHS/program/cassette-logos/103.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/020-stalker.webp": {
+    "image": "/VHS/program/cassette-logos/1398.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/021-solaris.webp": {
+    "image": "/VHS/program/cassette-logos/593.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/023-seven-samurai.webp": {
+    "image": "/VHS/program/cassette-logos/346.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/024-harakiri.webp": {
+    "image": "/VHS/program/cassette-logos/14537.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/025-the-godfather.webp": {
+    "image": "/VHS/program/cassette-logos/238.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/026-the-godfather-part-ii.webp": {
+    "image": "/VHS/program/cassette-logos/240.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/027-no-country-for-old-men.webp": {
+    "image": "/VHS/program/cassette-logos/6977.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/028-there-will-be-blood.webp": {
+    "image": "/VHS/program/cassette-logos/7345.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/029-the-master.webp": {
+    "image": "/VHS/program/cassette-logos/68722.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/031-portrait-of-a-lady-on-fire.webp": {
+    "image": "/VHS/program/cassette-logos/531428.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/032-the-worst-person-in-the-world.webp": {
+    "image": "/VHS/program/cassette-logos/660120.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/033-the-banshees-of-inisherin.webp": {
+    "image": "/VHS/program/cassette-logos/674324.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/035-moonlight.webp": {
+    "image": "/VHS/program/cassette-logos/376867.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/037-past-lives.webp": {
+    "image": "/VHS/program/cassette-logos/666277.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/038-anatomy-of-a-fall.webp": {
+    "image": "/VHS/program/cassette-logos/915935.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/039-decision-to-leave.webp": {
+    "image": "/VHS/program/cassette-logos/705996.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/040-burning.webp": {
+    "image": "/VHS/program/cassette-logos/491584.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/041-memories-of-murder.webp": {
+    "image": "/VHS/program/cassette-logos/11423.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/042-oldboy.webp": {
+    "image": "/VHS/program/cassette-logos/670.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/043-chungking-express.webp": {
+    "image": "/VHS/program/cassette-logos/11104.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/044-fallen-angels.webp": {
+    "image": "/VHS/program/cassette-logos/11220.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/045-happy-together.webp": {
+    "image": "/VHS/program/cassette-logos/18329.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/046-yi-yi.webp": {
+    "image": "/VHS/program/cassette-logos/25538.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/047-a-brighter-summer-day.webp": {
+    "image": "/VHS/program/cassette-logos/15804.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/048-tokyo-story.webp": {
+    "image": "/VHS/program/cassette-logos/18148.png",
+    "surface": "light"
+  },
+  "/VHS/program/vote-covers/049-late-spring.webp": {
+    "image": "/VHS/program/cassette-logos/20530.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/050-perfect-days.webp": {
+    "image": "/VHS/program/cassette-logos/976893.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/051-drive-my-car.webp": {
+    "image": "/VHS/program/cassette-logos/758866.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/052-shoplifters.webp": {
+    "image": "/VHS/program/cassette-logos/505192.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/053-the-zone-of-interest.webp": {
+    "image": "/VHS/program/cassette-logos/467244.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/054-under-the-skin.webp": {
+    "image": "/VHS/program/cassette-logos/97370.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/055-ex-machina.webp": {
+    "image": "/VHS/program/cassette-logos/264660.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/056-arrival.webp": {
+    "image": "/VHS/program/cassette-logos/329865.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/057-interstellar.webp": {
+    "image": "/VHS/program/cassette-logos/157336.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/058-children-of-men.webp": {
+    "image": "/VHS/program/cassette-logos/9693.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/059-brazil.webp": {
+    "image": "/VHS/program/cassette-logos/68.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/061-total-recall.webp": {
+    "image": "/VHS/program/cassette-logos/861.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/063-terminator-2-judgment-day.webp": {
+    "image": "/VHS/program/cassette-logos/280.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/064-mad-max-fury-road.webp": {
+    "image": "/VHS/program/cassette-logos/76341.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/065-the-matrix.webp": {
+    "image": "/VHS/program/cassette-logos/603.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/066-akira.webp": {
+    "image": "/VHS/program/cassette-logos/149.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/067-ghost-in-the-shell.webp": {
+    "image": "/VHS/program/cassette-logos/9323.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/068-paprika.webp": {
+    "image": "/VHS/program/cassette-logos/4977.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/069-princess-mononoke.webp": {
+    "image": "/VHS/program/cassette-logos/128.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/073-the-tale-of-the-princess-kaguya.webp": {
+    "image": "/VHS/program/cassette-logos/149871.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/074-fantastic-mr-fox.webp": {
+    "image": "/VHS/program/cassette-logos/10315.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/079-fargo.webp": {
+    "image": "/VHS/program/cassette-logos/275.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/080-the-big-lebowski.webp": {
+    "image": "/VHS/program/cassette-logos/115.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/085-days-of-heaven.webp": {
+    "image": "/VHS/program/cassette-logos/16642.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/087-wings-of-desire.webp": {
+    "image": "/VHS/program/cassette-logos/144.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/088-come-and-see.webp": {
+    "image": "/VHS/program/cassette-logos/25237.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/089-the-battle-of-algiers.webp": {
+    "image": "/VHS/program/cassette-logos/17295.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/090-la-haine.webp": {
+    "image": "/VHS/program/cassette-logos/406.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/091-beau-travail.webp": {
+    "image": "/VHS/program/cassette-logos/14626.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/092-cleo-from-5-to-7.webp": {
+    "image": "/VHS/program/cassette-logos/499.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/093-the-400-blows.webp": {
+    "image": "/VHS/program/cassette-logos/147.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/094-breathless.webp": {
+    "image": "/VHS/program/cassette-logos/269.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/095-le-samourai.webp": {
+    "image": "/VHS/program/cassette-logos/5511.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/096-playtime.webp": {
+    "image": "/VHS/program/cassette-logos/10227.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/097-the-umbrellas-of-cherbourg.webp": {
+    "image": "/VHS/program/cassette-logos/5967.png",
+    "surface": "light"
+  },
+  "/VHS/program/vote-covers/098-the-young-girls-of-rochefort.webp": {
+    "image": "/VHS/program/cassette-logos/2433.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/099-all-that-jazz.webp": {
+    "image": "/VHS/program/cassette-logos/16858.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/100-mishima-a-life-in-four-chapters.webp": {
+    "image": "/VHS/program/cassette-logos/27064.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/101-the-straight-story.webp": {
+    "image": "/VHS/program/cassette-logos/404.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/102-millers-crossing.webp": {
+    "image": "/VHS/program/cassette-logos/379.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/103-thief.webp": {
+    "image": "/VHS/program/cassette-logos/11524.png",
+    "surface": "light"
+  },
+  "/VHS/program/vote-covers/104-after-hours.webp": {
+    "image": "/VHS/program/cassette-logos/10843.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/105-jeanne-dielman.webp": {
+    "image": "/VHS/program/cassette-logos/44012.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/106-drifting-clouds.webp": {
+    "image": "/VHS/program/cassette-logos/8214.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/107-punch-drunk-love.webp": {
+    "image": "/VHS/program/cassette-logos/8051.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/108-wild-strawberries.webp": {
+    "image": "/VHS/program/cassette-logos/614.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/109-wild-at-heart.webp": {
+    "image": "/VHS/program/cassette-logos/483.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/110-rear-window.webp": {
+    "image": "/VHS/program/cassette-logos/567.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/111-ikiru.webp": {
+    "image": "/VHS/program/cassette-logos/3782.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/112-grave-of-the-fireflies.webp": {
+    "image": "/VHS/program/cassette-logos/12477.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/115-sound-of-falling.webp": {
+    "image": "/VHS/program/cassette-logos/1221061.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/116-the-good-the-bad-and-the-ugly.webp": {
+    "image": "/VHS/program/cassette-logos/429.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/117-blow-out.webp": {
+    "image": "/VHS/program/cassette-logos/11644.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/119-battle-royale.webp": {
+    "image": "/VHS/program/cassette-logos/3176.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/118-jaws.webp": {
+    "image": "/VHS/program/cassette-logos/578.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/120-carrie.webp": {
+    "image": "/VHS/program/cassette-logos/7340.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/121-do-the-right-thing.webp": {
+    "image": "/VHS/program/cassette-logos/925.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/122-the-night-of-the-hunter.webp": {
+    "image": "/VHS/program/cassette-logos/3112.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/123-barry-lyndon.webp": {
+    "image": "/VHS/program/cassette-logos/3175.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/124-blade-runner.webp": {
+    "image": "/VHS/program/cassette-logos/78.png",
+    "surface": "dark"
+  },
+  "/VHS/program/vote-covers/125-blue-velvet.webp": {
+    "image": "/VHS/program/cassette-logos/793.png",
+    "surface": "dark"
+  }
+}
