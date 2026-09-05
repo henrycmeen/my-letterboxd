@@ -1,3 +1,4 @@
+import { FilmResultSpine } from "@/components/FilmResultSpine";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { FilmTicket, type TicketData } from "@/components/FilmTicket";
@@ -117,8 +118,7 @@ export function TicketFinale({
                             {String(place).padStart(2, "0")}
                           </span>
                           <span className={styles.filmTitle}>
-                            {entry.film.title}
-                            <small>{entry.film.year}</small>
+                            <FilmResultSpine film={entry.film} compact />
                           </span>
                           <span className={styles.votes}>
                             <strong>{entry.votes}</strong>
@@ -181,8 +181,7 @@ export function TicketFinale({
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <span className={styles.filmTitle}>
-                    {entry.film.title}
-                    <small>{entry.film.year}</small>
+                    <FilmResultSpine film={entry.film} />
                   </span>
                   <span className={styles.votes}>
                     <strong>{entry.votes}</strong>{" "}

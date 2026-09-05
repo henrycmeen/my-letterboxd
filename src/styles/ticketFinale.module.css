@@ -76,18 +76,7 @@
 }
 .filmTitle {
   flex: 1;
-  font-size: clamp(16px, 2.4vw, 25px);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1.1;
-}
-.filmTitle small {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: #90978a;
-  margin-top: 6px;
-  font-weight: 400;
+  min-width: 0;
 }
 .votes {
   text-align: right;

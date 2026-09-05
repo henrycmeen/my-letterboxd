@@ -1,3 +1,4 @@
+import { FilmResultSpine } from "@/components/FilmResultSpine";
 import Head from "next/head";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FilmTicket } from "@/components/FilmTicket";
@@ -161,8 +162,7 @@ export const ClosedFilmRound = ({ snapshot }: ClosedFilmRoundProps) => {
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span className={styles.filmTitle}>
-                  {film.title}
-                  <small>{film.year}</small>
+                  <FilmResultSpine film={film} />
                 </span>
                 <span className={styles.votes}>
                   <strong>{votes}</strong>
