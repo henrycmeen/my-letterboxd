@@ -589,7 +589,7 @@ const Home: NextPage = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,172,102,0.16),transparent_30%),linear-gradient(180deg,#06070b_0%,#020304_100%)]" />
       <div className="relative mx-auto flex min-h-full w-full max-w-7xl flex-col items-center justify-center px-4 pb-20 pt-8 sm:pb-24">
         <section className="w-full max-w-6xl">
-          <div className="relative mx-auto w-full max-w-6xl aspect-[16/10] rounded-[2.2rem] bg-black p-4 shadow-[0_36px_120px_rgba(0,0,0,0.6)]">
+          <div className="relative mx-auto w-full max-w-6xl aspect-square sm:aspect-[16/10] rounded-[2.2rem] bg-black p-4 shadow-[0_36px_120px_rgba(0,0,0,0.6)]">
             <div
               className="relative h-full w-full overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#090b12]
               before:pointer-events-none before:absolute before:inset-0 before:z-20
@@ -693,7 +693,7 @@ const Home: NextPage = () => {
           </div>
         </section>
 
-        <aside className="relative z-20 -mt-3 flex w-full justify-center sm:-mt-5">
+        <aside className="relative z-20 mt-4 flex w-full justify-center sm:-mt-5">
           <div className="pointer-events-none absolute bottom-[82%] left-1/2 h-40 w-[30rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,218,164,0.18)_0%,rgba(255,218,164,0.08)_26%,rgba(255,218,164,0)_72%)] blur-2xl sm:h-52 sm:w-[40rem]" />
           <div className="relative w-full max-w-[320px] rotate-[9deg] sm:max-w-[360px] md:max-w-[400px]">
             <div className="absolute inset-x-[20%] top-[-8%] h-[16%] rounded-full bg-black/30 blur-2xl" />
