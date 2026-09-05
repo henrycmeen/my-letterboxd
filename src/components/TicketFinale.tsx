@@ -129,21 +129,13 @@ export function TicketFinale({
                     );
                   })}
               </ol>
-              {demo && <p className={styles.demoNote}>Eksempelstemmer</p>}
             </div>
             <div className={styles.winnerHeading} aria-hidden={!winnerRevealed}>
               <p className={styles.kicker}>VINNEREN ER</p>
               <h1>{winner.film.title}</h1>
               <p>
-                {winner.votes}{" "}
-                {demo
-                  ? winner.votes === 1
-                    ? "eksempelstemme"
-                    : "eksempelstemmer"
-                  : winner.votes === 1
-                    ? "stemme"
-                    : "stemmer"}{" "}
-                · {winner.film.year}
+                {winner.votes} {winner.votes === 1 ? "stemme" : "stemmer"} ·{" "}
+                {winner.film.year}
               </p>
             </div>
           </div>
@@ -168,7 +160,6 @@ export function TicketFinale({
           >
             <header className={styles.resultsHeader}>
               <h2>Hele avstemningen</h2>
-              {demo && <span>Eksempelstemmer</span>}
             </header>
             <ol className={styles.ranking}>
               {finalists.map((entry, index) => (

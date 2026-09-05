@@ -21,11 +21,6 @@
   font-size: 12px;
   vertical-align: top;
 }
-.header > span {
-  color: #93938b;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-}
 .studio {
   max-width: 1060px;
   margin: auto;
@@ -266,12 +261,6 @@
   opacity: 0.6;
   cursor: wait;
 }
-.hint {
-  margin-top: 12px;
-  font-size: 11px;
-  color: #93948a;
-  line-height: 1.6;
-}
 .actionStatus {
   min-height: 17px;
   margin-top: 10px;
@@ -299,17 +288,6 @@
   align-items: center;
   flex-direction: column;
   min-width: 0;
-}
-.previewCaption {
-  width: 100%;
-  max-width: 350px;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 0 16px;
-  color: #a4a69a;
-  font-size: 9px;
-  letter-spacing: 0.12em;
 }
 .ticketMount {
   width: min(100%, 350px);
@@ -546,9 +524,6 @@
   .header a {
     font-size: 18px;
   }
-  .header > span {
-    font-size: 7px;
-  }
   .studio {
     display: flex;
     flex-direction: column;
@@ -561,8 +536,7 @@
   .controls h1 {
     font-size: 36px;
   }
-  .ticketMount,
-  .previewCaption {
+  .ticketMount {
     max-width: 320px;
   }
   .preview {
@@ -594,8 +568,7 @@
     min-height: 0;
   }
   .header,
-  .controls,
-  .previewCaption {
+  .controls {
     display: none !important;
   }
   .studio,
