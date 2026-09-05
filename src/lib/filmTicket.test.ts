@@ -28,6 +28,7 @@ void test("every catalogue film can produce a ticket with an existing local fall
   for (const film of films) {
     const ticket = makeFilmTicket(film, "001");
     assert.equal(ticket.film.id, film.id);
+    assert.ok(ticket.director, `Director missing for ${film.title}`);
     assert.ok(
       existsSync(join(process.cwd(), "public", ticket.fallback)),
       film.title,
@@ -42,4 +43,5 @@ void test("every catalogue film can produce a ticket with an existing local fall
   const persona = makeFilmTicket(films.find((f) => f.id === 797)!, "002");
   assert.equal(persona.logo, undefined);
   assert.equal(persona.film.title, "Persona");
+  assert.equal(persona.director, "Ingmar Bergman");
 });

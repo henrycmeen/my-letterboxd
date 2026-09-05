@@ -13,6 +13,7 @@ process.env.CLUB_DB_PATH = path.join(testDirectory, "results.sqlite");
 
 const { getFilmVoteStore } = await import("./filmVotes");
 const { getActiveVoteBoardId } = await import("./filmClubProgramme");
+const { buildFilmRoundLockMetadata } = await import("./filmRoundService");
 const { default: handler } = await import("../pages/api/club/results");
 
 interface RecordedResponse {
@@ -157,4 +158,30 @@ void test("rejects unsupported methods", async () => {
 
   assert.equal(response.statusCode, 405);
   assert.equal(response.headers.allow, "GET");
+});
+
+void test("closed results use frozen film metadata, scores and totals", async () => {
+  const clubId = "frozen-results";
+  const boardId = getActiveVoteBoardId(clubId);
+  const metadata = buildFilmRoundLockMetadata(clubId);
+  const first = metadata.catalogue[0]!;
+  first.title = "Title when the round closed";
+  metadata.ticketTemplates[String(first.id)]!.film.title = first.title;
+  first.tmdbVoteAverage = 6.5;
+  const store = getFilmVoteStore();
+  store.setVote(boardId, first.id, "private-test-voter", true);
+  store.lockRound(boardId, metadata, 1);
+  first.title = "Later catalogue title";
+
+  const response = await invoke({ query: { clubSlug: clubId } });
+  const body = response.body as {
+    ranking: Array<{ title: string; votes: number; tmdbVoteAverage: number }>;
+    stats: { totalVotes: number };
+  };
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.ranking[0]?.title, "Title when the round closed");
+  assert.equal(body.ranking[0]?.tmdbVoteAverage, 6.5);
+  assert.equal(body.ranking[0]?.votes, 1);
+  assert.equal(body.stats.totalVotes, 1);
+  assert.equal(JSON.stringify(body).includes("private-test-voter"), false);
 });

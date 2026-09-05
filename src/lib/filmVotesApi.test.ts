@@ -33,6 +33,8 @@ const deviceCookie = (seed: number): Record<string, string> => ({
 });
 
 const { default: handler } = await import("../pages/api/club/votes");
+const { getFilmVoteStore } = await import("./filmVotes");
+const { buildFilmRoundLockMetadata } = await import("./filmRoundService");
 
 interface RecordedResponse {
   body: unknown;
@@ -399,5 +401,24 @@ void test("rejects unsupported methods with the stable error shape", async () =>
   assert.equal(response.headers.allow, "GET, POST");
   assert.deepEqual(response.body, {
     error: { code: "METHOD_NOT_ALLOWED", message: "Metoden er ikke tillatt." },
+  });
+});
+
+void test("rejects vote changes after the round has been locked", async () => {
+  const boardId = "default-2026-09-22";
+  const film = filmVoteCatalogue[0]!;
+  const store = getFilmVoteStore();
+  store.setVote(boardId, film.id, "round-closed-voter", true);
+  store.lockRound(boardId, buildFilmRoundLockMetadata("default"), 1);
+
+  const response = await invoke({
+    body: { filmId: film.id },
+    method: "POST",
+    query: { boardId },
+  });
+
+  assert.equal(response.statusCode, 409);
+  assert.deepEqual(response.body, {
+    error: { code: "ROUND_CLOSED", message: "Avstemningen er låst." },
   });
 });

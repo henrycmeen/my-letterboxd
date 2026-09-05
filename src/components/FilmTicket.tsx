@@ -9,6 +9,7 @@ export interface TicketData {
   fallback: string;
   logo?: string;
   logoFallback?: string;
+  director?: string;
   palette: string;
   date: string;
   time: string;
@@ -44,7 +45,11 @@ export function FilmTicket({
         year: "numeric",
         timeZone: "UTC",
       }).format(date);
-  const sources = [ticket.image, ticket.fallback, ticket.film.coverImage];
+  const sources = [
+    ticket.image,
+    ticket.fallback,
+    ticket.film.coverImage,
+  ].filter(Boolean);
   // A cached image can finish before React hydrates and attaches onLoad.
   // Inspect the rendered images as well, including cached failures.
   useEffect(() => {
@@ -82,14 +87,18 @@ export function FilmTicket({
             onError={() => setImageAttempt(imageAttempt + 1)}
           />
         ) : (
-          <div className={styles.artFallback}>{ticket.film.year}</div>
+          <div className={styles.artFallback}>{ticket.film.year || "FILM"}</div>
         )}
       </div>
       <div className={styles.ticketBody}>
         <div className={styles.landscape}>
           <div className={styles.edition}>
-            <span>FILMKLUBBEN PRESENTERER</span>
-            <span>FILM / {ticket.film.year}</span>
+            <span>
+              {ticket.director
+                ? `REGI: ${ticket.director}`
+                : "FILMKLUBBEN PRESENTERER"}
+            </span>
+            <span>FILM / {ticket.film.year || "—"}</span>
           </div>
           <div
             className={styles.titleBlock}
@@ -133,7 +142,13 @@ export function FilmTicket({
           </div>
         </div>
       </div>
-      <div className={styles.grain} aria-hidden="true" />
+      <div
+        className={styles.grain}
+        style={{
+          backgroundImage: `url("${withBasePath("/ticket-demo/paper-grain.png")}")`,
+        }}
+        aria-hidden="true"
+      />
     </article>
   );
 }
