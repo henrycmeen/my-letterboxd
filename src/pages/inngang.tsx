@@ -55,106 +55,26 @@ interface RemoteControlHotspot {
   height: number;
 }
 
+// Coordinates follow the 420 × 594 source image, including its transparent margin.
+const remoteHotspot = (
+  id: string, label: string, action: RemoteControlAction,
+  x: number, y: number, width = 34, height = 32,
+): RemoteControlHotspot => ({
+  id, label, action, left: x / 420 * 100, top: y / 594 * 100,
+  width: width / 420 * 100, height: height / 594 * 100,
+});
+
 const LANDING_REMOTE_HOTSPOTS: RemoteControlHotspot[] = [
-  {
-    id: 'digit-1',
-    label: 'Tast 1',
-    action: { kind: 'digit', value: '1' },
-    left: 22.3,
-    top: 24.6,
-    width: 7.3,
-    height: 2.9,
-  },
-  {
-    id: 'digit-2',
-    label: 'Tast 2',
-    action: { kind: 'digit', value: '2' },
-    left: 34.0,
-    top: 24.6,
-    width: 7.3,
-    height: 2.9,
-  },
-  {
-    id: 'digit-3',
-    label: 'Tast 3',
-    action: { kind: 'digit', value: '3' },
-    left: 45.7,
-    top: 24.6,
-    width: 7.1,
-    height: 2.9,
-  },
-  {
-    id: 'backspace',
-    label: 'Slett siste siffer',
-    action: { kind: 'backspace' },
-    left: 20.8,
-    top: 58.4,
-    width: 6.8,
-    height: 3.8,
-  },
-  {
-    id: 'digit-4',
-    label: 'Tast 4',
-    action: { kind: 'digit', value: '4' },
-    left: 21.5,
-    top: 31.6,
-    width: 7.3,
-    height: 2.9,
-  },
-  {
-    id: 'digit-5',
-    label: 'Tast 5',
-    action: { kind: 'digit', value: '5' },
-    left: 33.3,
-    top: 31.6,
-    width: 7.3,
-    height: 2.9,
-  },
-  {
-    id: 'digit-6',
-    label: 'Tast 6',
-    action: { kind: 'digit', value: '6' },
-    left: 45.0,
-    top: 31.6,
-    width: 7.1,
-    height: 2.9,
-  },
-  {
-    id: 'digit-7',
-    label: 'Tast 7',
-    action: { kind: 'digit', value: '7' },
-    left: 20.8,
-    top: 38.6,
-    width: 7.3,
-    height: 2.9,
-  },
-  {
-    id: 'digit-8',
-    label: 'Tast 8',
-    action: { kind: 'digit', value: '8' },
-    left: 32.6,
-    top: 38.6,
-    width: 7.3,
-    height: 2.9,
-  },
-  {
-    id: 'digit-9',
-    label: 'Tast 9',
-    action: { kind: 'digit', value: '9' },
-    left: 44.2,
-    top: 38.6,
-    width: 7.1,
-    height: 2.9,
-  },
-  {
-    id: 'reset',
-    label: 'Nullstill kode',
-    action: { kind: 'reset' },
-    left: 67.0,
-    top: 25.4,
-    width: 6.8,
-    height: 3,
-  },
+  ...Array.from({ length: 9 }, (_, index) => {
+    const digit = String(index + 1);
+    return remoteHotspot(`digit-${digit}`, `Tast ${digit}`, { kind: 'digit', value: digit },
+      111 + (index % 3) * 37, 148 + Math.floor(index / 3) * 39);
+  }),
+  remoteHotspot('digit-0', 'Tast 0', { kind: 'digit', value: '0' }, 111, 273),
+  remoteHotspot('ok', 'Bekreft kode', { kind: 'ok' }, 186, 313),
+  remoteHotspot('backspace', 'Slett siste siffer', { kind: 'backspace' }, 149, 313),
+  remoteHotspot('reset', 'Nullstill kode', { kind: 'reset' }, 223, 148),
+  remoteHotspot('power', 'Nullstill med av/på', { kind: 'reset' }, 260, 351),
 ];
 
 interface FilmClubPageProps {
@@ -612,6 +532,10 @@ const Home: NextPage = () => {
         return;
       }
 
+      if (event.key === 'Enter' && event.target instanceof HTMLButtonElement) {
+        return; // Let the focused remote button receive its native keyboard click.
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault();
         submitCodeRef.current();
@@ -773,7 +697,7 @@ const Home: NextPage = () => {
           <div className="pointer-events-none absolute bottom-[82%] left-1/2 h-40 w-[30rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,218,164,0.18)_0%,rgba(255,218,164,0.08)_26%,rgba(255,218,164,0)_72%)] blur-2xl sm:h-52 sm:w-[40rem]" />
           <div className="relative w-full max-w-[320px] rotate-[9deg] sm:max-w-[360px] md:max-w-[400px]">
             <div className="absolute inset-x-[20%] top-[-8%] h-[16%] rounded-full bg-black/30 blur-2xl" />
-            <div className="relative mx-auto aspect-[433/612] w-full overflow-visible p-0 shadow-none">
+            <div className="relative mx-auto aspect-[420/594] w-full overflow-visible p-0 shadow-none">
               <img
                 src={LANDING_REMOTE_IMAGE}
                 alt="Fjernkontroll for adgangskode"
