@@ -101,17 +101,17 @@ export const FilmClubDemo = () => {
           content="Prøv Filmklubben: VHS-covere, filmvalg og trailere. En demo uten innlogging."
         />
       </Head>
-      <header className={demo.header}>
-        <span>Filmklubben – finn neste film sammen.</span>
-        <a href="https://github.com/henrycmeen/my-letterboxd">
-          Koden på GitHub ↗
-        </a>
-      </header>
       <main>
         <section
           className={styles.nextSection}
           aria-label="Trailer for ditt filmvalg"
         >
+          <header className={`${styles.sectionLabel} ${demo.header}`}>
+            <span>Filmklubben – finn neste film sammen.</span>
+            <a href="https://github.com/henrycmeen/my-letterboxd">
+              Koden på GitHub ↗
+            </a>
+          </header>
           <div className={styles.nextLayout}>
             <div className={styles.nextCase}>
               <NextFilmTv movie={movie} />
