@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { VhsCaseArtwork } from "@/components/VhsCaseArtwork";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 import { withBasePath } from "@/lib/basePath";
 import {
@@ -388,37 +389,10 @@ export const FilmVoteWall = ({
                 onClick={() => void toggleVoteForFilm(film.id, hasVoted)}
                 onPointerLeave={() => clearSuppressedPreview(film.id)}
               >
-                <span className={styles.voteCaseInterior} aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className={styles.voteCaseShell}
-                    src={withBasePath(
-                      "/VHS/program/case-underlay-trimmed.avif",
-                    )}
-                    alt=""
-                    draggable={false}
-                  />
-                  {caseState.showsCassette ? (
-                    <span className={styles.voteCassetteTray}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        className={styles.voteCassette}
-                        src={withBasePath("/VHS/program/cassette-trimmed.avif")}
-                        alt=""
-                        draggable={false}
-                      />
-                    </span>
-                  ) : null}
-                </span>
-                <span className={styles.voteCaseCover} aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={withBasePath(film.coverImage)}
-                    alt=""
-                    draggable={false}
-                    loading={index < 30 ? "eager" : "lazy"}
-                  />
-                </span>
+                <VhsCaseArtwork
+                  coverImage={film.coverImage}
+                  eager={index < 30}
+                />
               </button>
             </li>
           );
