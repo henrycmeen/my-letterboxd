@@ -584,7 +584,7 @@
   justify-content: center;
   position: absolute;
   transform: translateX(0);
-  transform-origin: 50% 65%;
+  transform-origin: 50% 50%;
   transition: transform 260ms cubic-bezier(0.25, 1, 0.5, 1);
   z-index: 1;
 }
@@ -609,20 +609,20 @@
 }
 
 /* Opening stays inside each fixed grid slot. The cover recedes first;
-   the tape then tips toward the viewer and settles with its reels exposed. */
+   the tape moves straight toward the viewer and settles back into its tray. */
 .voteFilm[data-case-open="true"] .voteCaseCover {
   transform: rotateY(-64deg);
 }
 
 .voteFilm[data-case-open="true"] .voteCassetteTray {
-  transform: translate3d(0, 0, 0) rotateY(0deg) rotateZ(0deg);
-  animation: cassetteLift 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform: perspective(800px) translateZ(0);
+  animation: cassetteLift 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes cassetteLift {
-  0%, 20% { transform: translate3d(0, 0, 0) rotateY(0) rotateZ(0) scale(1); }
-  66% { transform: translate3d(3%, -2%, 0) rotateY(-9deg) rotateZ(1deg); }
-  100% { transform: translate3d(0, 0, 0) rotateY(0deg) rotateZ(0deg); }
+  0%, 25% { transform: perspective(800px) translateZ(0); }
+  60% { transform: perspective(800px) translateZ(20px); }
+  100% { transform: perspective(800px) translateZ(0); }
 }
 
 .voteFilm[data-case-open="false"] .voteCaseCover {
