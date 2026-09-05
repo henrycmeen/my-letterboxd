@@ -171,12 +171,9 @@ export const FilmClubDemo = () => {
         </section>
       </main>
       <footer className={demo.footer}>
-        <span>Demo · Valgene lagres ikke.</span>
-        <Link href="/inngang">Har du en klubbkode?</Link>
-        <span>
-          Filmdata og bilder fra <a href="https://www.themoviedb.org">TMDB</a>.
-          Trailere fra YouTube.
-        </span>
+        <Link href="/inngang" className={demo.clubCodeLink}>
+          Har du en filmklubbkode? <span aria-hidden="true">↗</span>
+        </Link>
       </footer>
     </div>
   );
