@@ -614,13 +614,13 @@
   transition-duration: 260ms;
 }
 
-/* Hover and keyboard focus only hint at opening; selection has its own pose. */
-.voteFilm[data-case-open="false"]:not([data-suppress-preview="true"]):focus-visible .voteCaseCover {
+/* Halfway pose hints at either opening or closing on the next interaction. */
+.voteFilm[data-case-open]:not([data-suppress-preview="true"]):focus-visible .voteCaseCover {
   transform: rotateY(-32deg);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .voteFilm[data-case-open="false"]:not([data-suppress-preview="true"]):hover .voteCaseCover {
+  .voteFilm[data-case-open]:not([data-suppress-preview="true"]):hover .voteCaseCover {
     transform: rotateY(-32deg);
   }
 }

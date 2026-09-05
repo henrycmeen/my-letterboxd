@@ -125,44 +125,108 @@ export interface YoutubePlaybackProgress {
   duration: number;
 }
 
+type YoutubeInfo = Record<string, unknown>;
+
+const isYoutubeInfo = (value: unknown): value is YoutubeInfo =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+
+const getYoutubeInfo = (
+  value: unknown,
+  events: readonly string[],
+): YoutubeInfo | null => {
+  if (!isYoutubeInfo(value) || !events.includes(value.event as string)) {
+    return null;
+  }
+
+  return isYoutubeInfo(value.info) ? value.info : null;
+};
+
+const isValidYoutubeCurrentTime = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+const isValidYoutubeDuration = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
+
+const firstValidYoutubeNumber = (
+  values: readonly unknown[],
+  isValid: (value: unknown) => value is number,
+): number | null => {
+  for (const value of values) {
+    if (isValid(value)) {
+      return value;
+    }
+  }
+
+  return null;
+};
+
+const getYoutubeProgressFields = (
+  value: unknown,
+): { currentTime: number | null; duration: number | null } | null => {
+  const info = getYoutubeInfo(value, ["infoDelivery"]);
+  if (info === null) {
+    return null;
+  }
+
+  const progressState = isYoutubeInfo(info.progressState)
+    ? info.progressState
+    : null;
+
+  return {
+    currentTime: firstValidYoutubeNumber(
+      [info.currentTime, progressState?.current, progressState?.currentTime],
+      isValidYoutubeCurrentTime,
+    ),
+    duration: firstValidYoutubeNumber(
+      [info.duration, progressState?.duration],
+      isValidYoutubeDuration,
+    ),
+  };
+};
+
+export const getYoutubeDuration = (value: unknown): number | null => {
+  const info = getYoutubeInfo(value, ["infoDelivery", "initialDelivery"]);
+  if (info === null) {
+    return null;
+  }
+
+  const progressState = isYoutubeInfo(info.progressState)
+    ? info.progressState
+    : null;
+  return firstValidYoutubeNumber(
+    [info.duration, progressState?.duration],
+    isValidYoutubeDuration,
+  );
+};
+
 export const getYoutubePlaybackProgress = (
   value: unknown,
+  knownDuration?: number | null,
 ): YoutubePlaybackProgress | null => {
-  if (!value || typeof value !== "object") {
+  const fields = getYoutubeProgressFields(value);
+  const currentTime = fields?.currentTime;
+  if (currentTime === null || currentTime === undefined) {
     return null;
   }
 
-  const message = value as { event?: unknown; info?: unknown };
-  if (
-    message.event !== "infoDelivery" ||
-    !message.info ||
-    typeof message.info !== "object"
-  ) {
-    return null;
-  }
-
-  const info = message.info as {
-    currentTime?: unknown;
-    duration?: unknown;
-    progressState?: unknown;
-  };
-  const progressState =
-    info.progressState && typeof info.progressState === "object"
-      ? (info.progressState as { current?: unknown; duration?: unknown })
-      : null;
-  const currentTime = info.currentTime ?? progressState?.current;
-  const duration = info.duration ?? progressState?.duration;
-  if (
-    typeof currentTime !== "number" ||
-    !Number.isFinite(currentTime) ||
-    typeof duration !== "number" ||
-    !Number.isFinite(duration) ||
-    duration <= 0
-  ) {
+  const duration =
+    fields?.duration ??
+    (isValidYoutubeDuration(knownDuration) ? knownDuration : null);
+  if (duration === null) {
     return null;
   }
 
   return { currentTime, duration };
+};
+
+export const getYoutubeTrailerCutoffSeconds = (
+  duration: number,
+): number | null => {
+  if (!isValidYoutubeDuration(duration)) {
+    return null;
+  }
+
+  return Math.min(duration * 0.9, Math.max(duration * 0.5, duration - 22));
 };
 
 export const shouldRestartYoutubeTrailer = (
@@ -170,7 +234,17 @@ export const shouldRestartYoutubeTrailer = (
   cutoffRatio = 0.9,
 ): boolean => {
   const progress = getYoutubePlaybackProgress(value);
-  return (
-    progress !== null && progress.currentTime >= progress.duration * cutoffRatio
-  );
+  if (progress === null) {
+    return false;
+  }
+
+  const cutoff =
+    cutoffRatio === 0.9
+      ? getYoutubeTrailerCutoffSeconds(progress.duration)
+      : typeof cutoffRatio === "number" &&
+          Number.isFinite(cutoffRatio) &&
+          cutoffRatio > 0
+        ? progress.duration * cutoffRatio
+        : null;
+  return cutoff !== null && progress.currentTime >= cutoff;
 };

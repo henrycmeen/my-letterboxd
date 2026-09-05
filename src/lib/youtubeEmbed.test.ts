@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildYoutubeTrailerEmbedUrl,
+  getYoutubeDuration,
+  getYoutubePlaybackProgress,
+  getYoutubeTrailerCutoffSeconds,
   isYoutubeAutoplayBlockedMessage,
   isYoutubeBufferingMessage,
   isYoutubeEndedMessage,
@@ -144,25 +147,32 @@ void test("recognizes when YouTube is ready for mute and play commands", () => {
   assert.equal(isYoutubeReadyMessage("ready"), false);
 });
 
-void test("restarts a trailer after 90 percent so end cards never appear", () => {
+void test("restarts a trailer before its final outro", () => {
   assert.equal(
     shouldRestartYoutubeTrailer({
       event: "infoDelivery",
-      info: { currentTime: 89.9, duration: 100 },
+      info: { currentTime: 77.9, duration: 100 },
     }),
     false,
   );
   assert.equal(
     shouldRestartYoutubeTrailer({
       event: "infoDelivery",
-      info: { currentTime: 90, duration: 100 },
+      info: { currentTime: 78, duration: 100 },
     }),
     true,
   );
   assert.equal(
     shouldRestartYoutubeTrailer({
       event: "infoDelivery",
-      info: { currentTime: 180, duration: 200 },
+      info: { currentTime: 177.9, duration: 200 },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldRestartYoutubeTrailer({
+      event: "infoDelivery",
+      info: { currentTime: 178, duration: 200 },
     }),
     true,
   );
@@ -194,4 +204,72 @@ void test("ignores incomplete YouTube progress messages", () => {
     false,
   );
   assert.equal(shouldRestartYoutubeTrailer("90 percent"), false);
+});
+
+void test("uses a cached duration when YouTube sends current time separately", () => {
+  assert.deepEqual(
+    getYoutubePlaybackProgress(
+      { event: "infoDelivery", info: { currentTime: 44 } },
+      120,
+    ),
+    { currentTime: 44, duration: 120 },
+  );
+  assert.deepEqual(
+    getYoutubePlaybackProgress(
+      {
+        event: "infoDelivery",
+        info: { progressState: { current: 18 } },
+      },
+      120,
+    ),
+    { currentTime: 18, duration: 120 },
+  );
+  assert.equal(
+    getYoutubePlaybackProgress({
+      event: "infoDelivery",
+      info: { duration: 120 },
+    }),
+    null,
+  );
+});
+
+void test("reads valid durations from info and initial delivery messages", () => {
+  assert.equal(
+    getYoutubeDuration({ event: "infoDelivery", info: { duration: 120 } }),
+    120,
+  );
+  assert.equal(
+    getYoutubeDuration({
+      event: "infoDelivery",
+      info: { progressState: { duration: 95 } },
+    }),
+    95,
+  );
+  assert.equal(
+    getYoutubeDuration({
+      event: "initialDelivery",
+      info: { progressState: { duration: 80 } },
+    }),
+    80,
+  );
+  assert.equal(
+    getYoutubeDuration({ event: "infoDelivery", info: { duration: 0 } }),
+    null,
+  );
+  assert.equal(
+    getYoutubeDuration({ event: "infoDelivery", info: { duration: Infinity } }),
+    null,
+  );
+  assert.equal(getYoutubeDuration("duration"), null);
+});
+
+void test("cuts off short and long trailers before their outro", () => {
+  assert.equal(getYoutubeTrailerCutoffSeconds(20), 10);
+  assert.equal(getYoutubeTrailerCutoffSeconds(60), 38);
+  assert.equal(getYoutubeTrailerCutoffSeconds(100), 78);
+  assert.equal(getYoutubeTrailerCutoffSeconds(200), 178);
+  assert.equal(getYoutubeTrailerCutoffSeconds(0), null);
+  assert.equal(getYoutubeTrailerCutoffSeconds(-1), null);
+  assert.equal(getYoutubeTrailerCutoffSeconds(Number.NaN), null);
+  assert.equal(getYoutubeTrailerCutoffSeconds(Number.POSITIVE_INFINITY), null);
 });
