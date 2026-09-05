@@ -23,8 +23,8 @@ export function makeFilmTicket(
     palette: ticketPalettes[film.id] ?? art?.palette ?? "ember",
     date: "2026-09-22",
     time: "16:00",
-    venue: "Filmklubben",
-    note: "EN FILMKVELD SAMMEN.",
+    venue: "Wergelandssalen",
+    note: "ADGANG FOR ÉN",
     serial,
   };
 }
@@ -36,9 +36,11 @@ export interface DemoFinalist {
 // The public demo only stores a visitor's open/closed cases. These explicitly
 // fictional totals illustrate a whole club's result without touching club APIs.
 export function makeDemoFinalists(films: TicketData["film"][]): DemoFinalist[] {
-  const sampleVotes = [34, 27, 19, 12, 7];
-  return films.slice(0, sampleVotes.length).map((film, index) => ({
+  const sampleVotes = [
+    34, 30, 27, 24, 21, 19, 17, 15, 13, 11, 9, 7, 6, 5, 4, 3, 2, 1,
+  ];
+  return films.map((film, index) => ({
     film: { ...film },
-    votes: sampleVotes[index]!,
+    votes: sampleVotes[index] ?? 0,
   }));
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- Print artwork uses native image sizing. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/lib/basePath";
 import styles from "@/styles/ticketDemo.module.css";
 
@@ -26,6 +26,8 @@ export function FilmTicket({
   ticket: TicketData;
   onReady?: () => void;
 }) {
+  const imageRef = useRef<HTMLImageElement>(null);
+  const logoRef = useRef<HTMLImageElement>(null);
   const [imageAttempt, setImageAttempt] = useState(0);
   const [logoAttempt, setLogoAttempt] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -43,6 +45,20 @@ export function FilmTicket({
         timeZone: "UTC",
       }).format(date);
   const sources = [ticket.image, ticket.fallback, ticket.film.coverImage];
+  // A cached image can finish before React hydrates and attaches onLoad.
+  // Inspect the rendered images as well, including cached failures.
+  useEffect(() => {
+    const image = imageRef.current;
+    if (image?.complete) {
+      if (image.naturalWidth > 0) setImageLoaded(true);
+      else setImageAttempt(imageAttempt + 1);
+    }
+    const logo = logoRef.current;
+    if (logo?.complete) {
+      if (logo.naturalWidth > 0) setLogoLoaded(true);
+      else setLogoAttempt(logoAttempt + 1);
+    }
+  }, [imageAttempt, logoAttempt]);
   const ready =
     (imageLoaded || imageAttempt >= sources.length) &&
     (logoLoaded || logoAttempt >= logoSources.length);
@@ -58,11 +74,12 @@ export function FilmTicket({
       <div className={styles.artwork}>
         {imageAttempt < sources.length ? (
           <img
+            ref={imageRef}
             className={styles.scene}
             src={localOrRemote(sources[imageAttempt]!)}
             alt=""
             onLoad={() => setImageLoaded(true)}
-            onError={() => setImageAttempt((n) => n + 1)}
+            onError={() => setImageAttempt(imageAttempt + 1)}
           />
         ) : (
           <div className={styles.artFallback}>{ticket.film.year}</div>
@@ -80,11 +97,12 @@ export function FilmTicket({
           >
             {ticket.logo && logoAttempt < logoSources.length ? (
               <img
+                ref={logoRef}
                 className={styles.titleLogo}
                 src={localOrRemote(logoSources[logoAttempt]!)}
                 alt={ticket.film.title}
                 onLoad={() => setLogoLoaded(true)}
-                onError={() => setLogoAttempt((n) => n + 1)}
+                onError={() => setLogoAttempt(logoAttempt + 1)}
               />
             ) : (
               <h2>{ticket.film.title}</h2>

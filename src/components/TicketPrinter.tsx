@@ -10,6 +10,7 @@ export interface TicketPrinterProps {
   ticket: TicketData;
   onComplete?: () => void;
   skipAnimation?: boolean;
+  waiting?: boolean;
 }
 
 type StripStyle = CSSProperties & {
@@ -37,8 +38,9 @@ export function TicketPrinter({
   ticket,
   onComplete,
   skipAnimation = false,
+  waiting = false,
 }: TicketPrinterProps) {
-  const [settled, setSettled] = useState(skipAnimation);
+  const [settled, setSettled] = useState(skipAnimation && !waiting);
   const completionRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
@@ -53,7 +55,7 @@ export function TicketPrinter({
       onCompleteRef.current?.();
     }
 
-    if (completionRef.current) return;
+    if (waiting || completionRef.current) return;
 
     if (skipAnimation || hasReducedMotionPreference()) {
       complete();
@@ -67,7 +69,7 @@ export function TicketPrinter({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [skipAnimation]);
+  }, [skipAnimation, waiting]);
 
   const label = `Filmbillett: ${ticket.film.title}, ${ticket.date} klokken ${ticket.time}, ${ticket.venue}`;
 
@@ -75,8 +77,9 @@ export function TicketPrinter({
     <div
       className={styles.printer}
       data-settled={settled}
+      data-waiting={waiting}
       role="img"
-      aria-label={label}
+      aria-label={waiting ? "Billettskriver" : label}
     >
       <div className={styles.slot} aria-hidden="true">
         <span className={styles.slotLine} />

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FilmTicket } from "@/components/FilmTicket";
@@ -15,55 +14,55 @@ export function TicketFinale({
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [revealed, setRevealed] = useState(0);
+  const revealTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(finalists.length - 1);
   const [printing, setPrinting] = useState(false);
   const [finished, setFinished] = useState(false);
   const [skip, setSkip] = useState(false);
-  const [assetsReady, setAssetsReady] = useState(false);
-  const [fontsReady, setFontsReady] = useState(false);
   const winner = finalists[0]!;
+  const currentResult = finalists[currentIndex]!;
   const [ticket] = useState(() => makeFilmTicket(winner.film, "001"));
-  const ascending = [...finalists].reverse();
 
   useEffect(() => {
     const node = dialog.current!;
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     node.showModal();
-    let active = true;
-    void document.fonts.ready.then(() => {
-      if (active) setFontsReady(true);
-    });
     document.body.style.overflow = "hidden";
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    revealTimers.current = timers;
     if (reduced) {
       setSkip(true);
+      setCurrentIndex(0);
+      setPrinting(true);
+    } else if (finalists.length === 1) {
       setPrinting(true);
     } else {
-      ascending.forEach((_, index) => {
+      const stepDuration = Math.min(550, 5500 / (finalists.length - 1));
+      for (let step = 1; step < finalists.length; step++) {
         timers.push(
-          setTimeout(() => setRevealed(index + 1), 600 + index * 620),
+          setTimeout(() => {
+            const index = finalists.length - 1 - step;
+            setCurrentIndex(index);
+            if (index === 0) setPrinting(true);
+          }, step * stepDuration),
         );
-      });
-      timers.push(
-        setTimeout(() => setPrinting(true), 600 + ascending.length * 620 + 900),
-      );
+      }
     }
     return () => {
-      active = false;
       timers.forEach(clearTimeout);
       node.close();
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus({ preventScroll: true });
     };
-    // The finalists are a captured demo result, fixed for this mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [finalists.length]);
 
   function skipToTicket() {
+    revealTimers.current.forEach(clearTimeout);
+    setCurrentIndex(0);
     setSkip(true);
     setPrinting(true);
   }
@@ -81,77 +80,75 @@ export function TicketFinale({
         </button>
       </div>
       <div className={styles.content}>
-        {!printing ? (
-          <section className={styles.results} aria-label="Eksempelresultater">
-            <p className={styles.kicker}>STEMMENE ER TELT.</p>
-            <h1>Og kveldens film er …</h1>
-            <ol className={styles.ranking} aria-live="off">
-              {ascending.map((entry, index) => (
+        <section
+          className={styles.winner}
+          aria-label={
+            printing ? `Vinner: ${winner.film.title}` : "Resultatannonsering"
+          }
+        >
+          <div className={styles.winnerHeading} key={currentResult.film.id}>
+            <p className={styles.kicker}>
+              {printing ? "VINNEREN ER" : `${currentIndex + 1}. PLASS`}
+            </p>
+            <h1>{currentResult.film.title}</h1>
+            <p>
+              {currentResult.votes}{" "}
+              {currentResult.votes === 1 ? "eksempelstemme" : "eksempelstemmer"}{" "}
+              · {currentResult.film.year}
+            </p>
+          </div>
+          <TicketPrinter
+            ticket={ticket}
+            waiting={!printing}
+            skipAnimation={skip}
+            onComplete={() => setFinished(true)}
+          />
+          <div className={styles.actions} data-ready={finished}>
+            <button className={styles.again} type="button" onClick={onClose}>
+              Tilbake til filmene
+            </button>
+          </div>
+          {!finished && (
+            <button className={styles.skip} onClick={skipToTicket}>
+              Hopp over animasjonen
+            </button>
+          )}
+        </section>
+        {finished && (
+          <section
+            className={styles.allResults}
+            aria-label="Resultater for alle filmene"
+          >
+            <header className={styles.resultsHeader}>
+              <h2>Hele avstemningen</h2>
+              <span>Eksempelstemmer</span>
+            </header>
+            <ol className={styles.ranking}>
+              {finalists.map((entry, index) => (
                 <li
                   key={entry.film.id}
-                  data-visible={index < revealed}
-                  data-winner={index === ascending.length - 1}
+                  data-visible="true"
+                  data-winner={index === 0}
                 >
                   <span className={styles.place}>
-                    {String(ascending.length - index).padStart(2, "0")}
+                    {String(index + 1).padStart(2, "0")}
                   </span>
                   <span className={styles.filmTitle}>
                     {entry.film.title}
                     <small>{entry.film.year}</small>
                   </span>
                   <span className={styles.votes}>
-                    <strong>{entry.votes}</strong> stemmer
+                    <strong>{entry.votes}</strong>{" "}
+                    {entry.votes === 1 ? "stemme" : "stemmer"}
                   </span>
                 </li>
               ))}
             </ol>
-            <p className={styles.demoNote}>
-              Eksempelstemmer · Filmrekkefølgen følger valgene dine i demoen.
-            </p>
-            <button className={styles.skip} onClick={skipToTicket}>
-              Hopp til billetten ↓
-            </button>
-          </section>
-        ) : (
-          <section
-            className={styles.winner}
-            aria-label={`Vinner: ${winner.film.title}`}
-          >
-            <div className={styles.winnerHeading}>
-              <p className={styles.kicker}>KVELDENS FILM</p>
-              <h1>{winner.film.title}</h1>
-              <p>
-                {winner.votes} eksempelstemmer · {winner.film.year}
-              </p>
-            </div>
-            <TicketPrinter
-              ticket={ticket}
-              skipAnimation={skip}
-              onComplete={() => setFinished(true)}
-            />
-            <div className={styles.actions} data-ready={finished}>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                disabled={!finished || !assetsReady || !fontsReady}
-              >
-                Skriv ut / lagre PDF ↗
-              </button>
-              <Link href="/billett">Lag din egen billett ↗</Link>
-              <button className={styles.again} type="button" onClick={onClose}>
-                Tilbake til filmene
-              </button>
-            </div>
-            {!finished && (
-              <button className={styles.skip} onClick={skipToTicket}>
-                Hopp over animasjonen
-              </button>
-            )}
           </section>
         )}
       </div>
       <div className={styles.printOnly} aria-hidden="true">
-        <FilmTicket ticket={ticket} onReady={() => setAssetsReady(true)} />
+        <FilmTicket ticket={ticket} />
       </div>
     </dialog>,
     document.body,

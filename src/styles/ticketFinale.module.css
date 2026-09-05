@@ -44,16 +44,6 @@
   letter-spacing: 0.16em;
   margin: 0 0 16px;
 }
-.results {
-  padding: clamp(0px, 5vh, 50px) 0 0;
-}
-.results h1 {
-  font-size: clamp(26px, 4.5vw, 48px);
-  letter-spacing: -0.05em;
-  line-height: 1.1;
-  margin: 0 0 36px;
-  font-weight: 550;
-}
 .ranking {
   margin: 0;
   padding: 0;
@@ -113,12 +103,26 @@
   color: #eeeade;
   margin-bottom: 5px;
 }
-.demoNote {
-  color: #959a8e;
-  font-size: 11px;
-  line-height: 1.5;
-  margin-top: 24px;
+.allResults {
+  margin: 72px auto 0;
 }
+.resultsHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.resultsHeader h2 {
+  font-size: 17px;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+}
+.resultsHeader > span {
+  color: #959a8e;
+  font-size: 10px;
+}
+
 .skip {
   margin: 20px 0 0;
   padding: 12px 0;
@@ -131,7 +135,11 @@
   text-align: center;
 }
 .winnerHeading {
-  animation: arrive 0.5s ease-out both;
+  animation: arrive 0.18s ease-out both;
+  min-height: 134px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   margin-bottom: 24px;
 }
 .winner h1 {
@@ -170,15 +178,6 @@
   padding: 12px 16px;
   border: 1px solid #727965;
   color: #eeeade;
-}
-.actions > button:first-child {
-  background: #eeeade;
-  color: #171a12;
-  border-color: #eeeade;
-}
-.actions > button:disabled {
-  opacity: 0.5;
-  cursor: wait;
 }
 .actions .again {
   flex-basis: 100%;
@@ -219,10 +218,8 @@
     gap: 12px;
     min-height: 74px;
   }
-  .results h1 {
-    margin-bottom: 28px;
-  }
   .winnerHeading {
+    min-height: 118px;
     margin-bottom: 20px;
   }
 }

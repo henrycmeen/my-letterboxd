@@ -34,8 +34,8 @@ export default function TicketDemo() {
   const [originalLogo, setOriginalLogo] = useState(true);
   const [date, setDate] = useState("2026-09-22");
   const [time, setTime] = useState("16:00");
-  const [venue, setVenue] = useState("Wergelandshallen");
-  const [note, setNote] = useState("EN FILMKVELD SAMMEN.");
+  const [venue, setVenue] = useState("Wergelandssalen");
+  const [note, setNote] = useState("ADGANG FOR ÉN");
   const [readyTicketKey, setReadyTicketKey] = useState("");
   const [fontsReady, setFontsReady] = useState(false);
   const ticketKey = `${selectedId}-${originalLogo}`;
