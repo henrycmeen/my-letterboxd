@@ -7,6 +7,7 @@ import styles from "@/styles/filmClubProgram.module.css";
 // Deliberately no API, storage, TV, or vote-wall mounting in this local preview.
 export default function VhsDemo() {
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
+  const [suppressed, setSuppressed] = useState<number | null>(null);
   return (
     <main className={styles.programPage}>
       <Head>
@@ -29,14 +30,18 @@ export default function VhsDemo() {
                 aria-label={`${selected.has(film.id) ? "Lukk" : "Åpne"} ${film.title}`}
                 aria-pressed={selected.has(film.id)}
                 data-case-open={selected.has(film.id)}
-                onClick={() =>
+                data-suppress-preview={suppressed === film.id || undefined}
+                onPointerLeave={() => setSuppressed(null)}
+                onBlur={() => setSuppressed(null)}
+                onClick={() => {
+                  setSuppressed(film.id);
                   setSelected((previous) => {
                     const next = new Set(previous);
                     if (next.has(film.id)) next.delete(film.id);
                     else next.add(film.id);
                     return next;
-                  })
-                }
+                  });
+                }}
               >
                 <VhsCaseArtwork
                   coverImage={film.coverImage}

@@ -308,16 +308,14 @@ export const FilmVoteWall = ({
       return;
     }
 
-    const { nextHasVoted, suppressPreview } =
-      getVoteToggleInteraction(hasVoted);
+    const { nextHasVoted } = getVoteToggleInteraction(hasVoted);
     pendingFilmIds.current.add(filmId);
-    if (suppressPreview) {
-      setSuppressedPreviewFilmIds((current) => {
-        const next = new Set(current);
-        next.add(filmId);
-        return next;
-      });
-    }
+    // Let the clicked pose finish before hinting at the reverse action.
+    setSuppressedPreviewFilmIds((current) => {
+      const next = new Set(current);
+      next.add(filmId);
+      return next;
+    });
     setPendingVoteStates((current) => {
       const next = new Map(current);
       next.set(filmId, nextHasVoted);

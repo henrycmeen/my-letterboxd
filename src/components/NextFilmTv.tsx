@@ -4,6 +4,8 @@ import { withBasePath } from "@/lib/basePath";
 import {
   buildYoutubeTrailerEmbedUrl,
   getYoutubePlaybackProgress,
+  getYoutubeDuration,
+  getYoutubeTrailerCutoffSeconds,
   isYoutubeAutoplayBlockedMessage,
   isYoutubeBufferingMessage,
   isYoutubeEndedMessage,
@@ -11,7 +13,6 @@ import {
   isYoutubePausedMessage,
   isYoutubePlayingMessage,
   isYoutubeReadyMessage,
-  shouldRestartYoutubeTrailer,
   YOUTUBE_TRAILER_LOOP_START_SECONDS,
 } from "@/lib/youtubeEmbed";
 import {
@@ -142,6 +143,8 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
   const lastPlaybackTime = useRef<number | null>(null);
   const lastPlaybackProgressAt = useRef<number | null>(null);
   const hasPlaybackAdvanced = useRef(false);
+  const knownDuration = useRef<number | null>(null);
+  const captionsDisableRequested = useRef(false);
 
   const setTvPhase = useCallback((nextPhase: TvPhase) => {
     phaseRef.current = nextPhase;
@@ -247,7 +250,9 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
 
   useEffect(() => {
     restartPending.current = false;
-  }, [youtubeId]);
+    knownDuration.current = null;
+    captionsDisableRequested.current = false;
+  }, [displayed.youtubeId, playerGeneration]);
 
   const pendingDisplay = useRef<DisplayedTrailer>({
     coverImage: movie.coverImage,
@@ -419,6 +424,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         "onReady",
         "onAutoplayBlocked",
         "onError",
+        "onApiChange",
       ]) {
         postYoutubeCommand("addEventListener", [eventName]);
       }
@@ -483,17 +489,18 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     };
   }, [displayed.youtubeId, phase, revealPosterFallback, usePosterFallback]);
 
+  const restartTrailer = useCallback(() => {
+    if (restartPending.current || posterFallbackRef.current) {
+      return;
+    }
+    restartPending.current = true;
+    // Hide the old picture before seeking, including delayed end-state frames.
+    returnTrailerToTuning();
+    postYoutubeCommand("seekTo", [YOUTUBE_TRAILER_LOOP_START_SECONDS, true]);
+    postYoutubeCommand("playVideo");
+  }, [postYoutubeCommand, returnTrailerToTuning]);
+
   useEffect(() => {
-    const restartTrailer = () => {
-      if (restartPending.current) {
-        return;
-      }
-
-      restartPending.current = true;
-      postYoutubeCommand("seekTo", [YOUTUBE_TRAILER_LOOP_START_SECONDS, true]);
-      postYoutubeCommand("playVideo");
-    };
-
     const handleYoutubeMessage = (event: MessageEvent<unknown>) => {
       if (
         event.origin !== "https://www.youtube-nocookie.com" ||
@@ -511,7 +518,25 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         }
       }
 
+      const duration = getYoutubeDuration(payload);
+      if (duration !== null) knownDuration.current = duration;
+
+      // cc_load_policy=0 still permits the viewer's saved caption preference.
+      // Module unloading is best effort: YouTube does not guarantee an off switch.
+      if (
+        payload &&
+        typeof payload === "object" &&
+        (payload as { event?: unknown }).event === "onApiChange" &&
+        !captionsDisableRequested.current
+      ) {
+        captionsDisableRequested.current = true;
+        postYoutubeCommand("setOption", ["captions", "track", {}]);
+        postYoutubeCommand("unloadModule", ["captions"]);
+      }
+
       if (isYoutubeReadyMessage(payload)) {
+        postYoutubeCommand("setOption", ["captions", "track", {}]);
+        postYoutubeCommand("unloadModule", ["captions"]);
         postYoutubeCommand("mute");
         postYoutubeCommand("playVideo");
         return;
@@ -563,7 +588,10 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         }
       }
 
-      const progress = getYoutubePlaybackProgress(payload);
+      const progress = getYoutubePlaybackProgress(
+        payload,
+        knownDuration.current,
+      );
       if (progress && playbackSignalRef.current === "playing") {
         const now = Date.now();
         const previousTime = lastPlaybackTime.current;
@@ -596,8 +624,11 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
         restartPending.current = false;
       }
 
+      const cutoff = getYoutubeTrailerCutoffSeconds(knownDuration.current ?? 0);
       if (
-        shouldRestartYoutubeTrailer(payload) ||
+        (progress !== null &&
+          cutoff !== null &&
+          progress.currentTime >= cutoff) ||
         isYoutubeEndedMessage(payload)
       ) {
         restartTrailer();
@@ -611,6 +642,7 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
     clearRevealTimer,
     displayed.youtubeId,
     postYoutubeCommand,
+    restartTrailer,
     resetPlaybackCandidate,
     revealPicture,
     revealPosterFallback,
@@ -625,16 +657,36 @@ const ReadyNextFilmTv = ({ movie }: ReadyNextFilmTvProps) => {
 
     const watchdog = window.setInterval(() => {
       const progressAt = lastPlaybackProgressAt.current;
+      const time = lastPlaybackTime.current;
+      const cutoff = getYoutubeTrailerCutoffSeconds(knownDuration.current ?? 0);
+      // Bridge gaps between player messages, but never extrapolate stalled playback.
+      if (
+        progressAt !== null &&
+        time !== null &&
+        cutoff !== null &&
+        playbackSignalRef.current === "playing" &&
+        Date.now() - progressAt <= MAX_STABLE_PROGRESS_AGE_MS &&
+        time + (Date.now() - progressAt) / 1000 >= cutoff
+      ) {
+        restartTrailer();
+        return;
+      }
       if (
         progressAt === null ||
         Date.now() - progressAt > PLAYBACK_WATCHDOG_GRACE_MS
       ) {
         returnTrailerToTuning();
       }
-    }, 1_000);
+    }, 250);
 
     return () => window.clearInterval(watchdog);
-  }, [displayed.youtubeId, phase, returnTrailerToTuning, usePosterFallback]);
+  }, [
+    displayed.youtubeId,
+    phase,
+    restartTrailer,
+    returnTrailerToTuning,
+    usePosterFallback,
+  ]);
 
   const pictureClassName = `${styles.nextTvPicture} ${
     phase === "poweringOff"
