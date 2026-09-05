@@ -1,0 +1,103 @@
+.spine {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 3173 / 434;
+  container-type: inline-size;
+  isolation: isolate;
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+.spine[data-compact="true"] {
+  max-width: 420px;
+}
+.case,
+.plastic,
+.scratches {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.print {
+  position: absolute;
+  inset: 8% 2.4% 8% 2%;
+  overflow: hidden;
+  background: #151712;
+  color: #f1ede0;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 44%;
+  filter: saturate(0.8);
+}
+.shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #0a0b09b3 35%, #0a0b09e6 90%);
+}
+.title {
+  position: absolute;
+  inset: 13% 14% 13% 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.title img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.title span {
+  font-size: clamp(10px, 4cqw, 22px);
+  font-weight: 700;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.edition {
+  position: absolute;
+  inset: 15% 2% 15% auto;
+  width: 9%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8%;
+  color: #ece8dd;
+}
+.edition b {
+  border: 1px solid currentColor;
+  font-size: clamp(7px, 2.3cqw, 13px);
+  line-height: 1;
+  padding: 1px 2px;
+  font-style: italic;
+}
+.edition small {
+  font-family: monospace;
+  font-size: clamp(6px, 1.8cqw, 10px);
+}
+.print[data-surface="light"] {
+  color: #151712;
+  background: #ded9cd;
+}
+.print[data-surface="light"] .shade {
+  background: linear-gradient(90deg, transparent, #ded9cde6 35%, #ded9cd 90%);
+}
+.print[data-surface="light"] .edition {
+  color: #151712;
+}
+.plastic {
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+.scratches {
+  opacity: 0.4;
+}
