@@ -4,7 +4,7 @@ Finn neste film sammen. En enkel filmklubb med VHS-covere, avstemning og trailer
 
 **[Prøv demoen →](https://henrymeen.no/filmklubb/)**
 
-I demoen flytter filmene seg når du velger dem. Valgene finnes bare i nettleseren og nullstilles når siden lastes på nytt. Ingen innlogging eller database er nødvendig for demoen. Nederst kan du annonsere en vinner med eksempelstemmer og få en filmbillett skrevet ut.
+I demoen kan du prøve ni filmer som flytter seg når du velger dem. Valgene finnes bare i nettleseren og nullstilles når siden lastes på nytt. Ingen innlogging eller database er nødvendig for demoen. Nederst kan du annonsere en vinner med eksempelstemmer og få en filmbillett skrevet ut.
 
 **[Lag din egen filmbillett →](https://henrymeen.no/filmklubb/billett)** Velg film, farge og visning, og skriv ut eller lagre som PDF.
 

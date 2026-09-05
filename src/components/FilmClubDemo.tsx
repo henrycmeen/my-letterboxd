@@ -15,6 +15,13 @@ const TicketFinale = dynamic(
   { ssr: false },
 );
 
+// A compact selection keeps the finale within a few scrolls. The ticket
+// workshop and real clubs retain their full catalogues.
+const demoFilmIds = new Set([
+  680, 62, 503919, 438631, 843, 655, 25538, 149, 10227,
+]);
+const demoFilms = catalogue.filter((film) => demoFilmIds.has(film.id));
+
 // Local preview only: never mount the real vote wall or write a club vote.
 export const FilmClubDemo = () => {
   const [finalists, setFinalists] = useState<DemoFinalist[] | null>(null);
@@ -22,7 +29,7 @@ export const FilmClubDemo = () => {
   const [suppressedId, setSuppressedId] = useState<number | null>(null);
   const rankedFilms = useMemo(
     () =>
-      [...catalogue].sort((a, b) => {
+      [...demoFilms].sort((a, b) => {
         const voteDifference =
           Number(selected.has(b.id)) - Number(selected.has(a.id));
         return (
