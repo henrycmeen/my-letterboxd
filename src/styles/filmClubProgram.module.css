@@ -522,6 +522,19 @@
   text-shadow: 0 1px 1px #000;
 }
 
+.voteCassetteTitle img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 18cqw;
+  object-fit: contain;
+  opacity: 1;
+}
+
+.voteCassetteTitle[data-surface="light"] {
+  background: linear-gradient(to top, transparent, rgba(243, 242, 236, 0.94));
+}
+
 .voteCassetteSpine {
   position: absolute;
   inset: 6% 1% 6% 91%;

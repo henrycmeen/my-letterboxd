@@ -1,4 +1,5 @@
 import { withBasePath } from "@/lib/basePath";
+import cassetteLogos from "@/data/filmCassetteLogos.json";
 import cassetteLabels from "@/data/filmCassetteLabels.json";
 import styles from "@/styles/filmClubProgram.module.css";
 
@@ -12,6 +13,7 @@ export function VhsCaseArtwork({
   title: string;
   eager?: boolean;
 }) {
+  const titleLogo = cassetteLogos[coverImage as keyof typeof cassetteLogos];
   const labelImage = cassetteLabels[coverImage as keyof typeof cassetteLabels];
   return (
     <>
@@ -43,7 +45,22 @@ export function VhsCaseArtwork({
                     loading={eager ? "eager" : "lazy"}
                   />
                 ) : null}
-                <span className={styles.voteCassetteTitle}>{title}</span>
+                <span
+                  className={styles.voteCassetteTitle}
+                  data-surface={titleLogo?.surface}
+                >
+                  {titleLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={withBasePath(titleLogo.image)}
+                      alt=""
+                      draggable={false}
+                      loading={eager ? "eager" : "lazy"}
+                    />
+                  ) : (
+                    title
+                  )}
+                </span>
               </span>
             </span>
             <span className={styles.voteCassetteSpine}>{title}</span>
