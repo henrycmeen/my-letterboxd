@@ -1,0 +1,24 @@
+.header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(0.8rem, 2vw, 2rem);
+  font-size: 0.75rem;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem 2rem;
+  padding: 2rem clamp(0.8rem, 2vw, 2rem);
+  color: #aaa9a2;
+  font-size: 0.65rem;
+  line-height: 1.6;
+}
+.header a:focus-visible,
+.footer a:focus-visible {
+  outline: 2px solid #f3f2ec;
+  outline-offset: 4px;
+}
