@@ -391,6 +391,7 @@ export const FilmVoteWall = ({
               >
                 <VhsCaseArtwork
                   coverImage={film.coverImage}
+                  title={film.title}
                   eager={index < 30}
                 />
               </button>

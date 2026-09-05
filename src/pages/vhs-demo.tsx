@@ -40,6 +40,7 @@ export default function VhsDemo() {
               >
                 <VhsCaseArtwork
                   coverImage={film.coverImage}
+                  title={film.title}
                   eager={index < 30}
                 />
               </button>

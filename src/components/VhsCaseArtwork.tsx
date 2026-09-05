@@ -4,9 +4,11 @@ import styles from "@/styles/filmClubProgram.module.css";
 /** Shared artwork: the demo exercises the same layers as the vote wall. */
 export function VhsCaseArtwork({
   coverImage,
+  title,
   eager = false,
 }: {
   coverImage: string;
+  title: string;
   eager?: boolean;
 }) {
   return (
@@ -20,13 +22,25 @@ export function VhsCaseArtwork({
           draggable={false}
         />
         <span className={styles.voteCassetteTray}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className={styles.voteCassette}
-            src={withBasePath("/VHS/program/cassette-trimmed.avif")}
-            alt=""
-            draggable={false}
-          />
+          <span className={styles.voteCassetteBody}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className={styles.voteCassette}
+              src={withBasePath("/VHS/program/cassette-trimmed.avif")}
+              alt=""
+              draggable={false}
+            />
+            <span className={styles.voteCassetteLabel}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={withBasePath(coverImage)}
+                alt=""
+                draggable={false}
+                loading={eager ? "eager" : "lazy"}
+              />
+            </span>
+            <span className={styles.voteCassetteSpine}>{title}</span>
+          </span>
         </span>
       </span>
       <span className={styles.voteCaseCover} aria-hidden="true">
