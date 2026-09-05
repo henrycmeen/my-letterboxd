@@ -194,7 +194,8 @@
 }
 .paletteField > div {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 14px 10px;
 }
 .paletteField button {
   font-size: 10px;
@@ -224,6 +225,18 @@
 .paletteField button[data-palette="mineral"] span {
   background: #d5e1cd;
   border-color: #285a48;
+}
+.paletteField button[data-palette="white"] span {
+  background: #fff;
+  border-color: #202124;
+}
+.paletteField button[data-palette="midnight"] span {
+  background: #191b22;
+  border-color: #f5f3ec;
+}
+.paletteField button[data-palette="blue"] span {
+  background: #dce6f6;
+  border-color: #193c9b;
 }
 .paletteField button[aria-pressed="true"] {
   outline: 1px solid #999a8e;
@@ -323,6 +336,21 @@
   --ink: #264c3c;
   --accent: #264c3c;
 }
+.ticket[data-palette="white"] {
+  --paper: #fff;
+  --ink: #202124;
+  --accent: #202124;
+}
+.ticket[data-palette="midnight"] {
+  --paper: #191b22;
+  --ink: #f5f3ec;
+  --accent: #f5f3ec;
+}
+.ticket[data-palette="blue"] {
+  --paper: #dce6f6;
+  --ink: #193c9b;
+  --accent: #193c9b;
+}
 .artwork {
   position: relative;
   width: 100%;
@@ -346,6 +374,18 @@
   background: var(--ink);
   mix-blend-mode: screen;
   pointer-events: none;
+}
+/* The clean editions use the photograph without a print colour or texture. */
+.ticket[data-palette="white"] .scene,
+.ticket[data-palette="midnight"] .scene {
+  filter: none;
+  mix-blend-mode: normal;
+}
+.ticket[data-palette="white"] .artwork::after,
+.ticket[data-palette="midnight"] .artwork::after,
+.ticket[data-palette="white"] .grain,
+.ticket[data-palette="midnight"] .grain {
+  display: none;
 }
 .ticketBody {
   position: relative;
@@ -407,6 +447,13 @@
 .ticket[data-palette="mineral"] .titleLogo {
   filter: brightness(0) saturate(100%) invert(25%) sepia(17%) saturate(1054%)
     hue-rotate(102deg) brightness(92%) contrast(94%);
+}
+.ticket[data-palette="midnight"] .titleLogo {
+  filter: brightness(0) invert(1);
+}
+.ticket[data-palette="blue"] .titleLogo {
+  filter: brightness(0) saturate(100%) invert(20%) sepia(75%) saturate(1967%)
+    hue-rotate(216deg) brightness(90%) contrast(99%);
 }
 .titleBlock h2 {
   margin: 0;
