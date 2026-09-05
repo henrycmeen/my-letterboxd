@@ -34,6 +34,9 @@ const palettes = [
   { id: "rose", label: "Rosa" },
   { id: "red", label: "Rød" },
   { id: "mineral", label: "Grønn" },
+  { id: "white", label: "Hvit" },
+  { id: "midnight", label: "Natt" },
+  { id: "blue", label: "Blå" },
 ];
 const curated: Record<number, string> = {
   62: "ember",
