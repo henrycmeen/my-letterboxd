@@ -108,7 +108,7 @@ export const FilmClubDemo = () => {
         >
           <header className={`${styles.sectionLabel} ${demo.header}`}>
             <span>Filmklubben – finn neste film sammen.</span>
-            <a href="https://github.com/henrycmeen/my-letterboxd">
+            <a href="https://github.com/henrycmeen/filmklubb">
               Koden på GitHub ↗
             </a>
           </header>

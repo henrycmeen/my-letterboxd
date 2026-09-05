@@ -11,8 +11,8 @@ I demoen flytter filmene seg når du velger dem. Valgene finnes bare i nettleser
 Du trenger Node.js 24 og pnpm 10.
 
 ```bash
-git clone https://github.com/henrycmeen/my-letterboxd.git
-cd my-letterboxd
+git clone https://github.com/henrycmeen/filmklubb.git
+cd filmklubb
 pnpm install
 pnpm dev
 ```
