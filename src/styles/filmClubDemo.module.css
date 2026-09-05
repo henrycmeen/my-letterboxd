@@ -5,6 +5,9 @@
 .footer {
   display: flex;
   justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
   padding: 3rem clamp(0.8rem, 2vw, 2rem) 4rem;
 }
 .clubCodeLink span {
@@ -14,5 +17,26 @@
 .header a:focus-visible,
 .footer a:focus-visible {
   outline: 2px solid #f3f2ec;
+  outline-offset: 4px;
+}
+
+.announce {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  background: #eeeade;
+  color: #191b15;
+  padding: 16px 24px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.announcementNote {
+  font-size: 11px;
+  color: #989c90;
+  margin-top: -10px;
+  margin-bottom: 8px;
+}
+.footer button:focus-visible {
+  outline: 2px solid #eeeade;
   outline-offset: 4px;
 }
