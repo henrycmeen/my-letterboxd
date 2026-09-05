@@ -4,13 +4,20 @@
 }
 .footer {
   display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.8rem 2rem;
-  padding: 2rem clamp(0.8rem, 2vw, 2rem);
-  color: #aaa9a2;
-  font-size: 0.65rem;
+  justify-content: center;
+  padding: 3rem clamp(0.8rem, 2vw, 2rem) 4rem;
+}
+.clubCodeLink {
+  font-family: "Courier New", Courier, monospace;
+  font-size: clamp(0.8rem, 1.4vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   line-height: 1.6;
+  text-transform: uppercase;
+}
+.clubCodeLink span {
+  display: inline-block;
+  margin-left: 0.35em;
 }
 .header a:focus-visible,
 .footer a:focus-visible {
