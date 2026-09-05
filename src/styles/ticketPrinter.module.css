@@ -167,3 +167,12 @@
   background: linear-gradient(rgba(0, 0, 0, 0.7), transparent);
   pointer-events: none;
 }
+
+/* Keep the slot in place while the results count up, then start the feed. */
+.printer[data-waiting="true"] .paperWindow {
+  visibility: hidden;
+}
+.printer[data-waiting="true"] .paper,
+.printer[data-waiting="true"] .segment {
+  animation: none;
+}

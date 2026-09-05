@@ -21,21 +21,62 @@
 }
 
 .announce {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 32px;
-  background: #eeeade;
-  color: #191b15;
-  padding: 16px 24px;
-  font-size: 15px;
+  justify-content: center;
+  gap: 14px;
+  min-height: 64px;
+  max-width: 100%;
+  margin: 0 0 14px;
+  padding: 20px 26px;
+  border: 1px solid #4f514b;
+  border-bottom-color: #292b26;
+  border-radius: 11px;
+  background: linear-gradient(175deg, #3d3f39 0%, #242621 80%);
+  color: #efeee6;
+  box-shadow:
+    inset 0 1px 1px #ffffff26,
+    inset 0 -2px 2px #00000044,
+    0 6px 0 #131510,
+    0 7px 0 #42453b,
+    0 12px 20px #000000b3;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition:
+    transform 100ms ease,
+    box-shadow 100ms ease,
+    filter 100ms ease;
 }
-.announcementNote {
-  font-size: 11px;
-  color: #989c90;
-  margin-top: -10px;
-  margin-bottom: 8px;
+.announce:hover {
+  filter: brightness(1.13);
 }
+.announce:active {
+  transform: translateY(5px);
+  box-shadow:
+    inset 0 1px 2px #ffffff1a,
+    inset 0 -1px 1px #00000055,
+    0 1px 0 #131510,
+    0 2px 0 #42453b,
+    0 5px 10px #000000b3;
+}
+.stopSymbol {
+  flex: 0 0 9px;
+  height: 9px;
+  border-radius: 1px;
+  background: #da745c;
+  box-shadow:
+    0 1px 0 #00000099,
+    inset 0 1px 0 #ffffff40;
+}
+@media (prefers-reduced-motion: reduce) {
+  .announce {
+    transition: none;
+  }
+}
+
 .footer button:focus-visible {
   outline: 2px solid #eeeade;
   outline-offset: 4px;

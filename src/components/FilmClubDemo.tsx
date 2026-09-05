@@ -18,7 +18,8 @@ const TicketFinale = dynamic(
 // A compact selection keeps the finale within a few scrolls. The ticket
 // workshop and real clubs retain their full catalogues.
 const demoFilmIds = new Set([
-  680, 62, 503919, 438631, 843, 655, 25538, 149, 10227,
+  680, 62, 503919, 438631, 843, 655, 25538, 149, 10227, 348, 1091, 129, 28,
+  11104, 10315, 5967, 3175, 78,
 ]);
 const demoFilms = catalogue.filter((film) => demoFilmIds.has(film.id));
 
@@ -191,11 +192,9 @@ export const FilmClubDemo = () => {
           className={demo.announce}
           onClick={() => setFinalists(makeDemoFinalists(rankedFilms))}
         >
-          Annonser vinneren <span aria-hidden="true">↗</span>
+          <span className={demo.stopSymbol} aria-hidden="true" />
+          Avslutt avstemningen
         </button>
-        <p className={demo.announcementNote}>
-          Prøv avslutningen med eksempelstemmer.
-        </p>
         <Link
           href="/billett"
           className={`${styles.sectionLabel} ${demo.clubCodeLink}`}

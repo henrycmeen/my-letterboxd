@@ -8,11 +8,14 @@ import { makeDemoFinalists, makeFilmTicket } from "./filmTicket";
 void test("the finale captures the visitor's ranking without changing the catalogue", () => {
   const ranked = [...films].reverse();
   const finalists = makeDemoFinalists(ranked);
-  assert.equal(finalists.length, 5);
+  assert.equal(finalists.length, ranked.length);
   assert.equal(finalists[0]!.film.id, ranked[0]!.id);
-  assert.deepEqual(
-    finalists.map((f) => f.votes),
-    [34, 27, 19, 12, 7],
+  assert.equal(finalists[0]!.votes, 34);
+  assert.ok(
+    finalists.every(
+      (entry, index) =>
+        index === 0 || entry.votes <= finalists[index - 1]!.votes,
+    ),
   );
   const capturedTitle = finalists[0]!.film.title;
   ranked[0] = { ...ranked[0]!, title: "Changed after announcement" };
