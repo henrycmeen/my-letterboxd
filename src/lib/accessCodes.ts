@@ -5,9 +5,11 @@ export const ACCESS_CODE_LENGTH = 3;
 export const ACCESS_CODE_MAP = {
   '000': DEFAULT_CLUB_SLUG,
   '456': DEFAULT_CLUB_SLUG,
-  '123': 'nasjonalarkivet',
+  '123': 'na',
 } as const satisfies Record<string, string>;
 
 export const resolveClubSlugFromAccessCode = (
   code: string
-): string | null => ACCESS_CODE_MAP[code as keyof typeof ACCESS_CODE_MAP] ?? null;
+): string | null => Object.hasOwn(ACCESS_CODE_MAP, code)
+  ? ACCESS_CODE_MAP[code as keyof typeof ACCESS_CODE_MAP]
+  : null;
