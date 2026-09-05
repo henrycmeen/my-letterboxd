@@ -8,7 +8,8 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
-import catalogue from "@/data/filmVoteCatalogue.json";
+import clubCatalogue from "@/data/filmVoteCatalogue.json";
+import featuredFilms from "@/data/ticketFeaturedFilms.json";
 import art from "@/data/ticketDemoArt.json";
 import { FilmTicket, type TicketData } from "@/components/FilmTicket";
 import { makeFilmTicket } from "@/lib/filmTicket";
@@ -16,11 +17,17 @@ import { getTicketPngFilename, renderTicketPng } from "@/lib/ticketPng";
 import { withBasePath } from "@/lib/basePath";
 import styles from "@/styles/ticketDemo.module.css";
 
+const catalogue = [...clubCatalogue, ...featuredFilms];
+
 const samples = [
   { id: 62, label: "2001" },
   { id: 25538, label: "Yi Yi" },
   { id: 149, label: "Akira" },
   { id: 10227, label: "PlayTime" },
+  { id: 324857, label: "Spider-Man" },
+  { id: 10315, label: "Fantastic Mr. Fox" },
+  { id: 129, label: "Spirited Away" },
+  { id: 503919, label: "The Lighthouse" },
 ];
 const palettes = [
   { id: "ember", label: "Krem" },
@@ -268,7 +275,7 @@ export default function TicketDemo() {
           }
           setSearchPhase("error");
           setSearchError(
-            "TMDB-søk er ikke tilgjengelig akkurat nå. Katalogen kan fortsatt brukes.",
+            "Søket er ikke tilgjengelig akkurat nå. Prøv igjen snart.",
           );
         }
       })();
@@ -332,8 +339,8 @@ export default function TicketDemo() {
         setTicketFetchState("error");
         setTicketFetchError(
           isCatalogueFilm
-            ? "Ekstra filmdata er ikke tilgjengelig. Katalogmotivet beholdes."
-            : "Filmdata kunne ikke hentes. Søketreffet kan fortsatt brukes som billett.",
+            ? "Regissøren kunne ikke hentes akkurat nå."
+            : "Filmdata kunne ikke hentes akkurat nå.",
         );
       } finally {
         if (ticketAbortRef.current === controller) {
@@ -606,7 +613,6 @@ export default function TicketDemo() {
         <Link href="/">
           Filmklubben <span>●</span>
         </Link>
-        <span>BILLETTGENERATOR</span>
       </header>
       <main className={styles.studio}>
         <div className={styles.controls}>
@@ -616,6 +622,7 @@ export default function TicketDemo() {
               <button
                 key={id}
                 type="button"
+                aria-label={catalogue.find((film) => film.id === id)?.title}
                 aria-pressed={isCatalogueFilm && activeFilm.id === id}
                 onClick={() => chooseLocalFilm(id)}
               >
@@ -624,36 +631,15 @@ export default function TicketDemo() {
             ))}
           </div>
           <form onSubmit={saveTicketAsPng} aria-label="Lag en filmbillett">
-            <label className={styles.field} htmlFor="catalogue-film">
-              KATALOG · {catalogue.length} FILMER
-              <select
-                id="catalogue-film"
-                value={isCatalogueFilm ? String(activeFilm.id) : ""}
-                onChange={(event) =>
-                  chooseLocalFilm(Number(event.target.value))
-                }
-              >
-                <option value="" disabled>
-                  {isCatalogueFilm
-                    ? "Velg en film"
-                    : `${activeFilm.title} · TMDB`}
-                </option>
-                {catalogue.map((film) => (
-                  <option key={film.id} value={film.id}>
-                    {film.title} ({film.year})
-                  </option>
-                ))}
-              </select>
-            </label>
             <div className={styles.searchGroup}>
-              <label className={styles.searchField} htmlFor="film-search">
-                SØK I KATALOG OG TMDB
+              <div className={styles.searchField}>
                 <input
                   ref={searchInputRef}
                   id="film-search"
                   type="search"
                   value={searchQuery}
-                  placeholder="Søk etter en hvilken som helst film"
+                  aria-label="Søk etter film"
+                  placeholder="Søk etter film"
                   autoComplete="off"
                   role="combobox"
                   aria-autocomplete="list"
@@ -676,7 +662,7 @@ export default function TicketDemo() {
                   onChange={(event) => setSearchQuery(event.target.value)}
                   onKeyDown={handleSearchKeyDown}
                 />
-              </label>
+              </div>
               {showSearchResults ? (
                 <div
                   id="film-search-results"
@@ -719,16 +705,13 @@ export default function TicketDemo() {
                         onClick={() => chooseSearchItem(item)}
                       >
                         <span>{title}</span>
-                        <small>
-                          {year ?? "—"} ·{" "}
-                          {item.source === "catalogue" ? "Katalog" : "TMDB"}
-                        </small>
+                        <small>{year ?? "—"}</small>
                       </button>
                     );
                   })}
                   {searchPhase === "pending" ? (
                     <p className={styles.searchStatus} role="status">
-                      Søker i TMDB…
+                      Søker…
                     </p>
                   ) : null}
                   {searchPhase === "success" && searchItems.length === 0 ? (
@@ -769,7 +752,7 @@ export default function TicketDemo() {
                   setOriginalLogo(event.target.checked);
                 }}
               />
-              Bruk filmens originale tittellogo
+              Original tittellogo
             </label>
             <div className={styles.fields}>
               <label className={styles.field}>
@@ -828,10 +811,6 @@ export default function TicketDemo() {
                 <span aria-hidden="true">↓</span>
               </button>
             )}
-            <p className={styles.hint}>
-              PNG-filen lagres i omtrent 1200 × 2850 piksler med billetten
-              alene.
-            </p>
             <div className={styles.actionStatus} aria-live="polite">
               {actionMessages.join(" · ")}
             </div>
@@ -854,10 +833,6 @@ export default function TicketDemo() {
           className={styles.preview}
           aria-label={`Billettforhåndsvisning for ${ticket.film.title}`}
         >
-          <div className={styles.previewCaption}>
-            <span>PRØVETRYKK / {ticket.serial}</span>
-            <span>80 × 190 MM</span>
-          </div>
           <div
             className={styles.ticketMount}
             ref={ticketRef}
