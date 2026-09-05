@@ -34,6 +34,7 @@ export type FilmVoteMovie = (typeof filmVoteCatalogue)[number];
 interface FilmVoteWallProps {
   boardId: string;
   onLeaderChange?: (film: FilmVoteMovie | null) => void;
+  onRoundClosed?: () => void;
 }
 
 interface VoteMutation {
@@ -51,6 +52,7 @@ const createInitialSnapshot = (boardId: string): FilmVoteClientSnapshot => ({
 export const FilmVoteWall = ({
   boardId,
   onLeaderChange,
+  onRoundClosed,
 }: FilmVoteWallProps) => {
   const [snapshot, setSnapshot] = useState<FilmVoteClientSnapshot>(() =>
     createInitialSnapshot(boardId),
@@ -62,6 +64,7 @@ export const FilmVoteWall = ({
   const previousSlots = useRef(new Map<number, SlotPosition>());
   const previousRanks = useRef(new Map<number, number>());
   const runningAnimations = useRef(new Map<number, Animation>());
+  const roundClosedRef = useRef(false);
   const pendingFilmIds = useRef(new Set<number>());
   const [pendingVoteStates, setPendingVoteStates] = useState<
     ReadonlyMap<number, boolean>
@@ -151,6 +154,11 @@ export const FilmVoteWall = ({
               signal,
             },
       );
+      if (response.status === 409) {
+        roundClosedRef.current = true;
+        onRoundClosed?.();
+        return;
+      }
       if (!response.ok) {
         return;
       }
@@ -164,12 +172,13 @@ export const FilmVoteWall = ({
         applySnapshot(parsed);
       }
     },
-    [applySnapshot, boardId],
+    [applySnapshot, boardId, onRoundClosed],
   );
 
   useEffect(() => {
     const initialSnapshot = createInitialSnapshot(boardId);
     activeBoardIdRef.current = boardId;
+    roundClosedRef.current = false;
     snapshotRef.current = initialSnapshot;
     setSnapshot(initialSnapshot);
     setIsAuthoritativeSnapshot(false);
@@ -182,7 +191,7 @@ export const FilmVoteWall = ({
     const controller = new AbortController();
 
     const refresh = async () => {
-      if (pollInFlight) {
+      if (pollInFlight || roundClosedRef.current) {
         return;
       }
 
@@ -201,7 +210,7 @@ export const FilmVoteWall = ({
     const poll = async () => {
       await refresh();
 
-      if (!isCancelled) {
+      if (!isCancelled && !roundClosedRef.current) {
         pollTimer = window.setTimeout(() => void poll(), 1_500);
       }
     };
@@ -304,7 +313,7 @@ export const FilmVoteWall = ({
   }, [snapshot.ranking]);
 
   const toggleVoteForFilm = async (filmId: number, hasVoted: boolean) => {
-    if (pendingFilmIds.current.has(filmId)) {
+    if (roundClosedRef.current || pendingFilmIds.current.has(filmId)) {
       return;
     }
 

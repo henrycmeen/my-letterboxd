@@ -192,8 +192,12 @@ export const FilmClubDemo = () => {
           className={demo.announce}
           onClick={() => setFinalists(makeDemoFinalists(rankedFilms))}
         >
-          <span className={demo.stopSymbol} aria-hidden="true" />
-          Avslutt avstemningen
+          <span className={demo.powerSwitch} aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M16 4v12M9.3 8.3a11 11 0 1 0 13.4 0" />
+            </svg>
+          </span>
+          <span>Avslutt avstemningen</span>
         </button>
         <Link
           href="/billett"

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import filmVoteCatalogue from "@/data/filmVoteCatalogue.json";
 import { normalizeClubSlug } from "@/lib/clubSlug";
+import { FilmRoundClosedError } from "@/lib/filmRound";
 import { getFilmVoteStore, type FilmVoteSnapshot } from "@/lib/filmVotes";
 import {
   createDeviceIdentity,
@@ -13,7 +14,11 @@ import {
 
 interface ApiError {
   error: {
-    code: "INVALID_REQUEST" | "METHOD_NOT_ALLOWED" | "VOTING_UNAVAILABLE";
+    code:
+      | "INVALID_REQUEST"
+      | "METHOD_NOT_ALLOWED"
+      | "ROUND_CLOSED"
+      | "VOTING_UNAVAILABLE";
     message: string;
   };
 }
@@ -121,7 +126,16 @@ export default async function handler(
       .json(
         store.getSnapshot(boardId, voterKey, catalogueFilmIds, tieBreakScores),
       );
-  } catch {
+  } catch (error) {
+    if (error instanceof FilmRoundClosedError) {
+      return res.status(409).json({
+        error: {
+          code: "ROUND_CLOSED",
+          message: "Avstemningen er låst.",
+        },
+      });
+    }
+
     return votingUnavailable(res);
   }
 }

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { FilmTicket } from "@/components/FilmTicket";
+import { FilmTicket, type TicketData } from "@/components/FilmTicket";
 import { TicketPrinter } from "@/components/TicketPrinter";
 import { makeFilmTicket, type DemoFinalist } from "@/lib/filmTicket";
 import { GeistSans } from "geist/font/sans";
@@ -9,19 +9,24 @@ import styles from "@/styles/ticketFinale.module.css";
 export function TicketFinale({
   finalists,
   onClose,
+  demo = true,
+  frozenTicket,
 }: {
   finalists: DemoFinalist[];
   onClose: () => void;
+  demo?: boolean;
+  frozenTicket?: TicketData;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const revealTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [currentIndex, setCurrentIndex] = useState(finalists.length - 1);
   const [printing, setPrinting] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [skip, setSkip] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const winner = finalists[0]!;
-  const currentResult = finalists[currentIndex]!;
-  const [ticket] = useState(() => makeFilmTicket(winner.film, "001"));
+  const winnerRevealed = currentIndex === 0;
+  const [ticket] = useState(
+    () => frozenTicket ?? makeFilmTicket(winner.film, "001"),
+  );
 
   useEffect(() => {
     const node = dialog.current!;
@@ -33,24 +38,29 @@ export function TicketFinale({
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    revealTimers.current = timers;
     if (reduced) {
-      setSkip(true);
+      setReducedMotion(true);
       setCurrentIndex(0);
       setPrinting(true);
-    } else if (finalists.length === 1) {
-      setPrinting(true);
     } else {
-      const stepDuration = Math.min(550, 5500 / (finalists.length - 1));
+      const stepDuration = Math.min(
+        550,
+        5500 / Math.max(1, finalists.length - 1),
+      );
       for (let step = 1; step < finalists.length; step++) {
         timers.push(
           setTimeout(() => {
-            const index = finalists.length - 1 - step;
-            setCurrentIndex(index);
-            if (index === 0) setPrinting(true);
+            setCurrentIndex(finalists.length - 1 - step);
           }, step * stepDuration),
         );
       }
+      // Let the winner land before feeding the paper out of the slot.
+      timers.push(
+        setTimeout(
+          () => setPrinting(true),
+          (finalists.length - 1) * stepDuration + 700,
+        ),
+      );
     }
     return () => {
       timers.forEach(clearTimeout);
@@ -60,12 +70,6 @@ export function TicketFinale({
     };
   }, [finalists.length]);
 
-  function skipToTicket() {
-    revealTimers.current.forEach(clearTimeout);
-    setCurrentIndex(0);
-    setSkip(true);
-    setPrinting(true);
-  }
   return createPortal(
     <dialog
       ref={dialog}
@@ -74,7 +78,9 @@ export function TicketFinale({
       onCancel={onClose}
     >
       <div className={styles.topbar}>
-        <span>FILMKLUBBEN / DEMORUNDE</span>
+        <span>
+          {demo ? "FILMKLUBBEN / DEMORUNDE" : "AVSTEMNINGEN ER AVSLUTTET"}
+        </span>
         <button type="button" onClick={onClose} aria-label="Lukk annonseringen">
           Lukk ×
         </button>
@@ -83,36 +89,77 @@ export function TicketFinale({
         <section
           className={styles.winner}
           aria-label={
-            printing ? `Vinner: ${winner.film.title}` : "Resultatannonsering"
+            winnerRevealed
+              ? `Vinner: ${winner.film.title}`
+              : "Resultatannonsering"
           }
         >
-          <div className={styles.winnerHeading} key={currentResult.film.id}>
-            <p className={styles.kicker}>
-              {printing ? "VINNEREN ER" : `${currentIndex + 1}. PLASS`}
-            </p>
-            <h1>{currentResult.film.title}</h1>
-            <p>
-              {currentResult.votes}{" "}
-              {currentResult.votes === 1 ? "eksempelstemme" : "eksempelstemmer"}{" "}
-              · {currentResult.film.year}
-            </p>
+          <div className={styles.revealStage} data-winner={winnerRevealed}>
+            <div className={styles.countdown} aria-hidden={winnerRevealed}>
+              <p className={styles.kicker}>STEMMENE TELLES</p>
+              <ol
+                className={styles.fallingList}
+                aria-label="Foreløpige resultater"
+              >
+                {finalists
+                  .slice(Math.max(1, currentIndex))
+                  .map((entry, offset) => {
+                    const place = Math.max(1, currentIndex) + offset + 1;
+                    return (
+                      <li
+                        key={entry.film.id}
+                        className={styles.fallingRow}
+                        style={{ "--row": offset } as CSSProperties}
+                        data-current={offset === 0}
+                      >
+                        <div className={styles.fallingRowContent}>
+                          <span className={styles.place}>
+                            {String(place).padStart(2, "0")}
+                          </span>
+                          <span className={styles.filmTitle}>
+                            {entry.film.title}
+                            <small>{entry.film.year}</small>
+                          </span>
+                          <span className={styles.votes}>
+                            <strong>{entry.votes}</strong>
+                            {entry.votes === 1 ? "stemme" : "stemmer"}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ol>
+              {demo && <p className={styles.demoNote}>Eksempelstemmer</p>}
+            </div>
+            <div className={styles.winnerHeading} aria-hidden={!winnerRevealed}>
+              <p className={styles.kicker}>VINNEREN ER</p>
+              <h1>{winner.film.title}</h1>
+              <p>
+                {winner.votes}{" "}
+                {demo
+                  ? winner.votes === 1
+                    ? "eksempelstemme"
+                    : "eksempelstemmer"
+                  : winner.votes === 1
+                    ? "stemme"
+                    : "stemmer"}{" "}
+                · {winner.film.year}
+              </p>
+            </div>
           </div>
-          <TicketPrinter
-            ticket={ticket}
-            waiting={!printing}
-            skipAnimation={skip}
-            onComplete={() => setFinished(true)}
-          />
+          <div className={styles.printerReveal} data-visible={winnerRevealed}>
+            <TicketPrinter
+              ticket={ticket}
+              waiting={!printing}
+              skipAnimation={reducedMotion}
+              onComplete={() => setFinished(true)}
+            />
+          </div>
           <div className={styles.actions} data-ready={finished}>
             <button className={styles.again} type="button" onClick={onClose}>
-              Tilbake til filmene
+              {demo ? "Tilbake til filmene" : "Se resultatene"}
             </button>
           </div>
-          {!finished && (
-            <button className={styles.skip} onClick={skipToTicket}>
-              Hopp over animasjonen
-            </button>
-          )}
         </section>
         {finished && (
           <section
@@ -121,7 +168,7 @@ export function TicketFinale({
           >
             <header className={styles.resultsHeader}>
               <h2>Hele avstemningen</h2>
-              <span>Eksempelstemmer</span>
+              {demo && <span>Eksempelstemmer</span>}
             </header>
             <ol className={styles.ranking}>
               {finalists.map((entry, index) => (

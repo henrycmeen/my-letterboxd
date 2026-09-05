@@ -18,11 +18,12 @@
     "typecheck": "tsc --noEmit",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "test": "tsx --test \"src/**/*.test.ts\" \"scripts/club/*.test.ts\""
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.10.1",
     "geist": "^1.3.0",
+    "html-to-image": "^1.11.13",
     "ipaddr.js": "^2.4.0",
     "next": "^15.5.21",
     "react": "^18.3.1",

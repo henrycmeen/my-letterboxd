@@ -4,6 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
 import { Worker } from "node:worker_threads";
+import {
+  FilmRoundClosedError,
+  FilmRoundRevisionConflictError,
+  type FilmRoundLockMetadata,
+} from "./filmRound";
 import { createFilmVoteStore } from "./filmVotes";
 
 const testDirectories: string[] = [];
@@ -12,6 +17,64 @@ const createStore = async () => {
   const directory = await fs.mkdtemp(path.join(tmpdir(), "filmklubb-votes-"));
   testDirectories.push(directory);
   return createFilmVoteStore(path.join(directory, "votes.sqlite"));
+};
+
+const createRoundMetadata = (
+  clubId = "default",
+  screeningId = "2026-09-22",
+): FilmRoundLockMetadata => {
+  const films = [
+    {
+      id: 10,
+      title: "Ten",
+      year: 2000,
+      coverImage: "/ten.webp",
+      tmdbVoteAverage: 7.2,
+    },
+    {
+      id: 20,
+      title: "Twenty",
+      year: 2001,
+      coverImage: "/twenty.webp",
+      tmdbVoteAverage: 8.4,
+    },
+    {
+      id: 30,
+      title: "Thirty",
+      year: 2002,
+      coverImage: "/thirty.webp",
+      tmdbVoteAverage: 9.1,
+    },
+  ];
+  const ticketTemplates = Object.fromEntries(
+    films.map((film, index) => [
+      String(film.id),
+      {
+        film: {
+          id: film.id,
+          title: film.title,
+          year: film.year,
+          coverImage: film.coverImage,
+        },
+        image: `/image-${film.id}.jpg`,
+        fallback: `/fallback-${film.id}.jpg`,
+        palette: "ember",
+        date: "2026-09-22",
+        time: "16:00",
+        venue: "Wergelandssalen",
+        note: "ADGANG FOR ÉN",
+        serial: String(index + 1).padStart(3, "0"),
+      },
+    ]),
+  );
+
+  return {
+    clubId,
+    screeningId,
+    scheduledAt: "2026-09-22T16:00:00+02:00",
+    catalogue: films,
+    ticketTemplates,
+  };
 };
 
 afterEach(async () => {
@@ -319,4 +382,162 @@ void test("reports an empty aggregate for a fresh screening", async () => {
   assert.equal(results.totalVotes, 0);
   assert.equal(results.participatingDevices, 0);
   assert.equal(results.lastVoteAt, null);
+});
+
+void test("locks a complete, tie-broken ranking and freezes the winning ticket", async () => {
+  const store = await createStore();
+  const metadata = createRoundMetadata();
+
+  store.recordVote("default-2026-09-22", 10, "voter-a");
+  store.recordVote("default-2026-09-22", 20, "voter-b");
+
+  const snapshot = store.lockRound("default-2026-09-22", metadata, 2);
+
+  assert.deepEqual(
+    snapshot.ranking.map(({ film, votes }) => ({ filmId: film.id, votes })),
+    [
+      { filmId: 20, votes: 1 },
+      { filmId: 10, votes: 1 },
+      { filmId: 30, votes: 0 },
+    ],
+  );
+  assert.equal(snapshot.winner?.film.id, 20);
+  assert.equal(snapshot.stats.totalVotes, 2);
+  assert.equal(snapshot.stats.participatingDevices, 2);
+  assert.equal(snapshot.revision, 2);
+  assert.equal(snapshot.algorithmVersion, "film-vote-v1");
+  assert.equal(snapshot.ticket?.film.id, 20);
+  assert.equal(snapshot.ranking[0]?.tmdbVoteAverage, 8.4);
+  assert.equal(snapshot.snapshotHash.length, 64);
+  assert.equal(Object.isFrozen(snapshot), true);
+  assert.equal(Object.isFrozen(snapshot.ranking), true);
+  assert.deepEqual(store.getRoundSnapshot("default-2026-09-22"), snapshot);
+  assert.deepEqual(store.getLockedRound("default-2026-09-22"), snapshot);
+});
+
+void test("returns the original snapshot for an idempotent relock", async () => {
+  const store = await createStore();
+  const metadata = createRoundMetadata();
+
+  store.recordVote("default-2026-09-22", 10, "voter-a");
+  const first = store.lockRound("default-2026-09-22", metadata, 1);
+  const second = store.lockRound("default-2026-09-22", metadata, 999);
+
+  assert.equal(second.snapshotId, first.snapshotId);
+  assert.equal(second.snapshotHash, first.snapshotHash);
+  assert.deepEqual(second, first);
+});
+
+void test("validates the round metadata before an idempotent relock", async () => {
+  const store = await createStore();
+  const first = store.lockRound("default-2026-09-22", createRoundMetadata(), 0);
+
+  assert.throws(
+    () =>
+      store.lockRound(
+        "default-2026-09-22",
+        createRoundMetadata("other-club"),
+        999,
+      ),
+    /board must match the round club and screening/i,
+  );
+  assert.deepEqual(store.getLockedRound("default-2026-09-22"), first);
+});
+
+void test("rejects a stale expected revision before creating a snapshot", async () => {
+  const store = await createStore();
+  const metadata = createRoundMetadata();
+
+  store.recordVote("default-2026-09-22", 10, "voter-a");
+
+  assert.throws(
+    () => store.lockRound("default-2026-09-22", metadata, 0),
+    (error: unknown) =>
+      error instanceof FilmRoundRevisionConflictError &&
+      error.code === "REVISION_CONFLICT" &&
+      error.expectedRevision === 0 &&
+      error.actualRevision === 1,
+  );
+  assert.equal(store.getRoundSnapshot("default-2026-09-22"), null);
+});
+
+void test("rejects a board that does not match the round metadata", async () => {
+  const store = await createStore();
+
+  assert.throws(
+    () => store.lockRound("other-board", createRoundMetadata(), 0),
+    /board must match the round club and screening/i,
+  );
+});
+
+void test("refuses to lock votes for films outside the frozen catalogue", async () => {
+  const store = await createStore();
+  store.recordVote("default-2026-09-22", 999, "voter-a");
+
+  assert.throws(
+    () => store.lockRound("default-2026-09-22", createRoundMetadata(), 1),
+    /outside its catalogue/i,
+  );
+  assert.equal(store.getRoundSnapshot("default-2026-09-22"), null);
+});
+
+void test("refuses to lock a positive winner without a matching ticket", async () => {
+  const store = await createStore();
+  const metadata = createRoundMetadata();
+  delete metadata.ticketTemplates["10"];
+  store.recordVote("default-2026-09-22", 10, "voter-a");
+
+  assert.throws(
+    () => store.lockRound("default-2026-09-22", metadata, 1),
+    /winning film is missing its ticket template/i,
+  );
+  assert.equal(store.getRoundSnapshot("default-2026-09-22"), null);
+});
+
+void test("locks an empty round without inventing a winner or ticket", async () => {
+  const store = await createStore();
+  const snapshot = store.lockRound(
+    "default-2026-09-22",
+    createRoundMetadata(),
+    0,
+  );
+
+  assert.equal(snapshot.winner, null);
+  assert.equal(snapshot.ticket, null);
+  assert.equal(snapshot.stats.totalVotes, 0);
+  assert.equal(snapshot.stats.participatingDevices, 0);
+  assert.deepEqual(
+    snapshot.ranking.map(({ film, votes }) => ({ filmId: film.id, votes })),
+    [
+      { filmId: 10, votes: 0 },
+      { filmId: 20, votes: 0 },
+      { filmId: 30, votes: 0 },
+    ],
+  );
+});
+
+void test("rejects both new and removal votes after a round is closed", async () => {
+  const store = await createStore();
+  store.recordVote("default-2026-09-22", 10, "voter-a");
+  store.lockRound("default-2026-09-22", createRoundMetadata(), 1);
+
+  for (const hasVoted of [true, false]) {
+    assert.throws(
+      () => store.setVote("default-2026-09-22", 10, "voter-a", hasVoted),
+      (error: unknown) =>
+        error instanceof FilmRoundClosedError && error.code === "ROUND_CLOSED",
+    );
+  }
+});
+
+void test("keeps closed and open boards independent", async () => {
+  const store = await createStore();
+  store.lockRound("closed-2026-09-22", createRoundMetadata("closed"), 0);
+
+  assert.equal(store.getRoundSnapshot("open-2026-09-22"), null);
+  assert.equal(store.recordVote("open-2026-09-22", 10, "voter-a"), true);
+  assert.equal(
+    store.getSnapshot("open-2026-09-22", "voter-a", [10]).ranking[0]?.votes,
+    1,
+  );
 });

@@ -1,5 +1,6 @@
 import artwork from "@/data/ticketDemoArt.json";
 import logos from "@/data/filmCassetteLogos.json";
+import metadata from "@/data/ticketMetadata.json";
 import type { TicketData } from "@/components/FilmTicket";
 
 export const ticketPalettes: Record<number, string> = {
@@ -16,6 +17,7 @@ export function makeFilmTicket(
   const localLogo = logos[film.coverImage as keyof typeof logos];
   return {
     film: { ...film },
+    director: metadata[String(film.id) as keyof typeof metadata]?.director,
     image: art?.image ?? film.coverImage,
     fallback: art?.fallback ?? film.coverImage,
     logo: art && "logo" in art ? art.logo : localLogo?.image,

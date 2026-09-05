@@ -1,0 +1,231 @@
+.page {
+  min-height: 100vh;
+  background: #050505;
+  color: #eeeade;
+  padding: 0 1.25rem 4rem;
+}
+.kicker {
+  margin: 0;
+  color: #a9ab9e;
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.intro {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100svh;
+  overflow: hidden;
+  text-align: center;
+}
+.intro h1,
+.header h1 {
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  margin: 1rem 0 0;
+}
+.introMeta,
+.headerMeta,
+.winnerMeta,
+.noWinner p {
+  color: #a4a897;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.introMeta {
+  margin: 1rem 0 0;
+}
+.introCases {
+  align-items: end;
+  display: flex;
+  gap: clamp(0.6rem, 2.5vw, 1.5rem);
+  justify-content: center;
+  margin-top: clamp(2rem, 8vh, 5rem);
+  max-width: 48rem;
+  width: 100%;
+}
+.introCase {
+  animation: caseRise 850ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  cursor: default;
+  flex: 0 1 10rem;
+  max-width: 11rem;
+  opacity: 0;
+}
+.introCase:nth-child(2) {
+  margin-bottom: 1.5rem;
+}
+.introCase:nth-child(3) {
+  margin-bottom: 0.6rem;
+}
+.settled {
+  margin: 0 auto;
+  max-width: 54rem;
+  opacity: 0;
+  padding: 4rem 0 0;
+  transform: translateY(1rem);
+  transition:
+    opacity 360ms ease,
+    transform 360ms ease;
+}
+.settled[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+.header {
+  border-bottom: 1px solid #272a24;
+  padding-bottom: 1.5rem;
+  text-align: center;
+}
+.headerMeta {
+  margin: 1rem 0 0;
+}
+.winner {
+  padding: 3rem 0 0;
+  text-align: center;
+}
+.winnerTicket {
+  margin: 2.25rem auto 0;
+  max-width: 19rem;
+  width: min(100%, 19rem);
+}
+.winner h2,
+.noWinner h2 {
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  margin: 0.85rem 0 0;
+}
+.winnerMeta {
+  margin: 0.75rem 0 0;
+}
+.noWinner {
+  border-bottom: 1px solid #272a24;
+  padding: 4rem 0;
+  text-align: center;
+}
+.noWinner p {
+  margin: 1rem 0 0;
+}
+.results {
+  margin-top: 4rem;
+}
+.resultsHeader {
+  align-items: baseline;
+  border-bottom: 1px solid #272a24;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-bottom: 0.8rem;
+}
+.resultsHeader h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+.resultsHeader span {
+  color: #959a8e;
+  font-size: 0.65rem;
+}
+.results ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.results li {
+  align-items: center;
+  border-bottom: 1px solid #20231f;
+  display: flex;
+  gap: 1rem;
+  min-height: 4.7rem;
+  padding: 0.75rem 0;
+}
+.results li[data-winner="true"] {
+  color: #eee3b1;
+}
+.place {
+  color: #959a8e;
+  flex: 0 0 2rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+.filmTitle {
+  flex: 1;
+  font-size: clamp(1rem, 2.2vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  min-width: 0;
+}
+.filmTitle small {
+  color: #90978a;
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin-top: 0.35rem;
+}
+.votes {
+  color: #a7ab9c;
+  flex: 0 0 4.5rem;
+  font-size: 0.62rem;
+  text-align: right;
+}
+.votes strong {
+  color: #eeeade;
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+@keyframes caseRise {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem) rotate(1deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 40rem) {
+  .page {
+    padding-inline: 1rem;
+  }
+  .settled {
+    padding-top: 2.5rem;
+  }
+  .winner {
+    padding-top: 2.5rem;
+  }
+  .winnerTicket {
+    max-width: 15rem;
+  }
+  .results li {
+    gap: 0.7rem;
+  }
+  .place {
+    flex-basis: 1.7rem;
+  }
+  .votes {
+    flex-basis: 3.8rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .introCase,
+  .settled {
+    animation: none;
+    transition: none;
+  }
+  .introCase {
+    opacity: 1;
+    transform: none;
+  }
+}

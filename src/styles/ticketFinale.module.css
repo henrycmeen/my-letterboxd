@@ -123,24 +123,102 @@
   font-size: 10px;
 }
 
-.skip {
-  margin: 20px 0 0;
-  padding: 12px 0;
-  font-size: 11px;
-  color: #a5a99b;
-  text-underline-offset: 4px;
-  text-decoration: underline;
-}
 .winner {
   text-align: center;
 }
+.revealStage {
+  position: relative;
+  height: 410px;
+  margin-bottom: 24px;
+  transition: height 550ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.revealStage[data-winner="true"] {
+  height: 134px;
+}
+.countdown {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 220ms ease,
+    transform 350ms ease;
+}
+.countdown > .kicker {
+  margin-bottom: 28px;
+}
+.revealStage[data-winner="true"] .countdown {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(42px);
+  transition:
+    opacity 220ms ease,
+    transform 350ms ease,
+    visibility 0s 350ms;
+}
+.fallingList {
+  position: relative;
+  height: 330px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  mask-image: linear-gradient(#000 60%, transparent 100%);
+}
+.fallingRow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 78px;
+  text-align: left;
+  transform: translateY(calc(var(--row) * 78px));
+  opacity: 0.5;
+  transition:
+    transform 290ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 290ms ease;
+}
+.fallingRow[data-current="true"] {
+  opacity: 1;
+}
+.fallingRowContent {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 100%;
+  padding: 10px 0;
+  border-top: 1px solid #272a24;
+  animation: resultDrop 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.demoNote {
+  margin-top: 12px;
+  color: #858b7d;
+  font-size: 10px;
+}
 .winnerHeading {
-  animation: arrive 0.18s ease-out both;
-  min-height: 134px;
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-bottom: 24px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-16px);
+}
+.revealStage[data-winner="true"] .winnerHeading {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 400ms 180ms ease,
+    transform 400ms 180ms ease;
+}
+.printerReveal {
+  opacity: 0;
+  visibility: hidden;
+}
+.printerReveal[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 400ms 250ms ease;
 }
 .winner h1 {
   font-size: clamp(25px, 4vw, 44px);
@@ -197,10 +275,10 @@
   top: 0;
   pointer-events: none;
 }
-@keyframes arrive {
+@keyframes resultDrop {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-32px);
   }
   to {
     opacity: 1;
@@ -218,17 +296,27 @@
     gap: 12px;
     min-height: 74px;
   }
-  .winnerHeading {
-    min-height: 118px;
+  .revealStage {
     margin-bottom: 20px;
+  }
+  .revealStage[data-winner="true"] {
+    height: 118px;
+  }
+  .fallingRowContent {
+    gap: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .ranking li,
-  .actions {
+  .actions,
+  .revealStage,
+  .revealStage[data-winner="true"] .countdown,
+  .revealStage[data-winner="true"] .winnerHeading,
+  .printerReveal[data-visible="true"],
+  .fallingRow {
     transition: none;
   }
-  .winnerHeading {
+  .fallingRowContent {
     animation: none;
   }
 }

@@ -38,25 +38,12 @@
 .controls {
   padding-top: 16px;
 }
-.eyebrow {
-  color: #92948a;
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  margin-bottom: 20px;
-}
 .controls h1 {
   font-size: clamp(40px, 4.4vw, 60px);
   line-height: 1.02;
   font-weight: 600;
   letter-spacing: -0.06em;
-  margin: 0 0 20px;
-}
-.intro {
-  color: #aaa9a2;
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 24px;
-  max-width: 31ch;
+  margin: 0 0 24px;
 }
 .sampleChoices {
   display: flex;
@@ -75,6 +62,101 @@
   background: #eee8d3;
   color: #191913;
   border-color: #eee8d3;
+}
+.searchGroup {
+  position: relative;
+  margin-bottom: 18px;
+}
+.searchField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #a4a69a;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+.searchField input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  border-bottom: 1px solid #414237;
+  border-radius: 0;
+  padding: 4px 0 8px;
+  background: #050505;
+  color: #f3f2ec;
+  font-size: 14px;
+  letter-spacing: 0;
+  color-scheme: dark;
+}
+.searchField input::placeholder {
+  color: #77786f;
+  opacity: 1;
+}
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  border: 1px solid #3c3c35;
+  background: #0d0d0b;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.searchResult {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #efeee8;
+  text-align: left;
+  border-bottom: 1px solid #272720;
+}
+.searchResult:last-of-type {
+  border-bottom: 0;
+}
+.searchResult:hover,
+.searchResult[aria-selected="true"] {
+  background: #eee8d3;
+  color: #191913;
+}
+.searchResult span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.searchResult small {
+  flex: 0 0 auto;
+  color: #999a90;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.searchResult:hover small,
+.searchResult[aria-selected="true"] small {
+  color: #595a50;
+}
+.searchStatus,
+.searchEmpty,
+.searchError,
+.ticketFetchError,
+.exportError,
+.actionStatus {
+  font-size: 11px;
+  line-height: 1.5;
+}
+.searchStatus,
+.searchEmpty {
+  margin: 0;
+  padding: 12px;
+  color: #aaa9a2;
+}
+.searchError,
+.ticketFetchError,
+.exportError {
+  margin: 8px 0 0;
+  color: #e2a99c;
 }
 .field {
   display: flex;
@@ -190,23 +272,19 @@
   color: #93948a;
   line-height: 1.6;
 }
-.credits {
+.actionStatus {
+  min-height: 17px;
+  margin-top: 10px;
+  color: #c7c7ba;
+}
+.attribution {
+  margin: 24px 0 0;
   color: #93948b;
   font-size: 11px;
-  line-height: 1.65;
-  margin-top: 24px;
 }
-.credits summary {
-  cursor: pointer;
-  text-underline-offset: 4px;
-  text-decoration: underline;
-}
-.credits p {
-  margin: 12px 0;
-}
-.credits img {
-  width: 78px;
-  height: auto;
+.attribution a {
+  color: inherit;
+  text-underline-offset: 3px;
 }
 .page button:focus-visible,
 .page a:focus-visible,
@@ -232,12 +310,6 @@
   color: #a4a69a;
   font-size: 9px;
   letter-spacing: 0.12em;
-}
-.previewNote {
-  font-size: 8px;
-  color: #92948a;
-  margin: 24px 0 0;
-  letter-spacing: 0.16em;
 }
 .ticketMount {
   width: min(100%, 350px);
@@ -326,6 +398,12 @@
   color: var(--accent);
   font-family: monospace;
   font-weight: 400;
+  white-space: nowrap;
+}
+.edition span:first-child {
+  max-width: 75%;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
 }
 .titleBlock {
   flex: 1;
@@ -441,7 +519,6 @@
   pointer-events: none;
   z-index: 5;
   mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' filter='url(%23n)' d='M0 0h150v150H0z'/%3E%3C/svg%3E");
 }
 .artFallback {
   height: 100%;
@@ -473,40 +550,23 @@
     font-size: 7px;
   }
   .studio {
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
     padding: 8px 20px 48px;
   }
   .controls {
-    display: contents;
-  }
-  .controls form {
-    grid-row: 6;
-  }
-  .credits {
-    grid-row: 7;
+    width: 100%;
+    padding-top: 0;
   }
   .controls h1 {
     font-size: 36px;
-  }
-  .controls h1 br {
-    display: none;
-  }
-  .controls h1 br::after {
-    content: " ";
-  }
-  .intro {
-    max-width: none;
-    margin-bottom: 20px;
-  }
-  .eyebrow {
-    margin-bottom: 12px;
   }
   .ticketMount,
   .previewCaption {
     max-width: 320px;
   }
   .preview {
+    width: 100%;
     grid-row: 5;
     margin: 4px 0 32px;
   }
@@ -535,8 +595,7 @@
   }
   .header,
   .controls,
-  .previewCaption,
-  .previewNote {
+  .previewCaption {
     display: none !important;
   }
   .studio,

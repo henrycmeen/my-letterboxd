@@ -35,27 +35,43 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const clubId = resolveCanonicalClubId(requestedSlug);
     const programme = getFilmClubProgramme(clubId);
     const boardId = getActiveVoteBoardId(clubId);
-    const results = getFilmVoteStore().getResults(
-      boardId,
-      catalogueFilmIds,
-      tieBreakScores,
-    );
+    const store = getFilmVoteStore();
+    const lockedRound = store.getRoundSnapshot(boardId);
+    const results = lockedRound
+      ? {
+          revision: lockedRound.revision,
+          ranking: lockedRound.ranking.map((entry) => ({
+            filmId: entry.film.id,
+            votes: entry.votes,
+          })),
+          ...lockedRound.stats,
+        }
+      : store.getResults(boardId, catalogueFilmIds, tieBreakScores);
 
-    const ranking = results.ranking.flatMap((entry, index) => {
-      const film = filmById.get(entry.filmId);
-      return film
-        ? [
-            {
-              rank: index + 1,
-              filmId: film.id,
-              title: film.title,
-              coverImage: film.coverImage,
-              tmdbVoteAverage: film.tmdbVoteAverage,
-              votes: entry.votes,
-            },
-          ]
-        : [];
-    });
+    const ranking = lockedRound
+      ? lockedRound.ranking.map((entry, index) => ({
+          rank: index + 1,
+          filmId: entry.film.id,
+          title: entry.film.title,
+          coverImage: entry.film.coverImage,
+          tmdbVoteAverage: entry.tmdbVoteAverage ?? 0,
+          votes: entry.votes,
+        }))
+      : results.ranking.flatMap((entry, index) => {
+          const film = filmById.get(entry.filmId);
+          return film
+            ? [
+                {
+                  rank: index + 1,
+                  filmId: film.id,
+                  title: film.title,
+                  coverImage: film.coverImage,
+                  tmdbVoteAverage: film.tmdbVoteAverage,
+                  votes: entry.votes,
+                },
+              ]
+            : [];
+        });
 
     const history = programme.history.flatMap((entry) => {
       const winner = filmById.get(entry.winnerFilmId);
@@ -79,7 +95,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     return res.status(200).json({
       club: { id: clubId, name: programme.name },
-      activeScreening: programme.activeScreening,
+      activeScreening: lockedRound
+        ? { id: lockedRound.screeningId, scheduledAt: lockedRound.scheduledAt }
+        : programme.activeScreening,
       ranking,
       stats: {
         totalVotes: results.totalVotes,

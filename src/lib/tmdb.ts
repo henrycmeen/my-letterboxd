@@ -12,6 +12,11 @@ import {
   TMDB_POSTER_CACHE_DIRECTORY,
   TMDB_SEARCH_CACHE_DIRECTORY,
 } from '@/lib/storagePaths';
+import type {
+  TmdbMovieTicketDetails,
+  TmdbTicketCredit,
+  TmdbTicketImage,
+} from '@/lib/ticketMetadata';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w780';
@@ -24,6 +29,8 @@ const DEFAULT_FETCH_RETRY_BASE_MS = 300;
 const DEFAULT_TMDB_CACHE_MAX_MB = 768;
 const DEFAULT_TMDB_CACHE_MAX_AGE_DAYS = 30;
 const TMDB_CACHE_PRUNE_THROTTLE_MS = 5 * 60 * 1000;
+const TMDB_TICKET_IMAGE_LANGUAGES =
+  'en,null,nb,no,sv,da,de,fr,es,it,pt,ja,ko,zh,ru,pl,tr,fi,is,ar,he,cs,hu,th,el,hi,uk,ro';
 
 export type TmdbMovieListType =
   | 'popular'
@@ -76,6 +83,45 @@ const tmdbImageEntrySchema = z.object({
 const tmdbMovieImagesResponseSchema = z.object({
   backdrops: z.array(tmdbImageEntrySchema).default([]),
   posters: z.array(tmdbImageEntrySchema).default([]),
+});
+
+const tmdbTicketImageSchema = z.object({
+  file_path: z.string().min(1),
+  iso_639_1: z.string().nullable().optional().default(null),
+  width: z.number().int().nonnegative().optional().default(0),
+  height: z.number().int().nonnegative().optional().default(0),
+  vote_average: z.number().optional().default(0),
+  vote_count: z.number().optional().default(0),
+});
+
+const tmdbTicketCreditsSchema = z.object({
+  crew: z
+    .array(
+      z.object({
+        job: z.string(),
+        name: z.string(),
+      }),
+    )
+    .default([]),
+});
+
+const tmdbTicketImagesSchema = z.object({
+  logos: z.array(tmdbTicketImageSchema).default([]),
+  backdrops: z.array(tmdbTicketImageSchema).default([]),
+  posters: z.array(tmdbTicketImageSchema).default([]),
+});
+
+const tmdbMovieTicketResponseSchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string(),
+  release_date: z.string().optional().default(''),
+  original_language: z.string().nullable().optional().default(null),
+  poster_path: z.string().nullable().optional().default(null),
+  backdrop_path: z.string().nullable().optional().default(null),
+  credits: tmdbTicketCreditsSchema.optional().default({ crew: [] }),
+  images: tmdbTicketImagesSchema
+    .optional()
+    .default({ logos: [], backdrops: [], posters: [] }),
 });
 
 const tmdbVideoSchema = z.object({
@@ -170,6 +216,9 @@ const getSearchCachePath = (title: string, year?: number): string => {
 
 const getImagesCachePath = (movieId: number): string =>
   path.join(TMDB_IMAGE_CACHE_DIRECTORY, `movie-${movieId}-images.json`);
+
+const getTicketDetailsCachePath = (movieId: number): string =>
+  path.join(TMDB_CACHE_ROOT, 'tickets', `movie-${movieId}-details.json`);
 
 const readFreshCache = async <T>(
   cachePath: string,
@@ -580,6 +629,121 @@ export const getTmdbMovieById = async (
   const rawData: unknown = await response.json();
   const parsed = tmdbMovieSchema.parse(rawData);
   return mapTmdbMovieToClubMovie(parsed);
+};
+
+const mapTmdbTicketImage = (
+  image: z.infer<typeof tmdbTicketImageSchema>
+): TmdbTicketImage => ({
+  filePath: image.file_path,
+  language: image.iso_639_1 ?? null,
+  width: image.width,
+  height: image.height,
+  voteAverage: image.vote_average,
+  voteCount: image.vote_count,
+});
+
+const mapTmdbTicketCredit = (
+  credit: z.infer<typeof tmdbTicketCreditsSchema>['crew'][number]
+): TmdbTicketCredit => ({
+  job: credit.job,
+  name: credit.name,
+});
+
+const mapTmdbTicketDetails = (
+  details: z.infer<typeof tmdbMovieTicketResponseSchema>
+): TmdbMovieTicketDetails => ({
+  id: details.id,
+  title: details.title,
+  releaseDate: details.release_date,
+  originalLanguage: details.original_language,
+  posterPath: details.poster_path,
+  backdropPath: details.backdrop_path,
+  credits: {
+    crew: details.credits.crew.map(mapTmdbTicketCredit),
+  },
+  images: {
+    logos: details.images.logos.map(mapTmdbTicketImage),
+    backdrops: details.images.backdrops.map(mapTmdbTicketImage),
+    posters: details.images.posters.map(mapTmdbTicketImage),
+  },
+});
+
+const fetchTmdbMovieTicketDetails = async (
+  movieId: number
+): Promise<TmdbMovieTicketDetails | null> => {
+  const cachePath = getTicketDetailsCachePath(movieId);
+  let cached: z.infer<typeof tmdbMovieTicketResponseSchema> | null;
+
+  try {
+    cached = (await readFreshCache(
+      cachePath,
+      tmdbMovieTicketResponseSchema
+    )) as z.infer<typeof tmdbMovieTicketResponseSchema> | null;
+  } catch {
+    // Ignore an invalid cache entry and refresh it from TMDB.
+    cached = null;
+  }
+
+  if (cached) {
+    return mapTmdbTicketDetails(cached);
+  }
+
+  const url = new URL(`${TMDB_BASE_URL}/movie/${movieId}`);
+  url.searchParams.set('language', 'en-US');
+  url.searchParams.set('append_to_response', 'credits,images');
+  url.searchParams.set('include_image_language', TMDB_TICKET_IMAGE_LANGUAGES);
+
+  const { url: requestUrl, requestInit } = createTmdbRequest(url);
+  const response = await fetchWithRetry(requestUrl, requestInit);
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`TMDB ticket metadata error (${response.status})`);
+  }
+
+  const rawData: unknown = await response.json();
+  const parsed = tmdbMovieTicketResponseSchema.parse(rawData);
+  const details = mapTmdbTicketDetails(parsed);
+
+  try {
+    await writeCache(cachePath, parsed);
+  } catch {
+    // A cache write is best effort; keep the successful upstream response.
+  }
+
+  return details;
+};
+
+const tmdbTicketRequests = new Map<
+  number,
+  Promise<TmdbMovieTicketDetails | null>
+>();
+
+/** Fetch one movie's ticket fields with bounded, cached, deduplicated I/O. */
+export const getTmdbMovieTicketDetails = async (
+  movieId: number
+): Promise<TmdbMovieTicketDetails | null> => {
+  if (!Number.isSafeInteger(movieId) || movieId <= 0) {
+    return null;
+  }
+
+  const existing = tmdbTicketRequests.get(movieId);
+  if (existing) {
+    return existing;
+  }
+
+  const request = fetchTmdbMovieTicketDetails(movieId);
+  tmdbTicketRequests.set(movieId, request);
+
+  try {
+    return await request;
+  } finally {
+    if (tmdbTicketRequests.get(movieId) === request) {
+      tmdbTicketRequests.delete(movieId);
+    }
+  }
 };
 
 export const selectTmdbYoutubeTrailer = (
