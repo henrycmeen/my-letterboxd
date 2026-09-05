@@ -462,7 +462,7 @@
   cursor: pointer;
   display: block;
   padding: 0;
-  perspective: 700px;
+  perspective: 1800px;
   position: relative;
   width: 100%;
 }
@@ -475,6 +475,7 @@
 /* Keep the tape and its printed labels in one fixed-ratio physical body. */
 .voteCassetteBody {
   aspect-ratio: 296 / 536;
+  container-type: inline-size;
   width: 100%;
   position: relative;
 }
@@ -487,11 +488,38 @@
   background: #181818;
 }
 
-.voteCassetteLabel img {
+.voteCassettePrint {
+  /* The label is 46% of 296 wide and 40% of 536 tall. Swap those
+     dimensions before rotating the landscape still with the tape's print. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 157.46%;
+  height: 63.507%;
+  max-width: none;
+  transform: translate(-50%, -50%) rotate(90deg);
+  overflow: hidden;
+}
+
+.voteCassettePrint img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   opacity: 0.88;
+}
+
+.voteCassetteTitle {
+  position: absolute;
+  inset: 0 0 auto;
+  padding: 5% 5% 12%;
+  background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.88));
+  color: #f3f2ec;
+  font-size: 6cqw;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: left;
+  text-wrap: balance;
+  text-shadow: 0 1px 1px #000;
 }
 
 .voteCassetteSpine {
@@ -570,7 +598,7 @@
 /* Opening stays inside each fixed grid slot. The cover recedes first;
    the tape then tips toward the viewer and settles with its reels exposed. */
 .voteFilm[data-case-open="true"] .voteCaseCover {
-  transform: rotateY(-52deg);
+  transform: rotateY(-64deg);
 }
 
 .voteFilm[data-case-open="true"] .voteCassetteTray {
